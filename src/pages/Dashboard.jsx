@@ -14,12 +14,13 @@ export default function Dashboard() {
     const [stats, setStats] = useState({ eventCount: 0 })
     const [posts, setPosts] = useState([])
     const [activeTab, setActiveTab] = useState('All Sources') // Visual state for tabs
+    const [page, setPage] = useState(1)
+    const COACHES_PER_PAGE = 20
 
     useEffect(() => {
         async function fetchData() {
-            // Fetch coaches preview
-            const { data: coachesData } = await supabase.from('coaches').select('*').limit(20)
-            setCoaches(coachesData || [])
+            // Fetch coaches (initial load)
+            await loadCoaches(1)
 
             // Fetch stats for current user
             // Fetch stats for current user
@@ -48,6 +49,23 @@ export default function Dashboard() {
         }
         if (user) fetchData()
     }, [user])
+
+    const loadCoaches = async (pageNumber) => {
+        const from = (pageNumber - 1) * COACHES_PER_PAGE
+        const to = from + COACHES_PER_PAGE - 1
+
+        const { data: newCoaches } = await supabase
+            .from('coaches')
+            .select('*')
+            .range(from, to)
+
+        if (pageNumber === 1) {
+            setCoaches(newCoaches || [])
+        } else {
+            setCoaches(prev => [...prev, ...(newCoaches || [])])
+        }
+        setPage(pageNumber)
+    }
 
     return (
         <DashboardLayout>
@@ -189,6 +207,15 @@ export default function Dashboard() {
                                         </Button>
                                     </div>
                                 ))}
+                                {/* Load More Button */}
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full text-xs text-brand-primary h-8 mt-2"
+                                    onClick={() => loadCoaches(page + 1)}
+                                >
+                                    Load More
+                                </Button>
                             </CardContent>
                         </Card>
                     </div>

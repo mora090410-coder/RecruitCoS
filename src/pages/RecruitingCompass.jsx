@@ -169,6 +169,35 @@ export default function RecruitingCompass() {
         setResults({ reach: [], target: [], solid: [] })
 
         try {
+            // CACHE CHECK
+            // Generate a simple key based on school and user's primary characteristics
+            // Ideally we'd hash the whole profile, but user requested dream_school + athlete_id
+            const queryKey = `${searchSchool}_${JSON.stringify({
+                sport: athleteProfile?.sport,
+                gpa: athleteProfile?.gpa,
+                tier: athleteProfile?.academicTier
+            })}`.replace(/\s+/g, '_').toLowerCase()
+
+            if (user?.id) {
+                const { data: cached } = await supabase
+                    .from('search_cache')
+                    .select('results, expires_at')
+                    .eq('user_id', user.id)
+                    .eq('query_key', queryKey)
+                    .single()
+
+                if (cached && new Date(cached.expires_at) > new Date()) {
+                    console.log('Using CACHED results for:', searchSchool)
+                    setResults(cached.results)
+                    setView('overview')
+                    setLoading(false)
+                    return
+                }
+            }
+
+            // --- API CALL ---
+            console.log('Cache miss. Calling Gemini API for:', searchSchool)
+
             const prompt = `
 Role: You are an elite Collegiate Recruiting Advisor with expert knowledge of NCAA athletics, academic requirements, and geographic regions.
 
@@ -239,6 +268,20 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
             }
 
             setResults(grouped)
+
+            // SAVE TO CACHE
+            if (user?.id) {
+                const { error: cacheError } = await supabase
+                    .from('search_cache')
+                    .insert({
+                        user_id: user.id,
+                        query_key: queryKey,
+                        results: grouped
+                    })
+                if (cacheError) console.warn("Failed to cache results:", cacheError)
+                else console.log("Results cached successfully.")
+            }
+
             setView('overview')
 
         } catch (error) {

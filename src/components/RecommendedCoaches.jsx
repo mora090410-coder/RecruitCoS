@@ -5,18 +5,19 @@ import { Button } from './ui/button'
 export default function RecommendedCoaches({ athlete, selectedCoaches, onSelect }) {
     const [recommended, setRecommended] = useState([])
     const [loading, setLoading] = useState(true)
+    const [page, setPage] = useState(1)
+    const PER_PAGE = 5
 
     useEffect(() => {
         if (athlete?.id) {
-            loadRecommendations()
+            loadRecommendations(1)
         }
-    }, [athlete, selectedCoaches])
+    }, [athlete]) // Removed selectedCoaches dependency to avoid reset on selection
 
-    const loadRecommendations = async () => {
+    const loadRecommendations = async (pageNumber) => {
         setLoading(true)
         try {
             // Get coaches matching athlete's profile
-            // Note: target_divisions and preferred_regions are arrays
             let query = supabase
                 .from('coaches')
                 .select('*')
@@ -31,17 +32,25 @@ export default function RecommendedCoaches({ athlete, selectedCoaches, onSelect 
                 query = query.in('division', athlete.target_divisions)
             }
 
-            // Limit results
-            const { data, error } = await query.limit(5)
+            // Pagination using Range
+            const from = (pageNumber - 1) * PER_PAGE
+            const to = from + PER_PAGE - 1
+            const { data, error } = await query.range(from, to)
 
             if (error) throw error
 
-            // Filter out already selected locally
-            const filtered = data?.filter(
+            // Filter out already selected locally (client side filter might reduce count, but simpler for now)
+            const newCoaches = data?.filter(
                 coach => !selectedCoaches.find(c => c.id === coach.id)
             ) || []
 
-            setRecommended(filtered)
+            if (pageNumber === 1) {
+                setRecommended(newCoaches)
+            } else {
+                setRecommended(prev => [...prev, ...newCoaches])
+            }
+            setPage(pageNumber)
+
         } catch (err) {
             console.error("Error loading recommendations:", err)
         } finally {
@@ -75,6 +84,16 @@ export default function RecommendedCoaches({ athlete, selectedCoaches, onSelect 
                         </Button>
                     </div>
                 ))}
+
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-xs text-gray-400 hover:text-brand-primary mt-2"
+                    onClick={() => loadRecommendations(page + 1)}
+                    disabled={loading}
+                >
+                    {loading ? 'Loading...' : 'Load More Coaches'}
+                </Button>
             </div>
         </div>
     )
