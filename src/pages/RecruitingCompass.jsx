@@ -244,8 +244,16 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
     const handleExploreProfile = async () => {
         console.log('handleExploreProfile triggered')
         console.log('athleteProfile:', athleteProfile)
+        console.log('Current dreamSchool state:', dreamSchool)
 
-        // Use a representative school based on their academic tier
+        // 1. Check for Existing Dream School
+        if (dreamSchool && dreamSchool.trim() !== '') {
+            console.log('Using existing dream school from profile:', dreamSchool)
+            await handleSearch(dreamSchool)
+            return
+        }
+
+        // 2. Fallback: Use a representative school based on their academic tier
         const representativeSchools = {
             'highly_selective': 'Stanford University',
             'selective': 'University of Michigan',
@@ -256,7 +264,7 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
         // Default to selective if no profile
         const tier = athleteProfile?.academicTier || 'selective'
         const representativeSchool = representativeSchools[tier] || 'University of Michigan'
-        console.log('Searching with:', representativeSchool, 'based on tier:', tier)
+        console.log('No dream school set. Using fallback:', representativeSchool, 'based on tier:', tier)
 
         setDreamSchool(representativeSchool)
 
