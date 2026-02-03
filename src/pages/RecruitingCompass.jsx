@@ -54,6 +54,7 @@ export default function RecruitingCompass() {
     const [loading, setLoading] = useState(false)
     const [profileLoading, setProfileLoading] = useState(true)
     const [searchError, setSearchError] = useState(null)
+    const [lastSearchTime, setLastSearchTime] = useState(0)
 
     // Load athlete profile and saved schools on mount
     useEffect(() => {
@@ -160,10 +161,35 @@ export default function RecruitingCompass() {
         }
     }, [results, filters, athleteProfile])
 
+    // Helper for Exponential Backoff
+    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+    const generateWithRetry = async (model, prompt, retries = 3, delay = 2000) => {
+        try {
+            return await model.generateContent(prompt)
+        } catch (error) {
+            const isRateLimit = error.message?.includes('429') || error.status === 429
+            if (retries > 0 && isRateLimit) {
+                console.warn(`Hit 429 rate limit. Retrying in ${delay}ms...`)
+                await wait(delay)
+                return generateWithRetry(model, prompt, retries - 1, delay * 2)
+            }
+            throw error
+        }
+    }
+
     // AI Search
     const handleSearch = async (schoolOverride = null) => {
         const searchSchool = schoolOverride || dreamSchool
         if (!searchSchool.trim()) return
+
+        // Debounce check (5 seconds)
+        const now = Date.now()
+        if (now - lastSearchTime < 5000) {
+            console.warn("Search throttled: Please wait before searching again.")
+            return
+        }
+        setLastSearchTime(now)
 
         setLoading(true)
         setSearchError(null)
@@ -209,10 +235,11 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
 `
 
             const model = genAI.getGenerativeModel({
-                model: "gemini-2.0-flash",
+                model: "gemini-1.5-flash",
                 generationConfig: { responseMimeType: "application/json" }
             })
-            const result = await model.generateContent(prompt)
+
+            const result = await generateWithRetry(model, prompt)
             const response = await result.response
             const text = response.text()
 
@@ -240,7 +267,13 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
 
         } catch (error) {
             console.error("Gemini Error:", error)
-            setSearchError(`Search failed: ${error.message || 'Unknown error'}. Check console for details.`)
+            const isRateLimit = error.message?.includes('429') || error.status === 429
+
+            if (isRateLimit) {
+                setSearchError('Our Chief of Staff is currently busy helping other athletes. Please wait 60 seconds and try again.')
+            } else {
+                setSearchError(`Search failed: ${error.message || 'Unknown error'}. Check console for details.`)
+            }
         } finally {
             setLoading(false)
         }
