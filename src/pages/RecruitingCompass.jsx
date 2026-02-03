@@ -238,7 +238,8 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
 
     // Explore based on profile (uses profile data instead of dream school)
     const handleExploreProfile = async () => {
-        if (!athleteProfile) return
+        console.log('handleExploreProfile triggered')
+        console.log('athleteProfile:', athleteProfile)
 
         // Use a representative school based on their academic tier
         const representativeSchools = {
@@ -248,7 +249,10 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
             'open_admission': 'Community College'
         }
 
-        const representativeSchool = representativeSchools[athleteProfile.academicTier] || 'University of Michigan'
+        // Default to selective if no profile
+        const tier = athleteProfile?.academicTier || 'selective'
+        const representativeSchool = representativeSchools[tier] || 'University of Michigan'
+        console.log('Searching with:', representativeSchool, 'based on tier:', tier)
 
         setDreamSchool(representativeSchool)
 
