@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import DashboardLayout from '../components/DashboardLayout'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { getGenAI, callGeminiWithRetry } from '../lib/gemini'
 import { calculateDistance } from '../lib/utils'
 
 // Screen Components
@@ -17,20 +18,7 @@ import MyList from '../components/compass/MyList'
 export default function RecruitingCompass() {
     const { user } = useAuth()
 
-    // Gemini client (lazy init)
-    const [genAI, setGenAI] = useState(null)
-    useEffect(() => {
-        try {
-            const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-            if (apiKey) {
-                setGenAI(new GoogleGenerativeAI(apiKey))
-            } else {
-                console.warn('Gemini API key not found')
-            }
-        } catch (e) {
-            console.error('Failed to initialize Gemini:', e)
-        }
-    }, [])
+    // Gemini client (lazy init via getGenAI helper)
 
     // View state
     const [view, setView] = useState('search') // 'search' | 'overview' | 'list' | 'detail' | 'mylist'
@@ -161,22 +149,7 @@ export default function RecruitingCompass() {
         }
     }, [results, filters, athleteProfile])
 
-    // Helper for Exponential Backoff
-    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
-
-    const generateWithRetry = async (model, prompt, retries = 3, delay = 2000) => {
-        try {
-            return await model.generateContent(prompt)
-        } catch (error) {
-            const isRateLimit = error.message?.includes('429') || error.status === 429
-            if (retries > 0 && isRateLimit) {
-                console.warn(`Hit 429 rate limit. Retrying in ${delay}ms...`)
-                await wait(delay)
-                return generateWithRetry(model, prompt, retries - 1, delay * 2)
-            }
-            throw error
-        }
-    }
+    // Helpers imported from lib/gemini
 
     // AI Search
     const handleSearch = async (schoolOverride = null) => {
@@ -234,12 +207,15 @@ For each school provide:
 OUTPUT: Valid JSON array only. No markdown, no extra text.
 `
 
+            const genAI = getGenAI()
+            if (!genAI) throw new Error("Gemini API Key missing")
+
             const model = genAI.getGenerativeModel({
                 model: "gemini-1.5-flash",
                 generationConfig: { responseMimeType: "application/json" }
             })
 
-            const result = await generateWithRetry(model, prompt)
+            const result = await callGeminiWithRetry(model, prompt)
             const response = await result.response
             const text = response.text()
 

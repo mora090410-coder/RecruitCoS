@@ -1,10 +1,44 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+let genAIInstance = null;
+
+// Safe initialization
+export function getGenAI() {
+  if (genAIInstance) return genAIInstance;
+
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error("Gemini API Key missing! Check your .env file.");
+    return null;
+  }
+
+  genAIInstance = new GoogleGenerativeAI(apiKey);
+  return genAIInstance;
+}
+
+// Helper for Exponential Backoff
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+export async function callGeminiWithRetry(model, prompt, retries = 3, delay = 2000) {
+  try {
+    return await model.generateContent(prompt);
+  } catch (error) {
+    const isRateLimit = error.message?.includes('429') || error.status === 429;
+    if (retries > 0 && isRateLimit) {
+      console.warn(`Hit 429 rate limit. Retrying in ${delay}ms...`);
+      await wait(delay);
+      return callGeminiWithRetry(model, prompt, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
 
 export async function generateSocialPosts(eventData, coaches = [], voiceProfile = "") {
+  const genAI = getGenAI();
+  if (!genAI) throw new Error("Gemini AI not initialized");
+
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
+    model: "gemini-1.5-flash",
     generationConfig: { responseMimeType: "application/json" }
   });
 
@@ -53,7 +87,7 @@ export async function generateSocialPosts(eventData, coaches = [], voiceProfile 
   console.log("Generating with coaches:", coaches); // Debug log
 
   try {
-    const result = await model.generateContent(prompt);
+    const result = await callGeminiWithRetry(model, prompt);
     const text = result.response.text();
     return JSON.parse(text);
   } catch (error) {
