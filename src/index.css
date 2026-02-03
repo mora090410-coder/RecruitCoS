@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+    --color-brand-primary: #106fdb;
+    --color-brand-secondary: #0b4c96;
+    --color-brand-accent: #f59e0b;
+
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 1rem;
+}
+
+body {
+    font-family: var(--font-sans);
+    @apply bg-gray-50 text-slate-900;
+}
