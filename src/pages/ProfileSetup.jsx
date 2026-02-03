@@ -40,6 +40,7 @@ export default function ProfileSetup() {
     const [step, setStep] = useState(1)
     const [loading, setLoading] = useState(false)
     const [completed, setCompleted] = useState(false)
+    const [error, setError] = useState(null)
 
     // Form State
     const [formData, setFormData] = useState({
@@ -145,7 +146,7 @@ export default function ProfileSetup() {
                 if (signInError) {
                     // Email confirmation likely required
                     console.log('Sign in failed, email confirmation may be required:', signInError)
-                    alert('Account created! Please check your email to confirm, then log in.')
+                    setError('Account created! Please check your email to confirm, then log in.')
                     setLoading(false)
                     return
                 }
@@ -182,9 +183,9 @@ export default function ProfileSetup() {
             console.log('Profile saved successfully!')
             setCompleted(true) // Show success screen
 
-        } catch (error) {
-            console.error("Account creation failed:", error)
-            alert('Failed to create account: ' + error.message)
+        } catch (err) {
+            console.error("Account creation failed:", err)
+            setError('Failed to create account: ' + err.message)
         } finally {
             setLoading(false)
         }
@@ -497,6 +498,20 @@ export default function ProfileSetup() {
                         I agree to the <span className="text-white underline">Terms of Service</span> and <span className="text-white underline">Privacy Policy</span>
                     </span>
                 </label>
+
+                {/* Error Display */}
+                {error && (
+                    <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
+                        <p className="font-semibold mb-1">⚠️ Error</p>
+                        <p>{error}</p>
+                        <button
+                            onClick={() => setError(null)}
+                            className="mt-2 text-xs underline hover:text-red-300"
+                        >
+                            Dismiss
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     )
