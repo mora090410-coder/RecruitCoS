@@ -35,7 +35,7 @@ const SEARCH_PREFERENCES = [
 ]
 
 export default function ProfileSetup() {
-    const { signUp } = useAuth()
+    const { signUp, user } = useAuth()
     const navigate = useNavigate()
     const [step, setStep] = useState(1)
     const [loading, setLoading] = useState(false)
@@ -91,6 +91,13 @@ export default function ProfileSetup() {
         }
     }, [formData.gpaRange])
 
+    // Auto-fill email if user is already authenticated
+    useEffect(() => {
+        if (user?.email && !formData.email) {
+            setFormData(prev => ({ ...prev, email: user.email, agreedToTerms: true }))
+        }
+    }, [user])
+
     const handleNext = () => setStep(s => Math.min(s + 1, TOTAL_STEPS))
     const handleBack = () => setStep(s => Math.max(s - 1, 1))
 
@@ -107,54 +114,60 @@ export default function ProfileSetup() {
     // Step 7: Create Account & Save Profile
     const handleCreateAccount = async () => {
         setLoading(true)
+        setError(null)
         try {
-            console.log('Starting account creation...')
+            let userId
 
-            // 1. Sign Up
-            const { data: authData, error: authError } = await signUp({
-                email: formData.email,
-                password: formData.password,
-                options: {
-                    data: {
-                        first_name: formData.firstName,
-                        last_name: formData.lastName
-                    }
-                }
-            })
+            // Check if user is already authenticated
+            if (user) {
+                console.log('User already authenticated, skipping signUp...')
+                userId = user.id
+            } else {
+                console.log('Starting account creation...')
 
-            console.log('SignUp response:', { authData, authError })
-
-            if (authError) throw authError
-            if (!authData.user) throw new Error("No user created")
-
-            // 2. For local Supabase (no email confirmation), user should be logged in
-            // For cloud Supabase with email confirmation, we need to sign in
-            let userId = authData.user.id
-
-            // Check if we have a session (local dev usually auto-confirms)
-            const { data: sessionData } = await supabase.auth.getSession()
-            console.log('Session after signUp:', sessionData)
-
-            if (!sessionData?.session) {
-                // Try to sign in with password (for cases where email is auto-confirmed)
-                console.log('No active session, attempting sign in...')
-                const { error: signInError } = await supabase.auth.signInWithPassword({
+                // 1. Sign Up (only for new users)
+                const { data: authData, error: authError } = await signUp({
                     email: formData.email,
-                    password: formData.password
+                    password: formData.password,
+                    options: {
+                        data: {
+                            first_name: formData.firstName,
+                            last_name: formData.lastName
+                        }
+                    }
                 })
 
-                if (signInError) {
-                    // Email confirmation likely required
-                    console.log('Sign in failed, email confirmation may be required:', signInError)
-                    setError('Account created! Please check your email to confirm, then log in.')
-                    setLoading(false)
-                    return
+                console.log('SignUp response:', { authData, authError })
+
+                if (authError) throw authError
+                if (!authData.user) throw new Error("No user created")
+
+                userId = authData.user.id
+
+                // Check if we have a session (local dev usually auto-confirms)
+                const { data: sessionData } = await supabase.auth.getSession()
+                console.log('Session after signUp:', sessionData)
+
+                if (!sessionData?.session) {
+                    // Try to sign in with password (for cases where email is auto-confirmed)
+                    console.log('No active session, attempting sign in...')
+                    const { error: signInError } = await supabase.auth.signInWithPassword({
+                        email: formData.email,
+                        password: formData.password
+                    })
+
+                    if (signInError) {
+                        console.log('Sign in failed, email confirmation may be required:', signInError)
+                        setError('Account created! Please check your email to confirm, then log in.')
+                        setLoading(false)
+                        return
+                    }
                 }
             }
 
             console.log('Saving profile for user:', userId)
 
-            // 3. Save Profile to Supabase
+            // 2. Save Profile to Supabase
             const { error: profileError } = await supabase
                 .from('athletes')
                 .insert({
@@ -185,7 +198,7 @@ export default function ProfileSetup() {
 
         } catch (err) {
             console.error("Account creation failed:", err)
-            setError('Failed to create account: ' + err.message)
+            setError('Failed to save profile: ' + err.message)
         } finally {
             setLoading(false)
         }
@@ -200,7 +213,11 @@ export default function ProfileSetup() {
             case 4: return formData.locationCity && formData.locationState && formData.searchPreference
             case 5: return formData.targetDivisions.length > 0
             case 6: return true // Optional
-            case 7: return formData.email && formData.password.length >= 8 && formData.agreedToTerms
+            case 7:
+                // If user is authenticated, just need terms agreement
+                if (user) return formData.agreedToTerms
+                // Otherwise need email, password, and terms
+                return formData.email && formData.password.length >= 8 && formData.agreedToTerms
             default: return false
         }
     }
@@ -454,38 +471,55 @@ export default function ProfileSetup() {
                 </div>
                 <h2 className="text-2xl font-bold text-white">Profile Complete!</h2>
                 <p className="text-zinc-400 mt-2">
-                    Create your account to access your curated recruiting roadmap and saved schools.
+                    {user
+                        ? "Ready to save your profile and start your recruiting journey."
+                        : "Create your account to access your curated recruiting roadmap and saved schools."
+                    }
                 </p>
             </div>
 
             <div className="space-y-4">
-                <div className="space-y-2">
-                    <label className="text-zinc-400 text-sm">Email</label>
-                    <div className="relative">
-                        <Mail className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
-                        <input
-                            type="email"
-                            className="w-full bg-zinc-800 border-none rounded-lg pl-10 p-3 text-white focus:ring-2 focus:ring-green-400 outline-none"
-                            placeholder="you@example.com"
-                            value={formData.email}
-                            onChange={e => setFormData({ ...formData, email: e.target.value })}
-                        />
+                {/* Show signed-in message for authenticated users */}
+                {user ? (
+                    <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+                        <p className="text-green-400 text-sm font-medium">
+                            ✓ You are signed in as <span className="text-white">{user.email}</span>
+                        </p>
+                        <p className="text-zinc-400 text-xs mt-1">Ready to save your profile?</p>
                     </div>
-                </div>
-                <div className="space-y-2">
-                    <label className="text-zinc-400 text-sm">Password</label>
-                    <div className="relative">
-                        <Lock className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
-                        <input
-                            type="password"
-                            className="w-full bg-zinc-800 border-none rounded-lg pl-10 p-3 text-white focus:ring-2 focus:ring-green-400 outline-none"
-                            placeholder="••••••••"
-                            value={formData.password}
-                            onChange={e => setFormData({ ...formData, password: e.target.value })}
-                        />
-                    </div>
-                    <p className="text-xs text-zinc-500">At least 8 characters</p>
-                </div>
+                ) : (
+                    <>
+                        {/* Email field for new users */}
+                        <div className="space-y-2">
+                            <label className="text-zinc-400 text-sm">Email</label>
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
+                                <input
+                                    type="email"
+                                    className="w-full bg-zinc-800 border-none rounded-lg pl-10 p-3 text-white focus:ring-2 focus:ring-green-400 outline-none"
+                                    placeholder="you@example.com"
+                                    value={formData.email}
+                                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        {/* Password field for new users */}
+                        <div className="space-y-2">
+                            <label className="text-zinc-400 text-sm">Password</label>
+                            <div className="relative">
+                                <Lock className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
+                                <input
+                                    type="password"
+                                    className="w-full bg-zinc-800 border-none rounded-lg pl-10 p-3 text-white focus:ring-2 focus:ring-green-400 outline-none"
+                                    placeholder="••••••••"
+                                    value={formData.password}
+                                    onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                />
+                            </div>
+                            <p className="text-xs text-zinc-500">At least 8 characters</p>
+                        </div>
+                    </>
+                )}
 
                 <label className="flex items-start gap-3 cursor-pointer group">
                     <input
@@ -625,7 +659,10 @@ export default function ProfileSetup() {
                                 disabled={!canProceed() || loading}
                                 className="ml-auto bg-green-500 hover:bg-green-600 text-white font-semibold w-full"
                             >
-                                {loading ? 'Creating Account...' : 'Create My Account'}
+                                {loading
+                                    ? (user ? 'Saving Profile...' : 'Creating Account...')
+                                    : (user ? 'Save My Profile' : 'Create My Account')
+                                }
                             </Button>
                         )}
                     </div>
