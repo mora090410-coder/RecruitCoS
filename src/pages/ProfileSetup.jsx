@@ -116,12 +116,10 @@ export default function ProfileSetup() {
         setLoading(true)
         setError(null)
         try {
-            let userId
+            let userId = user?.id
 
-            // Check if user is already authenticated
-            if (user) {
-                console.log('User already authenticated, skipping signUp...')
-                userId = user.id
+            if (userId) {
+                console.log('User authenticated, skipping registration:', userId)
             } else {
                 console.log('Starting account creation...')
 
@@ -137,27 +135,21 @@ export default function ProfileSetup() {
                     }
                 })
 
-                console.log('SignUp response:', { authData, authError })
-
                 if (authError) throw authError
                 if (!authData.user) throw new Error("No user created")
 
                 userId = authData.user.id
 
-                // Check if we have a session (local dev usually auto-confirms)
+                // Check session availability
                 const { data: sessionData } = await supabase.auth.getSession()
-                console.log('Session after signUp:', sessionData)
-
                 if (!sessionData?.session) {
-                    // Try to sign in with password (for cases where email is auto-confirmed)
-                    console.log('No active session, attempting sign in...')
+                    // Attempt immediate sign-in
                     const { error: signInError } = await supabase.auth.signInWithPassword({
                         email: formData.email,
                         password: formData.password
                     })
 
                     if (signInError) {
-                        console.log('Sign in failed, email confirmation may be required:', signInError)
                         setError('Account created! Please check your email to confirm, then log in.')
                         setLoading(false)
                         return
@@ -167,14 +159,14 @@ export default function ProfileSetup() {
 
             console.log('Saving profile for user:', userId)
 
-            // 2. Save Profile to Supabase
+            // 2. Save Profile (Upsert to prevent duplicates)
             const { error: profileError } = await supabase
                 .from('athletes')
-                .insert({
+                .upsert({
                     user_id: userId,
                     first_name: formData.firstName,
-                    name: `${formData.firstName} ${formData.lastName}`,
                     last_name: formData.lastName,
+                    name: `${formData.firstName} ${formData.lastName}`, // Ensure mapped name
                     grad_year: parseInt(formData.gradYear),
                     sport: formData.sport,
                     position: formData.position,
@@ -186,15 +178,12 @@ export default function ProfileSetup() {
                     target_divisions: formData.targetDivisions,
                     dream_school: formData.dreamSchool || null,
                     onboarding_completed: true
-                })
+                }, { onConflict: 'user_id' })
 
-            if (profileError) {
-                console.error("Profile save error:", profileError)
-                throw profileError
-            }
+            if (profileError) throw profileError
 
             console.log('Profile saved successfully!')
-            setCompleted(true) // Show success screen
+            setCompleted(true)
 
         } catch (err) {
             console.error("Account creation failed:", err)

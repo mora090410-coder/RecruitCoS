@@ -258,25 +258,24 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
     // Explore based on profile (uses profile data instead of dream school)
     const handleExploreProfile = async () => {
         console.log('handleExploreProfile triggered')
-        console.log('athleteProfile:', athleteProfile)
-        console.log('Current dreamSchool state:', dreamSchool)
 
-        // 1. Check for Existing Dream School in PROFILE object (source of truth)
+        // 1. PRIORITY: Check for Existing Dream School in DB PROFILE (Source of Truth)
+        // We use the DB value if available to ensure "Michigan" bug doesn't happen for users who set a school.
         if (athleteProfile?.dreamSchool && athleteProfile.dreamSchool.trim() !== '') {
             console.log('Using persistent DB dream school:', athleteProfile.dreamSchool)
-            setDreamSchool(athleteProfile.dreamSchool) // Ensure UI matches
+            setDreamSchool(athleteProfile.dreamSchool) // Sync UI
             await handleSearch(athleteProfile.dreamSchool)
             return
         }
 
-        // Also check current UI state just in case
+        // 2. Check current UI state (fallback if profile not loaded or empty)
         if (dreamSchool && dreamSchool.trim() !== '') {
             console.log('Using current UI input dream school:', dreamSchool)
             await handleSearch(dreamSchool)
             return
         }
 
-        // 2. Fallback: Use a representative school based on their academic tier
+        // 3. Fallback: Use a representative school based on their academic tier
         const representativeSchools = {
             'highly_selective': 'Stanford University',
             'selective': 'University of Michigan',
@@ -284,14 +283,11 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
             'open_admission': 'Community College'
         }
 
-        // Default to selective if no profile
         const tier = athleteProfile?.academicTier || 'selective'
         const representativeSchool = representativeSchools[tier] || 'University of Michigan'
-        console.log('No dream school set. Using fallback:', representativeSchool, 'based on tier:', tier)
 
+        console.log('No dream school set in profile or UI. Using fallback:', representativeSchool)
         setDreamSchool(representativeSchool)
-
-        // Pass the school directly to handleSearch to avoid stale state
         await handleSearch(representativeSchool)
     }
 
