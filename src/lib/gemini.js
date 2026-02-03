@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { sanitizeInput } from "./security";
 
 let genAIInstance = null;
 
@@ -25,7 +26,7 @@ export async function callGeminiWithRetry(model, prompt, retries = 3, delay = 20
   } catch (error) {
     const isRateLimit = error.message?.includes('429') || error.status === 429;
     if (retries > 0 && isRateLimit) {
-      console.warn(`Hit 429 rate limit. Retrying in ${delay}ms...`);
+      if (import.meta.env.DEV) console.warn(`Hit 429 rate limit. Retrying in ${delay}ms...`);
       await wait(delay);
       return callGeminiWithRetry(model, prompt, retries - 1, delay * 2);
     }
@@ -42,23 +43,30 @@ export async function generateSocialPosts(eventData, coaches = [], voiceProfile 
     generationConfig: { responseMimeType: "application/json" }
   });
 
+  // Sanitized Inputs
+  const safeTitle = sanitizeInput(eventData.title);
+  const safeDescription = sanitizeInput(eventData.description);
+  const safeEventType = sanitizeInput(eventData.event_type);
+  const safeDate = sanitizeInput(eventData.date);
+  const safeVoice = sanitizeInput(voiceProfile);
+
   const prompt = `
     You are a social media expert for high school athletes. 
     based on the following event, generate 3 distinct social media post options (Twitter/X style).
     
-    Event Type: ${eventData.event_type}
-    Headline: ${eventData.title}
-    Details: ${eventData.description}
-    Date: ${eventData.date}
+    Event Type: ${safeEventType}
+    Headline: ${safeTitle}
+    Details: ${safeDescription}
+    Date: ${safeDate}
     
     Coaches to Tag: ${coaches.map(c => {
     const handle = c.twitter_handle || 'no_handle';
-    return `${c.name} (${handle.startsWith('@') ? handle : '@' + handle})`;
+    return `${sanitizeInput(c.name)} (${handle.startsWith('@') ? handle : '@' + handle})`;
   }).join(', ') || "None"}
 
-    ${voiceProfile ? `
+    ${safeVoice ? `
     CRITICAL TONE INSTRUCTION:
-    The user has a specific voice preference: "${voiceProfile}".
+    The user has a specific voice preference: "${safeVoice}".
     Ensure EXACTLY ONE of the options matches this specific instruction perfectly. Label that option as "My Voice".
     The other two options should provide variety (e.g. Hype, Humble, or Professional) but usually distinct from the user's specific instruction to offer choice.
     ` : ''}
@@ -66,7 +74,7 @@ export async function generateSocialPosts(eventData, coaches = [], voiceProfile 
     Return the response as a valid JSON object with the following structure:
     {
       "options": [
-        { "style": "${voiceProfile ? "My Voice" : "Hype"}", "content": "..." },
+        { "style": "${safeVoice ? "My Voice" : "Hype"}", "content": "..." },
         { "style": "Humble", "content": "..." },
         { "style": "Professional", "content": "..." }
       ]
@@ -84,14 +92,16 @@ export async function generateSocialPosts(eventData, coaches = [], voiceProfile 
     - Include these tags in ALL 3 options if possible.
   `;
 
-  console.log("Generating with coaches:", coaches); // Debug log
+  if (import.meta.env.DEV) {
+    console.log("Generating social posts...");
+  }
 
   try {
     const result = await callGeminiWithRetry(model, prompt);
     const text = result.response.text();
     return JSON.parse(text);
   } catch (error) {
-    console.error("Gemini Error:", error);
+    if (import.meta.env.DEV) console.error("Gemini Error:", error);
     throw new Error("Failed to generate posts");
   }
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -47,6 +47,9 @@ export default function EventLogger() {
     const [showVoiceModal, setShowVoiceModal] = useState(false)
     const [selectedOptionIndex, setSelectedOptionIndex] = useState(null)
 
+    // Throttling State
+    const lastGenerationTime = useRef(0);
+
     // Form State
     const [formData, setFormData] = useState({
         title: '',
@@ -74,7 +77,7 @@ export default function EventLogger() {
                     }
                 }
             } catch (err) {
-                console.error("Error checking profile:", err)
+                if (import.meta.env.DEV) console.error("Error checking profile:", err)
             } finally {
                 setPageLoading(false)
             }
@@ -107,6 +110,15 @@ export default function EventLogger() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+
+        // Throttling Check (10 seconds)
+        const now = Date.now();
+        if (now - lastGenerationTime.current < 10000) {
+            alert("Please wait a moment before generating again.");
+            return;
+        }
+        lastGenerationTime.current = now;
+
         setLoading(true)
 
         // 1. Get/Create Athlete (Fallback if not loaded)
@@ -359,8 +371,8 @@ export default function EventLogger() {
                                 key={index}
                                 onClick={() => setSelectedOptionIndex(index)}
                                 className={`relative group cursor-pointer transition-all duration-300 transform hover:-translate-y-1 ${selectedOptionIndex === index
-                                        ? 'ring-4 ring-brand-primary ring-offset-4 scale-105 z-10'
-                                        : 'hover:shadow-xl'
+                                    ? 'ring-4 ring-brand-primary ring-offset-4 scale-105 z-10'
+                                    : 'hover:shadow-xl'
                                     }`}
                             >
                                 <Card className={`h-full border-2 ${selectedOptionIndex === index ? 'border-brand-primary bg-brand-primary/5' : 'border-transparent hover:border-gray-200'}`}>

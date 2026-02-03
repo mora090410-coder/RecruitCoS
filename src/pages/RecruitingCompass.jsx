@@ -5,6 +5,7 @@ import DashboardLayout from '../components/DashboardLayout'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getGenAI, callGeminiWithRetry } from '../lib/gemini'
 import { calculateDistance } from '../lib/utils'
+import { sanitizeInput } from '../lib/security'
 
 // Screen Components
 import CompassSearch from '../components/compass/CompassSearch'
@@ -47,7 +48,7 @@ export default function RecruitingCompass() {
     // Load athlete profile and saved schools on mount
     useEffect(() => {
         async function loadData() {
-            console.log('Loading profile for user:', user?.id)
+            if (import.meta.env.DEV) console.log('Loading profile for user:', user?.id)
             setProfileLoading(true)
 
             // Load profile
@@ -57,7 +58,9 @@ export default function RecruitingCompass() {
                 .eq('user_id', user.id)
                 .single()
 
-            console.log('Athlete query result:', { athlete, athleteError })
+            if (import.meta.env.DEV && (athlete || athleteError)) {
+                // console.log('Athlete query result:', { athlete, athleteError }) 
+            }
 
             if (athlete) {
                 setAthleteProfile({
@@ -101,7 +104,6 @@ export default function RecruitingCompass() {
             }
 
             setProfileLoading(false)
-            console.log('Profile loading complete')
         }
 
         if (user) loadData()
@@ -153,8 +155,10 @@ export default function RecruitingCompass() {
 
     // AI Search
     const handleSearch = async (schoolOverride = null) => {
-        const searchSchool = schoolOverride || dreamSchool
-        if (!searchSchool.trim()) return
+        const rawSchool = schoolOverride || dreamSchool
+        if (!rawSchool || !rawSchool.trim()) return
+
+        const searchSchool = sanitizeInput(rawSchool)
 
         // Debounce check (5 seconds)
         const now = Date.now()
@@ -187,7 +191,7 @@ export default function RecruitingCompass() {
                     .single()
 
                 if (cached && new Date(cached.expires_at) > new Date()) {
-                    console.log('Using CACHED results for:', searchSchool)
+                    if (import.meta.env.DEV) console.log('Using CACHED results for:', searchSchool)
                     setResults(cached.results)
                     setView('overview')
                     setLoading(false)
@@ -196,7 +200,7 @@ export default function RecruitingCompass() {
             }
 
             // --- API CALL ---
-            console.log('Cache miss. Calling Gemini API for:', searchSchool)
+            if (import.meta.env.DEV) console.log('Cache miss. Calling Gemini API for:', searchSchool)
 
             const prompt = `
 Role: You are an elite Collegiate Recruiting Advisor with expert knowledge of NCAA athletics, academic requirements, and geographic regions.
@@ -204,13 +208,13 @@ Role: You are an elite Collegiate Recruiting Advisor with expert knowledge of NC
 Task: Find 35 schools similar to "${searchSchool}" and categorize them for this athlete.
 
 ATHLETE PROFILE:
-- Position: ${athleteProfile?.position || 'Unknown'}
-- Sport: ${athleteProfile?.sport || 'Unknown'}
-- GPA: ${athleteProfile?.gpa || 'Not provided'}
-- Academic Tier Preference: ${athleteProfile?.academicTier || 'selective'}
-- Home Location: ${athleteProfile?.location || 'Unknown'}
-- Search Preference: ${athleteProfile?.searchPreference || 'regional'}
-- Graduation Year: ${athleteProfile?.gradYear || 'Unknown'}
+- Position: ${sanitizeInput(athleteProfile?.position) || 'Unknown'}
+- Sport: ${sanitizeInput(athleteProfile?.sport) || 'Unknown'}
+- GPA: ${sanitizeInput(athleteProfile?.gpa) || 'Not provided'}
+- Academic Tier Preference: ${sanitizeInput(athleteProfile?.academicTier) || 'selective'}
+- Home Location: ${sanitizeInput(athleteProfile?.location) || 'Unknown'}
+- Search Preference: ${sanitizeInput(athleteProfile?.searchPreference) || 'regional'}
+- Graduation Year: ${sanitizeInput(athleteProfile?.gradYear) || 'Unknown'}
 
 CATEGORIZATION RULES:
 1. **REACH (10-12 schools):** More competitive than athlete's profile. Higher academic standards or elite athletics. Worth pursuing with strong performance.
@@ -248,7 +252,7 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
             const response = await result.response
             const text = response.text()
 
-            console.log("Gemini Raw Response:", text)
+            if (import.meta.env.DEV) console.log("Gemini Raw Response:", text)
 
             // Robust JSON extraction
             const jsonStart = text.indexOf('[')
@@ -278,14 +282,15 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
                         query_key: queryKey,
                         results: grouped
                     })
-                if (cacheError) console.warn("Failed to cache results:", cacheError)
-                else console.log("Results cached successfully.")
+                if (cacheError) {
+                    if (import.meta.env.DEV) console.warn("Failed to cache results:", cacheError)
+                }
             }
 
             setView('overview')
 
         } catch (error) {
-            console.error("Gemini Error:", error)
+            if (import.meta.env.DEV) console.error("Gemini Error:", error)
             const isRateLimit = error.message?.includes('429') || error.status === 429
 
             if (isRateLimit) {
