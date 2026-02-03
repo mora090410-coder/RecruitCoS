@@ -107,6 +107,8 @@ export default function ProfileSetup() {
     const handleCreateAccount = async () => {
         setLoading(true)
         try {
+            console.log('Starting account creation...')
+
             // 1. Sign Up
             const { data: authData, error: authError } = await signUp({
                 email: formData.email,
@@ -119,26 +121,53 @@ export default function ProfileSetup() {
                 }
             })
 
+            console.log('SignUp response:', { authData, authError })
+
             if (authError) throw authError
             if (!authData.user) throw new Error("No user created")
 
-            // 2. Save Profile to Supabase
-            // Note: 'athletes' table policy must allow insert for authenticated user or we use service role?
-            // Usually trigger on auth.users creates record, or RLS allows insert with user_id = auth.uid()
+            // 2. For local Supabase (no email confirmation), user should be logged in
+            // For cloud Supabase with email confirmation, we need to sign in
+            let userId = authData.user.id
+
+            // Check if we have a session (local dev usually auto-confirms)
+            const { data: sessionData } = await supabase.auth.getSession()
+            console.log('Session after signUp:', sessionData)
+
+            if (!sessionData?.session) {
+                // Try to sign in with password (for cases where email is auto-confirmed)
+                console.log('No active session, attempting sign in...')
+                const { error: signInError } = await supabase.auth.signInWithPassword({
+                    email: formData.email,
+                    password: formData.password
+                })
+
+                if (signInError) {
+                    // Email confirmation likely required
+                    console.log('Sign in failed, email confirmation may be required:', signInError)
+                    alert('Account created! Please check your email to confirm, then log in.')
+                    setLoading(false)
+                    return
+                }
+            }
+
+            console.log('Saving profile for user:', userId)
+
+            // 3. Save Profile to Supabase
             const { error: profileError } = await supabase
                 .from('athletes')
                 .insert({
-                    user_id: authData.user.id,
-                    first_name: formData.firstName, // assuming schema update or column mapping
-                    name: `${formData.firstName} ${formData.lastName}`, // legacy field mapping
-                    last_name: formData.lastName, // assuming schema update or just use 'name'
+                    user_id: userId,
+                    first_name: formData.firstName,
+                    name: `${formData.firstName} ${formData.lastName}`,
+                    last_name: formData.lastName,
                     grad_year: parseInt(formData.gradYear),
                     sport: formData.sport,
                     position: formData.position,
                     gpa_range: formData.gpaRange,
                     location_city: formData.locationCity,
                     location_state: formData.locationState,
-                    search_preference: formData.searchPreference, // mapped to distance_preference or keep search_preference
+                    search_preference: formData.searchPreference,
                     distance_preference: formData.searchPreference,
                     target_divisions: formData.targetDivisions,
                     dream_school: formData.dreamSchool || null,
@@ -146,11 +175,11 @@ export default function ProfileSetup() {
                 })
 
             if (profileError) {
-                // Determine if it's a "duplicate key" error or similar
                 console.error("Profile save error:", profileError)
                 throw profileError
             }
 
+            console.log('Profile saved successfully!')
             setCompleted(true) // Show success screen
 
         } catch (error) {

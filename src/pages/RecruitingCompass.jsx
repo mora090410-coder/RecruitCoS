@@ -12,11 +12,25 @@ import SchoolList from '../components/compass/SchoolList'
 import SchoolDetail from '../components/compass/SchoolDetail'
 import MyList from '../components/compass/MyList'
 
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
+// Gemini initialization moved inside component
 
 export default function RecruitingCompass() {
     const { user } = useAuth()
+
+    // Gemini client (lazy init)
+    const [genAI, setGenAI] = useState(null)
+    useEffect(() => {
+        try {
+            const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+            if (apiKey) {
+                setGenAI(new GoogleGenerativeAI(apiKey))
+            } else {
+                console.warn('Gemini API key not found')
+            }
+        } catch (e) {
+            console.error('Failed to initialize Gemini:', e)
+        }
+    }, [])
 
     // View state
     const [view, setView] = useState('search') // 'search' | 'overview' | 'list' | 'detail' | 'mylist'
@@ -48,7 +62,7 @@ export default function RecruitingCompass() {
             // Load profile
             const { data: athlete } = await supabase
                 .from('athletes')
-                .select('name, position, sport, grad_year, gpa, city, state, dream_school, academic_tier, search_preference')
+                .select('name, position, sport, grad_year, gpa, city, state, dream_school, academic_tier, search_preference, lat, lng')
                 .eq('user_id', user.id)
                 .single()
 
@@ -61,7 +75,9 @@ export default function RecruitingCompass() {
                     gpa: athlete.gpa || null,
                     academicTier: athlete.academic_tier || 'selective',
                     searchPreference: athlete.search_preference || 'regional',
-                    location: [athlete.city, athlete.state].filter(Boolean).join(', ') || 'Unknown'
+                    location: [athlete.city, athlete.state].filter(Boolean).join(', ') || 'Unknown',
+                    lat: athlete.lat,
+                    lng: athlete.lng
                 })
                 if (athlete.dream_school) {
                     setDreamSchool(athlete.dream_school)
@@ -184,7 +200,7 @@ For each school provide:
 OUTPUT: Valid JSON array only. No markdown, no extra text.
 `
 
-            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
             const result = await model.generateContent(prompt)
             const response = await result.response
             const text = response.text()

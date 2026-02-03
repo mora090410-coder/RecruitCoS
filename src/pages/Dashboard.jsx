@@ -18,7 +18,7 @@ export default function Dashboard() {
     useEffect(() => {
         async function fetchData() {
             // Fetch coaches preview
-            const { data: coachesData } = await supabase.from('coaches').select('*').limit(5)
+            const { data: coachesData } = await supabase.from('coaches').select('*').limit(20)
             setCoaches(coachesData || [])
 
             // Fetch stats for current user
