@@ -79,6 +79,7 @@ export default function RecruitingCompass() {
                     academicTier: athlete.academic_tier || 'selective',
                     searchPreference: athlete.search_preference || 'regional',
                     location: [athlete.city, athlete.state].filter(Boolean).join(', ') || 'Unknown',
+                    dreamSchool: athlete.dream_school || '', // Store persistent DB value
                     lat: athlete.lat,
                     lng: athlete.lng
                 })
@@ -246,9 +247,17 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
         console.log('athleteProfile:', athleteProfile)
         console.log('Current dreamSchool state:', dreamSchool)
 
-        // 1. Check for Existing Dream School
+        // 1. Check for Existing Dream School in PROFILE object (source of truth)
+        if (athleteProfile?.dreamSchool && athleteProfile.dreamSchool.trim() !== '') {
+            console.log('Using persistent DB dream school:', athleteProfile.dreamSchool)
+            setDreamSchool(athleteProfile.dreamSchool) // Ensure UI matches
+            await handleSearch(athleteProfile.dreamSchool)
+            return
+        }
+
+        // Also check current UI state just in case
         if (dreamSchool && dreamSchool.trim() !== '') {
-            console.log('Using existing dream school from profile:', dreamSchool)
+            console.log('Using current UI input dream school:', dreamSchool)
             await handleSearch(dreamSchool)
             return
         }
