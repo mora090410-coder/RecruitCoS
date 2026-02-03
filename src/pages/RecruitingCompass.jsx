@@ -57,14 +57,17 @@ export default function RecruitingCompass() {
     // Load athlete profile and saved schools on mount
     useEffect(() => {
         async function loadData() {
+            console.log('Loading profile for user:', user?.id)
             setProfileLoading(true)
 
             // Load profile
-            const { data: athlete } = await supabase
+            const { data: athlete, error: athleteError } = await supabase
                 .from('athletes')
                 .select('name, position, sport, grad_year, gpa, city, state, dream_school, academic_tier, search_preference, lat, lng')
                 .eq('user_id', user.id)
                 .single()
+
+            console.log('Athlete query result:', { athlete, athleteError })
 
             if (athlete) {
                 setAthleteProfile({
@@ -107,6 +110,7 @@ export default function RecruitingCompass() {
             }
 
             setProfileLoading(false)
+            console.log('Profile loading complete')
         }
 
         if (user) loadData()
