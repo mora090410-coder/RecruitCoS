@@ -483,9 +483,9 @@ export default function ProfileSetup() {
                 {user ? (
                     <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
                         <p className="text-green-400 text-sm font-medium">
-                            ✓ You are signed in as <span className="text-white">{user.email}</span>
+                            ✓ Signed in as <span className="text-white font-semibold">{user.email}</span>
                         </p>
-                        <p className="text-zinc-400 text-xs mt-1">Ready to save your profile?</p>
+                        <p className="text-zinc-400 text-xs mt-1">You are ready to launch your profile!</p>
                     </div>
                 ) : (
                     <>
