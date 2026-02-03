@@ -9,7 +9,8 @@ export default function CompassSearch({
     onSearch,
     onExploreProfile,
     loading,
-    athleteProfile
+    athleteProfile,
+    error
 }) {
     const handleQuickPick = (school) => {
         setDreamSchool(school)
@@ -26,6 +27,14 @@ export default function CompassSearch({
                     Find schools that match your profile—organized by Reach, Target, and Solid options.
                 </p>
             </div>
+
+            {/* Error Message */}
+            {error && (
+                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-red-600 max-w-lg w-full animate-in fade-in slide-in-from-top-2">
+                    <p className="font-medium">Search Issue</p>
+                    <p className="text-sm">{error}</p>
+                </div>
+            )}
 
             {/* Search Input */}
             <div className="w-full max-w-lg mb-6">

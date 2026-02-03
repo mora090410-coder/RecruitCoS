@@ -53,6 +53,7 @@ export default function RecruitingCompass() {
     // Loading state
     const [loading, setLoading] = useState(false)
     const [profileLoading, setProfileLoading] = useState(true)
+    const [searchError, setSearchError] = useState(null)
 
     // Load athlete profile and saved schools on mount
     useEffect(() => {
@@ -165,6 +166,7 @@ export default function RecruitingCompass() {
         if (!searchSchool.trim()) return
 
         setLoading(true)
+        setSearchError(null)
         setResults({ reach: [], target: [], solid: [] })
 
         try {
@@ -235,7 +237,7 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
 
         } catch (error) {
             console.error("Gemini Error:", error)
-            alert(`Search failed: ${error.message}`)
+            setSearchError(`Search failed: ${error.message || 'Unknown error'}. Check console for details.`)
         } finally {
             setLoading(false)
         }
@@ -376,6 +378,7 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
                         onSearch={handleSearch}
                         onExploreProfile={handleExploreProfile}
                         loading={loading}
+                        error={searchError}
                         athleteProfile={athleteProfile}
                     />
                 )
