@@ -155,8 +155,9 @@ export default function RecruitingCompass() {
     }, [results, filters, athleteProfile])
 
     // AI Search
-    const handleSearch = async () => {
-        if (!dreamSchool.trim()) return
+    const handleSearch = async (schoolOverride = null) => {
+        const searchSchool = schoolOverride || dreamSchool
+        if (!searchSchool.trim()) return
 
         setLoading(true)
         setResults({ reach: [], target: [], solid: [] })
@@ -165,7 +166,7 @@ export default function RecruitingCompass() {
             const prompt = `
 Role: You are an elite Collegiate Recruiting Advisor with expert knowledge of NCAA athletics, academic requirements, and geographic regions.
 
-Task: Find 35 schools similar to "${dreamSchool}" and categorize them for this athlete.
+Task: Find 35 schools similar to "${searchSchool}" and categorize them for this athlete.
 
 ATHLETE PROFILE:
 - Position: ${athleteProfile?.position || 'Unknown'}
@@ -179,11 +180,11 @@ ATHLETE PROFILE:
 CATEGORIZATION RULES:
 1. **REACH (10-12 schools):** More competitive than athlete's profile. Higher academic standards or elite athletics. Worth pursuing with strong performance.
 
-2. **TARGET (12-15 schools):** Good fit for current profile. Similar academic/athletic level to "${dreamSchool}". Realistic admissions.
+2. **TARGET (12-15 schools):** Good fit for current profile. Similar academic/athletic level to "${searchSchool}". Realistic admissions.
 
 3. **SOLID (10-12 schools):** Less competitive options. Strong programs where athlete will likely get serious interest. Reliable fallback options.
 
-IMPORTANT: Generate schools from DIFFERENT REGIONS than "${dreamSchool}" to broaden the athlete's horizons.
+IMPORTANT: Generate schools from DIFFERENT REGIONS than "${searchSchool}" to broaden the athlete's horizons.
 
 For each school provide:
 - school_name: Full official name
@@ -247,10 +248,12 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
             'open_admission': 'Community College'
         }
 
-        setDreamSchool(representativeSchools[athleteProfile.academicTier] || 'University of Michigan')
+        const representativeSchool = representativeSchools[athleteProfile.academicTier] || 'University of Michigan'
 
-        // Trigger search after setting dream school
-        setTimeout(() => handleSearch(), 100)
+        setDreamSchool(representativeSchool)
+
+        // Pass the school directly to handleSearch to avoid stale state
+        await handleSearch(representativeSchool)
     }
 
     // Add school to saved list
