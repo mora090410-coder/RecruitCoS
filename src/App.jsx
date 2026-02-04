@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ProfileProvider, useProfile } from './hooks/useProfile'
 import AppLoading from './components/AppLoading'
+import { Toaster } from 'sonner'
 
 // Pages
 import Login from './pages/Login'
@@ -99,12 +100,14 @@ function MainNavigator() {
   )
 }
 
+
 function App() {
   return (
     <AuthProvider>
       <ProfileProvider>
         <Router>
           <MainNavigator />
+          <Toaster position="top-center" />
         </Router>
       </ProfileProvider>
     </AuthProvider>
