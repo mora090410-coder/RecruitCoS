@@ -54,7 +54,7 @@ export default function RecruitingCompass() {
             // Load profile
             const { data: athlete, error: athleteError } = await supabase
                 .from('athletes')
-                .select('name, position, sport, grad_year, gpa, city, state, dream_school, academic_tier, search_preference, lat, lng')
+                .select('id, name, position, sport, grad_year, gpa, city, state, dream_school, academic_tier, search_preference, lat, lng')
                 .eq('user_id', user.id)
                 .single()
 
@@ -64,6 +64,7 @@ export default function RecruitingCompass() {
 
             if (athlete) {
                 setAthleteProfile({
+                    id: athlete.id,
                     name: athlete.name || 'Athlete',
                     position: athlete.position || 'Not Set',
                     sport: athlete.sport || 'Not Set',
@@ -480,6 +481,7 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
                         onAddToList={handleAddToList}
                         onBack={() => setView('list')}
                         isInList={savedSchoolNames.includes(selectedSchool?.school_name)}
+                        athleteId={athleteProfile?.id}
                     />
                 )
 
