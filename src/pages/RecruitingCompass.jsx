@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useProfile } from '../contexts/ProfileContext'
 import DashboardLayout from '../components/DashboardLayout'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getGenAI, callGeminiWithRetry } from '../lib/gemini'
@@ -18,7 +19,8 @@ import MyList from '../components/compass/MyList'
 // Gemini initialization moved inside component
 
 export default function RecruitingCompass() {
-    const { user, isImpersonating, activeAthlete } = useAuth()
+    const { user } = useAuth()
+    const { isImpersonating, activeAthlete } = useProfile()
 
     // Gemini client (lazy init via getGenAI helper)
 

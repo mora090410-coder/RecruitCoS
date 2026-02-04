@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { ChevronLeft, Plus, Zap, Heart } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useProfile } from '../../contexts/ProfileContext'
 import { Button } from '../ui/button'
 import { supabase } from '../../lib/supabase'
 import { SCHOOL_STATUSES, STATUS_CONFIG } from '../../lib/constants'
@@ -20,7 +21,7 @@ export default function MyList({
     const [schools, setSchools] = useState([])
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState('all')
-    const { isImpersonating, activeAthlete } = useAuth()
+    const { isImpersonating, activeAthlete } = useProfile()
 
     // Initial load
     useEffect(() => {
@@ -31,7 +32,7 @@ export default function MyList({
         setLoading(true)
         try {
             // targetId should be the athlete's ID
-            const targetId = isImpersonating ? activeAthlete?.id : currentUser.id
+            const targetId = isImpersonating ? activeAthlete?.id : user.id
             if (!targetId) return
 
             const { data, error } = await supabase

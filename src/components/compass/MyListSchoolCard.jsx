@@ -4,6 +4,7 @@ import StatusDropdown from './StatusDropdown'
 import { formatDistanceToNow } from 'date-fns'
 import SignalMeter from '../crm/SignalMeter'
 import { useAuth } from '../../contexts/AuthContext'
+import { useProfile } from '../../contexts/ProfileContext'
 
 export default function MyListSchoolCard({
     school, // This is the saved school record 
@@ -13,7 +14,8 @@ export default function MyListSchoolCard({
     onApprove,
     onDismiss
 }) {
-    const { user, isImpersonating } = useAuth()
+    const { user } = useAuth()
+    const { isImpersonating } = useProfile()
 
     // Determine last updated text
     const getLastUpdated = () => {

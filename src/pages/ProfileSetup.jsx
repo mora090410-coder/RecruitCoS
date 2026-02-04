@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useProfile } from '../contexts/ProfileContext'
 import { Button } from '../components/ui/button'
 import {
     ChevronRight, ChevronLeft, User, Trophy, MapPin,
@@ -35,7 +36,8 @@ const SEARCH_PREFERENCES = [
 ]
 
 export default function ProfileSetup() {
-    const { signUp, user, athleteProfile, checkingProfile, accessibleAthletes, refreshProfile } = useAuth()
+    const { signUp, user } = useAuth()
+    const { athleteProfile, loading: checkingProfile, accessibleAthletes, refreshProfile } = useProfile()
     const navigate = useNavigate()
     const [step, setStep] = useState(1)
     const [loading, setLoading] = useState(false)

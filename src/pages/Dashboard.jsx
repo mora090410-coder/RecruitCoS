@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useProfile } from '../contexts/ProfileContext'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import DashboardLayout from '../components/DashboardLayout'
@@ -15,7 +16,8 @@ import { Sparkles, ArrowRight, Zap } from 'lucide-react'
 export default function Dashboard() {
     const navigate = useNavigate()
     const [coaches, setCoaches] = useState([])
-    const { user, activeAthlete, isImpersonating } = useAuth()
+    const { user } = useAuth()
+    const { activeAthlete, isImpersonating } = useProfile()
     const [stats, setStats] = useState({ eventCount: 0 })
     const [posts, setPosts] = useState([])
     const [activeTab, setActiveTab] = useState('All Sources') // Visual state for tabs

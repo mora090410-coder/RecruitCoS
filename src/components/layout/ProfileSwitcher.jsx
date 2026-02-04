@@ -1,4 +1,5 @@
 import { useAuth } from '../../contexts/AuthContext'
+import { useProfile } from '../../contexts/ProfileContext'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -11,7 +12,8 @@ import { Button } from '../ui/button'
 import { ChevronDown, User, Users } from 'lucide-react'
 
 export default function ProfileSwitcher() {
-    const { user, accessibleAthletes, activeAthlete, switchAthlete } = useAuth()
+    const { user } = useAuth()
+    const { accessibleAthletes, activeAthlete, switchAthlete } = useProfile()
 
     if (!accessibleAthletes || accessibleAthletes.length === 0) return null
 

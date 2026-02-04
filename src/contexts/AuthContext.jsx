@@ -8,141 +8,42 @@ export const useAuth = () => useContext(AuthContext)
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null)
     const [loading, setLoading] = useState(true)
-    const [accessibleAthletes, setAccessibleAthletes] = useState([])
-    const [activeAthlete, setActiveAthlete] = useState(null)
-    const [athleteProfile, setAthleteProfile] = useState(null)
-    const [checkingProfile, setCheckingProfile] = useState(true)
 
     useEffect(() => {
         let mounted = true
 
-        // Safety timeout to prevent infinite loading
-        const safetyTimeout = setTimeout(() => {
-            if (mounted && (loading || checkingProfile)) {
-                console.warn("Auth check timed out - forcing load completion")
-                if (import.meta.env.DEV) console.log("State at timeout:", { user: !!user, loading, checkingProfile })
-                setLoading(false)
-                setCheckingProfile(false)
-            }
-        }, 8000)
-
-        async function getSessionAndAccess() {
+        // Initial Session Check
+        async function getSession() {
             try {
-                if (import.meta.env.DEV) console.log("Auth: Getting session...")
                 const { data: { session }, error } = await supabase.auth.getSession()
-                if (error) console.error("Auth session error:", error)
+                if (error) throw error
 
-                const currentUser = session?.user ?? null
-                if (mounted) setUser(currentUser)
-
-                if (currentUser) {
-                    if (import.meta.env.DEV) console.log("Auth: User found, fetching profile data...")
-                    if (import.meta.env.DEV) console.log("Auth: User found, fetching profile data...")
-
-                    // Fetch data (relies on outer safety timeout to prevent infinite hangs)
-                    await Promise.all([
-                        fetchAccess(currentUser.id),
-                        fetchAthleteProfile(currentUser.id)
-                    ])
+                if (mounted) {
+                    setUser(session?.user ?? null)
                 }
             } catch (err) {
-                console.error("Auth initialization error:", err)
+                console.error("Auth session check error:", err)
             } finally {
-                if (mounted) {
-                    if (import.meta.env.DEV) console.log("Auth: Initialization complete")
-                    setLoading(false)
-                    setCheckingProfile(false)
-                    clearTimeout(safetyTimeout)
-                }
+                if (mounted) setLoading(false)
             }
         }
 
-        getSessionAndAccess()
+        getSession()
 
-        // Listen for changes on auth state
+        // Auth State Listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            if (import.meta.env.DEV) console.log("Auth: State change event:", _event)
-            const currentUser = session?.user ?? null
-            if (mounted) setUser(currentUser)
-
-            if (currentUser) {
-                await Promise.all([
-                    fetchAccess(currentUser.id),
-                    fetchAthleteProfile(currentUser.id)
-                ])
-            } else {
-                if (mounted) {
-                    setAccessibleAthletes([])
-                    setActiveAthlete(null)
-                    setAthleteProfile(null)
-                }
-            }
-
+            if (import.meta.env.DEV) console.log("Auth State Change:", _event)
             if (mounted) {
+                setUser(session?.user ?? null)
                 setLoading(false)
-                setCheckingProfile(false)
             }
         })
 
         return () => {
             mounted = false
-            clearTimeout(safetyTimeout)
             subscription.unsubscribe()
         }
     }, [])
-
-    const fetchAccess = async (userId) => {
-        try {
-            const { data, error } = await supabase
-                .from('profile_access')
-                .select(`
-                    role,
-                    athlete:athletes (
-                        id,
-                        full_name,
-                        sport,
-                        grad_year
-                    )
-                `)
-                .eq('manager_id', userId)
-
-            if (!error) {
-                setAccessibleAthletes(data || [])
-            }
-        } catch (err) {
-            console.error("Error fetching athlete access:", err)
-        }
-    }
-
-    const fetchAthleteProfile = async (userId) => {
-        try {
-            const { data, error } = await supabase
-                .from('athletes')
-                .select('*')
-                .eq('user_id', userId)
-                .maybeSingle()
-
-            if (!error && data) {
-                setAthleteProfile(data)
-            } else {
-                setAthleteProfile(null)
-            }
-        } catch (err) {
-            console.error("Error fetching athlete profile:", err)
-            setAthleteProfile(null)
-        }
-    }
-
-    const switchAthlete = (athleteId) => {
-        if (!athleteId) {
-            setActiveAthlete(null)
-            return
-        }
-        const athlete = accessibleAthletes.find(a => a.athlete.id === athleteId)
-        if (athlete) {
-            setActiveAthlete(athlete.athlete)
-        }
-    }
 
     const value = {
         signUp: (data) => supabase.auth.signUp(data),
@@ -150,14 +51,7 @@ export const AuthProvider = ({ children }) => {
         signInWithPassword: (data) => supabase.auth.signInWithPassword(data),
         signOut: () => supabase.auth.signOut(),
         user,
-        loading,
-        checkingProfile,
-        accessibleAthletes,
-        activeAthlete,
-        athleteProfile,
-        switchAthlete,
-        refreshProfile: () => user && fetchAthleteProfile(user.id),
-        isImpersonating: !!activeAthlete
+        loading
     }
 
     return (

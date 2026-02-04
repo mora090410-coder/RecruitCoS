@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getAthletePhase } from '../lib/constants'
 import { useAuth } from '../contexts/AuthContext'
+import { useProfile } from '../contexts/ProfileContext'
 import { generateSocialPosts } from '../lib/gemini'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
@@ -38,7 +39,8 @@ const TONES = [
 
 export default function EventLogger() {
     const navigate = useNavigate()
-    const { user, isImpersonating } = useAuth()
+    const { user } = useAuth()
+    const { isImpersonating } = useProfile()
     const [loading, setLoading] = useState(false)
     const [pageLoading, setPageLoading] = useState(true)
     const [generatedPosts, setGeneratedPosts] = useState(null)
