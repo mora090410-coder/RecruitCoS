@@ -14,11 +14,7 @@ export default function Login() {
     const { signIn, signInWithPassword, user, loading: authLoading } = useAuth()
     const navigate = useNavigate()
 
-    useEffect(() => {
-        if (!authLoading && user) {
-            navigate('/dashboard')
-        }
-    }, [user, authLoading, navigate])
+    // Redirect logic moved to App.jsx MainNavigator
 
     const handleLogin = async (e) => {
         e.preventDefault()

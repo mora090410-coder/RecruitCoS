@@ -44,16 +44,7 @@ export default function ProfileSetup() {
     const [completed, setCompleted] = useState(false)
     const [error, setError] = useState(null)
 
-    // Onboarding Guard: Redirect if profile already exists
-    useEffect(() => {
-        if (!checkingProfile && user) {
-            const hasProfile = !!athleteProfile || (accessibleAthletes && accessibleAthletes.length > 0)
-            if (hasProfile) {
-                console.log('Profile detected, bypassing onboarding...')
-                navigate('/')
-            }
-        }
-    }, [checkingProfile, user, athleteProfile, accessibleAthletes, navigate])
+    // Onboarding Guard: Handled by App.jsx Traffic Controller now
 
     // Form State
     const [formData, setFormData] = useState({

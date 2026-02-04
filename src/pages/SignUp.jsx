@@ -13,11 +13,7 @@ export default function SignUp() {
     const { signUp, user, loading: authLoading } = useAuth()
     const navigate = useNavigate()
 
-    useEffect(() => {
-        if (!authLoading && user) {
-            navigate('/setup')
-        }
-    }, [user, authLoading, navigate])
+    // Redirect logic moved to App.jsx MainNavigator
 
     const handleSignUp = async (e) => {
         e.preventDefault()

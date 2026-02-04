@@ -101,10 +101,17 @@ export const ProfileProvider = ({ children }) => {
     }
 
     const value = {
+        // Legacy/Internal names
         athleteProfile,
+        loading: profileLoading,
+
+        // Stage 1 Audit Standard Names
+        profile: athleteProfile,
+        hasProfile: !!athleteProfile,
+        isProfileLoading: profileLoading,
+
         accessibleAthletes,
         activeAthlete,
-        loading: profileLoading, // Exposed simply as "loading"
         error,
         refreshProfile: fetchProfileData,
         switchAthlete,

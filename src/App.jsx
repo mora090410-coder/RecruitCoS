@@ -15,63 +15,55 @@ import RecruitingCompass from './pages/RecruitingCompass'
 // --- TRAFFIC CONTROLLER ---
 function MainNavigator() {
   const { user, loading: authLoading } = useAuth()
-  const { athleteProfile, loading: profileLoading } = useProfile()
-  const location = useLocation()
+  const { hasProfile, isProfileLoading } = useProfile()
 
   // 1. GLOBAL LOADING SHIELD
-  // Wait for BOTH auth and profile to settle before showing anything.
-  // This prevents flashing "Login" then "Dashboard" or vice versa.
-  if (authLoading || (user && profileLoading)) {
-    return <AppLoading message={authLoading ? "Verifying..." : "Loading Profile..."} />
+  // Wait for auth to settle. If user exists, also wait for profile to settle.
+  if (authLoading || (user && isProfileLoading)) {
+    return <AppLoading message={authLoading ? "Initializing..." : "Loading Profile..."} />
   }
 
-  // --- ROUTE GUARDS ---
-
-  // Guard: Protected Routes
-  // Enforces: User must be logged in AND have a profile.
-  // Redirects: To /login if no user, to /setup if no profile.
-  const ProtectedRoute = ({ children }) => {
-    if (!user) return <Navigate to="/login" replace state={{ from: location }} />
-    if (!athleteProfile) return <Navigate to="/setup" replace />
-    return children
+  // 2. STATE A: NOT LOGGED IN
+  // User can only see public pages. Any other route redirects to Landing.
+  if (!user) {
+    return (
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    )
   }
 
-  // Guard: Public Only Routes (Login, Signup, Landing)
-  // Enforces: Logged in users shouldn't see these.
-  // Redirects: To /dashboard if user has profile, or /setup if proper user but no profile.
-  const PublicRoute = ({ children }) => {
-    if (user) {
-      return athleteProfile ? <Navigate to="/dashboard" replace /> : <Navigate to="/setup" replace />
-    }
-    return children
+  // 3. STATE B: LOGGED IN, NO PROFILE
+  // User MUST complete setup. No other access allowed.
+  if (!hasProfile) {
+    return (
+      <Routes>
+        <Route path="/profile-setup" element={<ProfileSetup />} />
+        <Route path="*" element={<Navigate to="/profile-setup" replace />} />
+      </Routes>
+    )
   }
 
-  // Guard: Setup Route
-  // Enforces: User must be logged in. Should NOT have a profile (unless editing? logic can vary).
-  // For now: If profile exists, kick to dashboard. If not logged in, kick to login.
-  const SetupRoute = ({ children }) => {
-    if (!user) return <Navigate to="/login" replace />
-    if (athleteProfile) return <Navigate to="/dashboard" replace />
-    return children
-  }
-
+  // 4. STATE C: LOGGED IN + HAS PROFILE
+  // User has full access. Public routes redirect to Dashboard.
   return (
     <Routes>
-      {/* PUBLIC ROUTES */}
-      <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
-      <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-      <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
+      {/* Redirect Public & Setup Routes to Dashboard */}
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/signup" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/profile-setup" element={<Navigate to="/dashboard" replace />} />
 
-      {/* ONBOARDING */}
-      <Route path="/setup" element={<SetupRoute><ProfileSetup /></SetupRoute>} />
+      {/* Protected App Routes */}
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/compass" element={<RecruitingCompass />} />
+      <Route path="/log-event" element={<EventLogger />} />
 
-      {/* PROTECTED APP ROUTES */}
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/compass" element={<ProtectedRoute><RecruitingCompass /></ProtectedRoute>} />
-      <Route path="/log-event" element={<ProtectedRoute><EventLogger /></ProtectedRoute>} />
-
-      {/* FALLBACK */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Catch-all */}
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   )
 }

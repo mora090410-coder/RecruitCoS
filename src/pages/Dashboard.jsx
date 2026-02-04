@@ -42,7 +42,7 @@ export default function Dashboard() {
             } else {
                 const { data: athlete, error } = await supabase.from('athletes').select('id, grad_year').eq('user_id', user.id).single()
                 if (error || !athlete) {
-                    if (!isImpersonating) navigate('/setup')
+                    // Redirect handled by Global Traffic Controller now
                     return
                 }
                 targetAthleteId = athlete.id
