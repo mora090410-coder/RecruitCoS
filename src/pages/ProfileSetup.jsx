@@ -6,7 +6,7 @@ import { useProfile } from '../hooks/useProfile'
 import { Button } from '../components/ui/button'
 import {
     ChevronRight, ChevronLeft, User, Trophy, MapPin,
-    GraduationCap, Check, Sparkles, Target, Mail, Lock
+    GraduationCap, Check, Sparkles, Target, Mail, Lock, X
 } from 'lucide-react'
 
 // Constants
@@ -40,9 +40,6 @@ export default function ProfileSetup() {
     const { athleteProfile, accessibleAthletes, refreshProfile, isProfileLoading, isInitialized, hasProfile } = useProfile()
 
     // STRICT ROUTE GUARD:
-    // If we're still loading profile data OR we already have a profile,
-    // do NOT show the setup form. The parent App.jsx router will redirect us,
-    // but this prevents a split-second flicker of the form.
     if (isProfileLoading || !isInitialized || hasProfile) {
         return (
             <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center z-50">
@@ -56,8 +53,8 @@ export default function ProfileSetup() {
     const [loading, setLoading] = useState(false)
     const [completed, setCompleted] = useState(false)
     const [error, setError] = useState(null)
-
-
+    const [showLegalModal, setShowLegalModal] = useState(false)
+    const [legalContentType, setLegalContentType] = useState('terms') // 'terms' or 'privacy'
 
     // Form State
     const [formData, setFormData] = useState({
@@ -90,9 +87,13 @@ export default function ProfileSetup() {
         agreedToTerms: false
     })
 
+    // Track if user has manually modified divisions to prevent overwrite
+    const [manualDivisions, setManualDivisions] = useState(false)
+
     // Smart Defaults for Divisions based on GPA
     useEffect(() => {
-        if (formData.gpaRange && formData.targetDivisions.length === 0) {
+        // Only auto-select if user hasn't manually selected/deselected AND target is empty
+        if (!manualDivisions && formData.gpaRange && formData.targetDivisions.length === 0) {
             let defaults = []
             if (formData.gpaRange === '3.8-4.0+') {
                 defaults = ['D1', 'D3']
@@ -101,12 +102,10 @@ export default function ProfileSetup() {
             } else {
                 defaults = ['D2', 'NAIA', 'JUCO']
             }
-            // Only set if user hasn't interacted yet (length check above helps, but could be better)
-            // Ideally we'd want to suggest but not force overwrite if they unchecked all.
-            // For now, this matches the requirement "if ... length === 0".
+            // We do NOT set manualDivisions to true here, as this is an auto-action
             setFormData(prev => ({ ...prev, targetDivisions: defaults }))
         }
-    }, [formData.gpaRange])
+    }, [formData.gpaRange, manualDivisions])
 
     // Auto-fill email if user is already authenticated
     useEffect(() => {
@@ -119,6 +118,7 @@ export default function ProfileSetup() {
     const handleBack = () => setStep(s => Math.max(s - 1, 1))
 
     const handleDivisionToggle = (divId) => {
+        setManualDivisions(true) // User is taking control
         setFormData(prev => {
             const current = prev.targetDivisions
             const updated = current.includes(divId)
@@ -126,6 +126,11 @@ export default function ProfileSetup() {
                 : [...current, divId]
             return { ...prev, targetDivisions: updated }
         })
+    }
+
+    const openLegal = (type) => {
+        setLegalContentType(type)
+        setShowLegalModal(true)
     }
 
     // Step 7: Create Account & Save Profile
@@ -537,7 +542,14 @@ export default function ProfileSetup() {
                         onChange={e => setFormData({ ...formData, agreedToTerms: e.target.checked })}
                     />
                     <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
-                        I agree to the <span className="text-white underline">Terms of Service</span> and <span className="text-white underline">Privacy Policy</span>
+                        I agree to the{' '}
+                        <button onClick={() => openLegal('terms')} className="text-white underline hover:text-green-400">
+                            Terms of Service
+                        </button>
+                        {' '}and{' '}
+                        <button onClick={() => openLegal('privacy')} className="text-white underline hover:text-green-400">
+                            Privacy Policy
+                        </button>
                     </span>
                 </label>
 
@@ -559,8 +571,6 @@ export default function ProfileSetup() {
     )
 
     // --- Render ---
-
-
 
     // Completion Screen (Step 8 equivalent)
     if (completed) {
@@ -615,8 +625,47 @@ export default function ProfileSetup() {
 
     return (
         <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
+            {/* Legal Modal */}
+            {showLegalModal && (
+                <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-zinc-900 border border-zinc-800 text-white p-6 rounded-2xl max-w-lg w-full max-h-[80vh] flex flex-col shadow-2xl">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold">
+                                {legalContentType === 'terms' ? 'Terms of Service' : 'Privacy Policy'}
+                            </h3>
+                            <button onClick={() => setShowLegalModal(false)} className="text-zinc-400 hover:text-white">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto text-sm text-zinc-300 space-y-4 pr-2">
+                            {legalContentType === 'terms' ? (
+                                <>
+                                    <p>Welcome to RecruitCo. By accessing our platform, you agree to these terms.</p>
+                                    <p><strong>1. Services</strong><br />We provide recruiting tools and AI-powered insights for student-athletes.</p>
+                                    <p><strong>2. User Accounts</strong><br />You are responsible for maintaining the confidentiality of your account.</p>
+                                    <p><strong>3. Acceptable Use</strong><br />Do not misuse our services or scrape data.</p>
+                                    <p><strong>4. Termination</strong><br />We reserve the right to suspend accounts for violations.</p>
+                                </>
+                            ) : (
+                                <>
+                                    <p>Your privacy is important to us.</p>
+                                    <p><strong>1. Data Collection</strong><br />We collect information you provide (name, stats, etc.) to improve your experience.</p>
+                                    <p><strong>2. Usage</strong><br />We use your data to match you with colleges and generate recruiting content.</p>
+                                    <p><strong>3. Sharing</strong><br />We do not sell your personal data to third parties.</p>
+                                    <p><strong>4. Security</strong><br />We use industry-standard encryption to protect your data.</p>
+                                </>
+                            )}
+                        </div>
+                        <div className="pt-4 mt-4 border-t border-zinc-800">
+                            <Button className="w-full bg-green-500 hover:bg-green-600" onClick={() => setShowLegalModal(false)}>
+                                Close
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
+            <div className="w-full max-w-md">
                 {/* Header */}
                 <div className="mb-8">
                     <div className="flex justify-between items-end mb-2">

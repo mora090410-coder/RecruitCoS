@@ -11,6 +11,7 @@ import Dashboard from './pages/Dashboard'
 import EventLogger from './pages/EventLogger'
 import ProfileSetup from './pages/ProfileSetup'
 import RecruitingCompass from './pages/RecruitingCompass'
+import EditPost from './pages/EditPost'
 
 // --- TRAFFIC CONTROLLER ---
 function MainNavigator() {
@@ -87,6 +88,7 @@ function MainNavigator() {
       {/* Protected App Routes */}
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/compass" element={<RecruitingCompass />} />
+      <Route path="/edit-post/:id" element={<EditPost />} />
       <Route path="/log-event" element={<EventLogger />} />
 
       {/* Catch-all */}

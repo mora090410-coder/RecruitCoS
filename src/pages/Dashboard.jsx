@@ -1,31 +1,45 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useProfile } from '../hooks/useProfile'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import DashboardLayout from '../components/DashboardLayout'
-import { PlusCircle, Copy, Calendar, User as UserIcon } from 'lucide-react'
+import {
+    Calendar, CheckCircle, Clock, Search, SlidersHorizontal,
+    Plus, ChevronRight, Share2, MoreHorizontal, Edit2,
+    Trash2, Archive, ExternalLink, PlusCircle, Copy, User as UserIcon, Sparkles, ArrowRight, Zap
+} from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { getAthletePhase, PHASE_CONFIG, RECRUITING_PHASES } from '../lib/constants'
 import WeeklyBriefing from '../components/WeeklyBriefing'
 import { getGenAI, getRecruitingInsight } from '../lib/gemini'
 import { getSchoolHeat } from '../lib/signalEngine'
-import { Sparkles, ArrowRight, Zap } from 'lucide-react'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu'
+import { toast } from 'sonner'
+
 
 export default function Dashboard() {
     const navigate = useNavigate()
-    const [coaches, setCoaches] = useState([])
+    const [coaches, setCoaches] = useState([]) // This will be replaced by suggestedCoaches
     const { user } = useAuth()
     const { activeAthlete, isImpersonating, profile } = useProfile()
     const [stats, setStats] = useState({ eventCount: 0 })
     const [posts, setPosts] = useState([])
     const [activeTab, setActiveTab] = useState('All Sources') // Visual state for tabs
     const [phase, setPhase] = useState('Discovery')
-    const [page, setPage] = useState(1)
+    const [page, setPage] = useState(0) // Changed to 0 for edge function
     const [aiInsight, setAiInsight] = useState(null)
     const [loadingInsight, setLoadingInsight] = useState(false)
-    const COACHES_PER_PAGE = 20
+    const [suggestedCoaches, setSuggestedCoaches] = useState([])
+    const [loadingCoaches, setLoadingCoaches] = useState(false)
+    // const COACHES_PER_PAGE = 20 // No longer needed with edge function
 
     useEffect(() => {
         async function fetchData() {
@@ -46,7 +60,7 @@ export default function Dashboard() {
             if (!targetAthleteId) return
 
             // 2. Fetch Coaches (Initial Load)
-            await loadCoaches(1)
+            await loadCoaches(0) // Start from page 0 for edge function
 
             // 3. Calculate Phase
             const currentPhase = getAthletePhase(targetGradYear)
@@ -122,23 +136,137 @@ export default function Dashboard() {
             }
         }
         fetchInsight()
-    }, [user, phase])
+    }, [user, phase, activeAthlete, isImpersonating, profile])
 
-    const loadCoaches = async (pageNumber) => {
-        const from = (pageNumber - 1) * COACHES_PER_PAGE
-        const to = from + COACHES_PER_PAGE - 1
+    // Feed Filtering
+    const filteredPosts = useMemo(() => {
+        if (activeTab === 'All Sources') return posts
 
-        const { data: newCoaches } = await supabase
-            .from('coaches')
-            .select('*')
-            .range(from, to)
+        return posts.filter(post => {
+            const status = post.status ? post.status.toLowerCase() : 'draft'
+            const tab = activeTab.toLowerCase()
 
-        if (pageNumber === 1) {
-            setCoaches(newCoaches || [])
-        } else {
-            setCoaches(prev => [...prev, ...(newCoaches || [])])
+            if (tab === 'drafts') return status === 'draft'
+            if (tab === 'scheduled') return status === 'scheduled'
+            if (tab === 'posted') return status === 'posted' || status === 'published'
+            if (tab === 'archived') return status === 'archived'
+
+            return true
+        })
+    }, [posts, activeTab])
+
+    // 4. LOAD COACHES via EDGE FUNCTION
+    const loadCoaches = async (pageNumber, sportOverride = null) => {
+        try {
+            setLoadingCoaches(true)
+
+            // Get correct athlete ID
+            const targetAthleteId = isImpersonating ? activeAthlete?.id : profile?.id
+
+            // Call Edge Function
+            const { data, error } = await supabase.functions.invoke('match-coaches', {
+                body: {
+                    athlete_id: targetAthleteId,
+                    page: pageNumber,
+                    limit: 3
+                }
+            })
+
+            if (error) throw error
+
+            // Fallback for empty data or if edge function isn't deployed yet
+            // If Edge Function returns nothing, we could fallback to local query or just show empty.
+            // For now, let's assume it works or returns { coaches: [] }
+
+            const newCoaches = data?.coaches || []
+
+            if (pageNumber === 0) {
+                setSuggestedCoaches(newCoaches)
+            } else {
+                setSuggestedCoaches(prev => [...prev, ...newCoaches])
+            }
+            setPage(pageNumber) // Update page state
+        } catch (error) {
+            console.error('Error loading coaches:', error)
+            // Optional: Fallback to local query if needed?
+            // setCoachError('Failed to load matches')
+        } finally {
+            setLoadingCoaches(false)
         }
-        setPage(pageNumber)
+    }
+
+    const handleFollowCoach = async (coachId) => {
+        const targetAthleteId = isImpersonating ? activeAthlete?.id : profile?.id
+        if (!targetAthleteId) {
+            toast.error("Could not determine athlete ID.")
+            return
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from('athlete_interactions')
+                .insert({
+                    athlete_id: targetAthleteId,
+                    coach_id: coachId,
+                    type: 'Coach Follow',
+                    interaction_date: new Date().toISOString(),
+                    notes: 'Followed coach from dashboard suggestion'
+                })
+                .select()
+
+            if (error) throw error
+
+            toast.success("Coach followed successfully!")
+            // Optionally, refresh coaches or update UI to reflect the follow
+            setSuggestedCoaches(prev => prev.map(coach =>
+                coach.id === coachId ? { ...coach, is_followed: true } : coach
+            ))
+        } catch (error) {
+            console.error("Error following coach:", error)
+            toast.error("Failed to follow coach.")
+        }
+    }
+
+    const handleEditPost = (postId) => {
+        navigate(`/edit-post/${postId}`)
+    }
+
+    const handleDeletePost = async (postId) => {
+        if (!window.confirm("Are you sure you want to delete this post?")) return
+
+        try {
+            const { error } = await supabase
+                .from('posts')
+                .delete()
+                .eq('id', postId)
+
+            if (error) throw error
+
+            setPosts(prev => prev.filter(post => post.id !== postId))
+            toast.success("Post deleted successfully!")
+        } catch (error) {
+            console.error("Error deleting post:", error)
+            toast.error("Failed to delete post.")
+        }
+    }
+
+    const handleArchivePost = async (postId) => {
+        try {
+            const { error } = await supabase
+                .from('posts')
+                .update({ status: 'Archived' })
+                .eq('id', postId)
+
+            if (error) throw error
+
+            setPosts(prev => prev.map(post =>
+                post.id === postId ? { ...post, status: 'Archived' } : post
+            ))
+            toast.success("Post archived successfully!")
+        } catch (error) {
+            console.error("Error archiving post:", error)
+            toast.error("Failed to archive post.")
+        }
     }
 
     return (
@@ -185,17 +313,23 @@ export default function Dashboard() {
                     {/* Left Column: Feed (2 spans) */}
                     <div className="lg:col-span-2 space-y-6">
                         <WeeklyBriefing phase={phase} />
-                        {posts.length === 0 ? (
+                        {filteredPosts.length === 0 ? (
                             <div className="text-center py-20 bg-white rounded-lg border border-dashed">
                                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <PlusCircle className="text-gray-400" />
                                 </div>
-                                <h3 className="text-lg font-medium text-gray-900">No content yet</h3>
-                                <p className="text-gray-500 mb-6">Hit the Log Event button to start generating content.</p>
+                                <h3 className="text-lg font-medium text-gray-900">
+                                    {activeTab === 'All Sources' ? 'No content yet' : `No ${activeTab.toLowerCase()} found`}
+                                </h3>
+                                <p className="text-gray-500 mb-6">
+                                    {activeTab === 'All Sources'
+                                        ? 'Hit the Log Event button to start generating content.'
+                                        : `Create a new post to populate this tab.`}
+                                </p>
                                 <Button variant="outline" onClick={() => navigate('/log-event')}>Start Creating &rarr;</Button>
                             </div>
                         ) : (
-                            posts.map(post => (
+                            filteredPosts.map(post => (
                                 <Card key={post.id} className="overflow-hidden hover:shadow-md transition-shadow">
                                     <CardContent className="p-6">
                                         <div className="flex justify-between items-start mb-4">
@@ -212,10 +346,29 @@ export default function Dashboard() {
                                                     </p>
                                                 </div>
                                             </div>
-                                            <Button size="icon" variant="ghost" className="h-8 w-8">
-                                                <span className="sr-only">Options</span>
-                                                <span className="text-bold text-gray-400">...</span>
-                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button size="icon" variant="ghost" className="h-8 w-8">
+                                                        <span className="sr-only">Options</span>
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => handleEditPost(post.id)}>
+                                                        <Edit2 className="mr-2 h-4 w-4" /> Edit Post
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem>
+                                                        <Share2 className="mr-2 h-4 w-4" /> Share
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onClick={() => handleArchivePost(post.id)}>
+                                                        <Archive className="mr-2 h-4 w-4" /> Archive
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-red-600" onClick={() => handleDeletePost(post.id)}>
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
 
                                         <div className="bg-gray-50 p-4 rounded-md text-gray-800 text-sm whitespace-pre-wrap leading-relaxed">
@@ -228,7 +381,7 @@ export default function Dashboard() {
                                                 size="sm"
                                                 onClick={() => {
                                                     navigator.clipboard.writeText(post.post_text)
-                                                    alert("Copied to clipboard!")
+                                                    toast.success("Copied to clipboard!")
                                                 }}
                                                 className="text-xs"
                                             >
@@ -236,7 +389,7 @@ export default function Dashboard() {
                                                 Copy Text
                                             </Button>
                                             {/* Placeholder Action */}
-                                            <Button variant="ghost" size="sm" className="text-xs text-gray-500">
+                                            <Button variant="ghost" size="sm" className="text-xs text-gray-500" onClick={() => handleEditPost(post.id)}>
                                                 Edit Post
                                             </Button>
                                         </div>

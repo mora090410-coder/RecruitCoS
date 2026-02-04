@@ -184,7 +184,7 @@ export default function RecruitingCompass() {
 
         setLoading(true)
         setSearchError(null)
-        setResults({ reach: [], target: [], solid: [] })
+        // setResults({ reach: [], target: [], solid: [] }) // REMOVED TO PERSIST RESULTS
 
         try {
             // CACHE CHECK
