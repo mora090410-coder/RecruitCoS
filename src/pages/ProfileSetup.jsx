@@ -37,7 +37,20 @@ const SEARCH_PREFERENCES = [
 
 export default function ProfileSetup() {
     const { signUp, user } = useAuth()
-    const { athleteProfile, accessibleAthletes, refreshProfile } = useProfile()
+    const { athleteProfile, accessibleAthletes, refreshProfile, isProfileLoading, hasProfile } = useProfile()
+
+    // STRICT ROUTE GUARD:
+    // If we're still loading profile data OR we already have a profile,
+    // do NOT show the setup form. The parent App.jsx router will redirect us,
+    // but this prevents a split-second flicker of the form.
+    if (isProfileLoading || hasProfile) {
+        return (
+            <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center z-50">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+            </div>
+        )
+    }
+
     const navigate = useNavigate()
     const [step, setStep] = useState(1)
     const [loading, setLoading] = useState(false)

@@ -16,6 +16,7 @@ export const ProfileProvider = ({ children }) => {
 
     // Loading State
     const [profileLoading, setProfileLoading] = useState(true)
+    const [isInitialized, setIsInitialized] = useState(false)
     const [error, setError] = useState(null)
 
     // Reset state when user changes (e.g., logout)
@@ -27,6 +28,7 @@ export const ProfileProvider = ({ children }) => {
             // If auth is done loading and we have no user, profile loading is also done (nothing to load)
             if (!authLoading) {
                 setProfileLoading(false)
+                setIsInitialized(true)
             }
         } else {
             // User exists, so we must load profile
@@ -78,6 +80,7 @@ export const ProfileProvider = ({ children }) => {
             setError(err)
         } finally {
             setProfileLoading(false)
+            setIsInitialized(true)
         }
     }, [user])
 
@@ -109,6 +112,7 @@ export const ProfileProvider = ({ children }) => {
         profile: athleteProfile,
         hasProfile: !!athleteProfile,
         isProfileLoading: profileLoading,
+        isInitialized,
 
         // Access Control
         accessibleAthletes,
