@@ -15,7 +15,7 @@ import RecruitingCompass from './pages/RecruitingCompass'
 // --- TRAFFIC CONTROLLER ---
 function MainNavigator() {
   const { user, loading: authLoading } = useAuth()
-  const { hasProfile, isProfileLoading, error: profileError } = useProfile()
+  const { hasProfile, isProfileLoading, isInitialized, error: profileError } = useProfile()
 
   // 0. FATAL ERROR SHIELD
   if (profileError) {
@@ -42,7 +42,7 @@ function MainNavigator() {
 
   // 1. GLOBAL LOADING SHIELD
   // Wait for auth to settle. If user exists, also wait for profile to settle.
-  if (authLoading || (user && isProfileLoading)) {
+  if (authLoading || isProfileLoading || !isInitialized) {
     return (
       <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center z-50">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>

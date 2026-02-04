@@ -58,7 +58,6 @@ export const ProfileProvider = ({ children }) => {
                         role,
                         athlete:athletes (
                             id,
-                            id,
                             name,
                             sport,
                             grad_year
