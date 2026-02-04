@@ -144,4 +144,8 @@ CREATE POLICY "Users can manage their own interactions" ON public.athlete_intera
 CREATE POLICY "Athletes can manage access to their own profile" ON public.profile_access
     FOR ALL USING (athlete_id = auth.uid());
 
+-- SUBSCRIPTIONS
+CREATE POLICY "Users can view their own subscription" ON public.subscriptions
+    FOR SELECT USING (athlete_id = auth.uid());
+
 COMMIT;
