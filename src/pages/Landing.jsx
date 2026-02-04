@@ -13,7 +13,14 @@ export default function Landing() {
         }
     }, [user, loading, navigate])
 
-    if (loading) return null // Or a minimal loading spinner if desired
+    if (loading) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950">
+                <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-zinc-500 font-medium animate-pulse">Loading experience...</p>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-zinc-950 text-white flex flex-col selection:bg-blue-500 selection:text-white">

@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
                 setLoading(false)
                 setCheckingProfile(false)
             }
-        }, 5000)
+        }, 8000)
 
         async function getSessionAndAccess() {
             try {
@@ -37,13 +37,12 @@ export const AuthProvider = ({ children }) => {
 
                 if (currentUser) {
                     if (import.meta.env.DEV) console.log("Auth: User found, fetching profile data...")
-                    // Use Promise.race to prevent fetch hangs
-                    await Promise.race([
-                        Promise.all([
-                            fetchAccess(currentUser.id),
-                            fetchAthleteProfile(currentUser.id)
-                        ]),
-                        new Promise(resolve => setTimeout(resolve, 4000)) // Inner timeout slightly shorter
+                    if (import.meta.env.DEV) console.log("Auth: User found, fetching profile data...")
+
+                    // Fetch data (relies on outer safety timeout to prevent infinite hangs)
+                    await Promise.all([
+                        fetchAccess(currentUser.id),
+                        fetchAthleteProfile(currentUser.id)
                     ])
                 }
             } catch (err) {

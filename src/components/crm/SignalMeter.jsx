@@ -37,7 +37,7 @@ export default function SignalMeter({ heat, showLabel = false, className }) {
                 {/* Tooltip-like label on hover */}
                 <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                     <div className="bg-zinc-900 border border-zinc-800 text-white text-[10px] py-1 px-2 rounded-lg whitespace-nowrap shadow-xl">
-                        <span className="font-bold">{label}</span> • {heat.count || 0} interaction{heat.count !== 1 ? 's' : ''}
+                        <span className="font-bold">{label}</span> • {heat?.count || 0} interaction{heat?.count !== 1 ? 's' : ''}
                     </div>
                 </div>
             </div>
