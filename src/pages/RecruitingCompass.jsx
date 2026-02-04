@@ -60,7 +60,7 @@ export default function RecruitingCompass() {
             const { data: athlete, error: athleteError } = await supabase
                 .from('athletes')
                 .select('id, name, position, sport, grad_year, gpa, city, state, dream_school, academic_tier, search_preference, latitude, longitude')
-                .eq('user_id', user.id)
+                .eq('id', user.id)
                 .single()
 
             if (import.meta.env.DEV && (athlete || athleteError)) {

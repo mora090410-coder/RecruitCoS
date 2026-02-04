@@ -50,7 +50,7 @@ export const ProfileProvider = ({ children }) => {
                 supabase
                     .from('athletes')
                     .select('*')
-                    .eq('user_id', user.id)
+                    .eq('id', user.id)
                     .maybeSingle(),
                 supabase
                     .from('profile_access')

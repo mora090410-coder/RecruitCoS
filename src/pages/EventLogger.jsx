@@ -70,7 +70,7 @@ export default function EventLogger() {
                 const { data: athleteData, error } = await supabase
                     .from('athletes')
                     .select('*') // Get full athlete object for recommendations
-                    .eq('user_id', user.id)
+                    .eq('id', user.id)
                     .single()
 
                 if (athleteData) {
@@ -127,13 +127,13 @@ export default function EventLogger() {
         // 1. Get/Create Athlete (Fallback if not loaded)
         let currentAthlete = athlete
         if (!currentAthlete) {
-            let { data: fetchedAthlete } = await supabase.from('athletes').select('*').eq('user_id', user.id).single()
+            let { data: fetchedAthlete } = await supabase.from('athletes').select('*').eq('id', user.id).single()
 
             if (!fetchedAthlete) {
                 // Create fallback if needed
                 const { data: newAthlete, error: createError } = await supabase
                     .from('athletes')
-                    .insert([{ user_id: user.id, name: user.email.split('@')[0], grad_year: 2026 }])
+                    .insert([{ id: user.id, name: user.email.split('@')[0], grad_year: 2026 }])
                     .select()
                     .single()
 

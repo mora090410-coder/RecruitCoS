@@ -183,7 +183,7 @@ export default function ProfileSetup() {
             console.log('Saving profile for user:', userId)
 
             const profileData = {
-                user_id: userId,
+                id: userId,
                 first_name: formData.firstName.trim(),
                 last_name: formData.lastName.trim(),
                 name: fullName,
@@ -191,8 +191,8 @@ export default function ProfileSetup() {
                 sport: formData.sport,
                 position: formData.position,
                 gpa_range: formData.gpaRange,
-                location_city: formData.locationCity,
-                location_state: formData.locationState,
+                city: formData.locationCity,
+                state: formData.locationState,
                 search_preference: formData.searchPreference,
                 distance_preference: formData.searchPreference,
                 target_divisions: formData.targetDivisions,
@@ -202,7 +202,7 @@ export default function ProfileSetup() {
 
             const { error: profileError } = await supabase
                 .from('athletes')
-                .upsert(profileData, { onConflict: 'user_id' })
+                .upsert(profileData, { onConflict: 'id' })
 
             if (profileError) {
                 console.error("Database upsert error:", profileError)

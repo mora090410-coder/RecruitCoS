@@ -25,7 +25,7 @@ export async function inviteManager(athleteId, email, role = 'manager') {
     // Attempting to find user_id via the athletes table for simplicity in this MVP flow
     const { data: userData, error: userError } = await supabase
         .from('athletes')
-        .select('user_id')
+        .select('id')
         .eq('email', email) // Assuming email is stored in athletes table based on previous steps
         .single();
 
@@ -33,7 +33,7 @@ export async function inviteManager(athleteId, email, role = 'manager') {
         throw new Error("Manager must have an active RecruitCoS account with this email.");
     }
 
-    const managerId = userData.user_id;
+    const managerId = userData.id;
 
     // 2. Insert into profile_access
     const { data, error } = await supabase

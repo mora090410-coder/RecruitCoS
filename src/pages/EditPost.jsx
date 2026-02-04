@@ -28,7 +28,7 @@ export default function EditPost() {
                     .single()
 
                 if (error) throw error
-                if (data.user_id !== user.id) throw new Error("Unauthorized")
+                if (data.athlete_id !== user.id) throw new Error("Unauthorized")
 
                 setPost(data)
                 setContent(data.post_text || '')
