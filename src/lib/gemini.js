@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { sanitizeInput } from "./security";
+import { withRetry, isRetryableError } from "./aiUtils";
 
 let genAIInstance = null;
 
@@ -17,36 +18,41 @@ export function getGenAI() {
   return genAIInstance;
 }
 
-// Helper for Exponential Backoff with enhanced error handling
-const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+/**
+ * Calls Gemini API with robust retry logic for 503/429/5xx errors.
+ * Uses exponential backoff: 1s, 2s, 4s delays.
+ * 
+ * @param {Object} model - Gemini model instance
+ * @param {string} prompt - The prompt to send
+ * @param {Object} options - Retry options
+ * @param {number} options.maxRetries - Max retries (1-5, default: 3)
+ * @param {Function} options.onRetry - Callback when retrying
+ * @returns {Promise<Object>} Gemini response
+ */
+export async function callGeminiWithRetry(model, prompt, options = {}) {
+  const { maxRetries = 3, onRetry = null } = options;
 
-export async function callGeminiWithRetry(model, prompt, retries = 3, delay = 2000) {
-  try {
-    const result = await model.generateContent(prompt);
+  return withRetry(
+    async () => {
+      const result = await model.generateContent(prompt);
 
-    // Check for blocked responses (2026 safety filter handling)
-    const response = result.response;
-    if (response.promptFeedback?.blockReason) {
-      const reason = response.promptFeedback.blockReason;
-      if (import.meta.env.DEV) console.warn("Response blocked:", reason);
+      // Check for blocked responses (2026 safety filter handling)
+      const response = result.response;
+      if (response.promptFeedback?.blockReason) {
+        const reason = response.promptFeedback.blockReason;
+        if (import.meta.env.DEV) console.warn("Response blocked:", reason);
 
-      // Handle BlockedReason.OTHER gracefully
-      if (reason === "OTHER" || reason === "BLOCKED_REASON_UNSPECIFIED") {
-        throw new Error(`Content filtered: ${reason}. Please try rephrasing.`);
+        // Handle BlockedReason.OTHER gracefully
+        if (reason === "OTHER" || reason === "BLOCKED_REASON_UNSPECIFIED") {
+          throw new Error(`Content filtered: ${reason}. Please try rephrasing.`);
+        }
+        throw new Error(`Content blocked: ${reason}`);
       }
-      throw new Error(`Content blocked: ${reason}`);
-    }
 
-    return result;
-  } catch (error) {
-    const isRateLimit = error.message?.includes('429') || error.status === 429;
-    if (retries > 0 && isRateLimit) {
-      if (import.meta.env.DEV) console.warn(`Hit 429 rate limit. Retrying in ${delay}ms...`);
-      await wait(delay);
-      return callGeminiWithRetry(model, prompt, retries - 1, delay * 2);
-    }
-    throw error;
-  }
+      return result;
+    },
+    { maxRetries, baseDelay: 1000, onRetry }
+  );
 }
 
 // JSON Schema for Social Posts (2026 Gemini 3 Standards)

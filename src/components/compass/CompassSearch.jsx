@@ -9,6 +9,7 @@ export default function CompassSearch({
     onSearch,
     onExploreProfile,
     loading,
+    retryStatus,
     athleteProfile,
     error
 }) {
@@ -76,7 +77,7 @@ export default function CompassSearch({
                 {loading ? (
                     <span className="flex items-center gap-2">
                         <Sparkles className="w-5 h-5 animate-pulse" />
-                        Finding Schools...
+                        {retryStatus || 'Finding Schools...'}
                     </span>
                 ) : (
                     'Find Similar Schools'

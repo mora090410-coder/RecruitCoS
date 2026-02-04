@@ -5,6 +5,7 @@ import { useProfile } from '../hooks/useProfile'
 import DashboardLayout from '../components/DashboardLayout'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getGenAI, callGeminiWithRetry } from '../lib/gemini'
+import { getRetryStatusMessage } from '../lib/aiUtils'
 import { calculateDistance } from '../lib/utils'
 import { sanitizeInput } from '../lib/security'
 import { getSchoolHeat } from '../lib/signalEngine'
@@ -44,6 +45,7 @@ export default function RecruitingCompass() {
 
     // Loading state
     const [loading, setLoading] = useState(false)
+    const [retryStatus, setRetryStatus] = useState(null) // 'Retrying...' status for UI
     const [profileLoading, setProfileLoading] = useState(true)
     const [searchError, setSearchError] = useState(null)
     const [lastSearchTime, setLastSearchTime] = useState(0)
@@ -281,7 +283,23 @@ REQUIREMENTS:
 INSTRUCTION:
 Find 35 schools similar to "${searchSchool}" and categorize them as reach, target, or solid based on this athlete's profile.`
 
-            const result = await callGeminiWithRetry(model, prompt)
+            // Clear retry status before starting
+            setRetryStatus(null)
+
+            const result = await callGeminiWithRetry(model, prompt, {
+                maxRetries: 3,
+                onRetry: (attempt, error, delay) => {
+                    const status = getRetryStatusMessage(attempt, 3)
+                    setRetryStatus(status)
+                    if (import.meta.env.DEV) {
+                        console.log(`[RecruitingCompass] ${status} (delay: ${delay}ms)`, error.message)
+                    }
+                }
+            })
+
+            // Clear retry status on success
+            setRetryStatus(null)
+
             const response = await result.response
             const text = response.text()
 
@@ -484,6 +502,7 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
                         onSearch={handleSearch}
                         onExploreProfile={handleExploreProfile}
                         loading={loading}
+                        retryStatus={retryStatus}
                         error={searchError}
                         athleteProfile={athleteProfile}
                     />
