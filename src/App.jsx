@@ -12,6 +12,7 @@ import EventLogger from './pages/EventLogger'
 import ProfileSetup from './pages/ProfileSetup'
 import RecruitingCompass from './pages/RecruitingCompass'
 import EditPost from './pages/EditPost'
+import Vibes from './pages/Vibes'
 
 // --- TRAFFIC CONTROLLER ---
 function MainNavigator() {
@@ -89,6 +90,7 @@ function MainNavigator() {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/compass" element={<RecruitingCompass />} />
       <Route path="/edit-post/:id" element={<EditPost />} />
+      <Route path="/vibes" element={<Vibes />} />
       <Route path="/log-event" element={<EventLogger />} />
 
       {/* Catch-all */}

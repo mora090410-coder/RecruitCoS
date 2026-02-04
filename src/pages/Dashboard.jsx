@@ -275,23 +275,27 @@ export default function Dashboard() {
         if (navigator.share) {
             try {
                 await navigator.share({
-                    title: 'My Recruiting Update',
+                    title: 'Athlete Update',
                     text: postText,
                 })
                 toast.success('Shared successfully!')
             } catch (error) {
                 console.error('Error sharing:', error)
-                // If user cancels share, we don't necessarily error, but good to log
             }
         } else {
             try {
                 await navigator.clipboard.writeText(postText)
-                toast.success('Link copied to clipboard!')
+                toast.success('Text copied to clipboard!')
             } catch (error) {
                 console.error('Error copying to clipboard:', error)
                 toast.error('Failed to copy to clipboard.')
             }
         }
+    }
+
+    const handleExploreVibes = () => {
+        // Navigates to the Campus Vibes hub
+        navigate('/vibes')
     }
 
     return (
@@ -500,7 +504,7 @@ export default function Dashboard() {
                             <CardHeader className="pb-3">
                                 <div className="flex justify-between items-center">
                                     <CardTitle className="text-base">Suggested Coaches</CardTitle>
-                                    <Button variant="link" className="text-xs px-0 h-auto">
+                                    <Button variant="link" className="text-xs px-0 h-auto" onClick={handleExploreVibes}>
                                         {(phase === RECRUITING_PHASES.DISCOVERY || phase === RECRUITING_PHASES.FOUNDATION)
                                             ? "Explore Campus Vibes"
                                             : "View All Coaches"}
@@ -537,6 +541,6 @@ export default function Dashboard() {
 
                 </div>
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     )
 }
