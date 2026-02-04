@@ -25,8 +25,10 @@ export default function MyList({
 
     // Initial load
     useEffect(() => {
-        loadMyList()
-    }, [])
+        if (user) {
+            loadMyList()
+        }
+    }, [user])
 
     const loadMyList = async () => {
         setLoading(true)

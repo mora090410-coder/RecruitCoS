@@ -433,7 +433,12 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
             if (error) {
                 // Handle Duplicate Entry (Schema 23505 Unique Violation)
                 if (error.code === '23505') {
-                    toast.error(`${school.school_name} is already in your My List.`)
+                    setToastConfig({
+                        message: `${school.school_name} is already in your My List.`,
+                        actionLabel: 'View My List',
+                        onAction: () => setView('mylist')
+                    })
+                    setShowToast(true)
                     return
                 }
                 throw error
@@ -449,14 +454,7 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
                 [school.category]: [...prev[school.category], schoolWithStatus]
             }))
 
-            toast.success(isImpersonating ? `Suggestion for ${school.school_name} sent to athlete!` : `${school.school_name} added to your list!`, {
-                action: {
-                    label: 'View My List',
-                    onClick: () => setView('mylist')
-                }
-            })
-
-            // Also show our custom toast (requested by user)
+            // Show our custom toast (requested by user)
             setToastConfig({
                 message: `${school.school_name} added to your ${school.category} list!`,
                 actionLabel: 'View My List',
@@ -464,9 +462,19 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
             })
             setShowToast(true)
 
+            // Auto-navigate to mylist after a short delay
+            setTimeout(() => {
+                setView('mylist')
+            }, 1500)
+
         } catch (error) {
             console.error("[RecruitingCompass] Error saving school (Code: " + error.code + "):", error)
-            toast.error('Failed to add school: ' + (error.message || 'Unknown database error'))
+            setToastConfig({
+                message: 'Failed to add school: ' + (error.message || 'Unknown database error'),
+                actionLabel: 'Retry',
+                onAction: () => handleAddToList(school)
+            })
+            setShowToast(true)
         }
     }
 
@@ -584,6 +592,7 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
             case 'mylist':
                 return (
                     <MyList
+                        user={user}
                         savedSchools={savedSchools}
                         onRemove={handleRemoveFromList}
                         onViewSchool={(school) => {
