@@ -168,23 +168,31 @@ export default function RecruitingCompass() {
     // Helpers imported from lib/gemini
 
     // AI Search
-    const handleSearch = async (schoolOverride = null) => {
-        const rawSchool = schoolOverride || dreamSchool
-        if (!rawSchool || !rawSchool.trim()) return
+    const handleSearch = async (schoolInput = null) => {
+        // 1. Determine actual school name (handle event objects)
+        const rawSchool = (typeof schoolInput === 'string') ? schoolInput : dreamSchool
+
+        if (!rawSchool || !rawSchool.trim()) {
+            if (import.meta.env.DEV) console.warn("[RecruitingCompass] No search school provided.")
+            return
+        }
 
         const searchSchool = sanitizeInput(rawSchool)
 
-        // Debounce check (5 seconds)
+        // 2. Immediate Loading State
+        setLoading(true)
+        setSearchError(null)
+
+        if (import.meta.env.DEV) console.log("[RecruitingCompass] Starting search for:", searchSchool)
+
+        // 3. Debounce check (5 seconds)
         const now = Date.now()
         if (now - lastSearchTime < 5000) {
-            console.warn("Search throttled: Please wait before searching again.")
+            if (import.meta.env.DEV) console.warn("[RecruitingCompass] Search throttled: Please wait.")
+            setLoading(false)
             return
         }
         setLastSearchTime(now)
-
-        setLoading(true)
-        setSearchError(null)
-        // setResults({ reach: [], target: [], solid: [] }) // REMOVED TO PERSIST RESULTS
 
         try {
             // CACHE CHECK

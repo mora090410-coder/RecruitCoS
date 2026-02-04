@@ -137,81 +137,98 @@ export default function ProfileSetup() {
     const handleCreateAccount = async () => {
         setLoading(true)
         setError(null)
+
         try {
+            // 1. SANITIZATION & VALIDATION PRE-FLIGHT
+            const fullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`
+            const parsedGradYear = parseInt(formData.gradYear)
+
+            if (isNaN(parsedGradYear)) {
+                throw new Error("Invalid graduation year. Please go back and select a year.")
+            }
+
+            if (!formData.sport || !formData.position) {
+                throw new Error("Sport and position information is missing.")
+            }
+
+            if (formData.targetDivisions.length === 0) {
+                throw new Error("Please select at least one division level.")
+            }
+
             let userId = user?.id
 
-            if (userId) {
-                console.log('User authenticated, skipping registration:', userId)
-            } else {
+            // 2. AUTHENTICATION (If not already logged in)
+            if (!userId) {
                 console.log('Starting account creation...')
-
-                // 1. Sign Up (only for new users)
                 const { data: authData, error: authError } = await signUp({
                     email: formData.email,
                     password: formData.password,
                     options: {
                         data: {
                             first_name: formData.firstName,
-                            last_name: formData.lastName
+                            last_name: formData.lastName,
+                            full_name: fullName
                         }
                     }
                 })
 
                 if (authError) throw authError
-                if (!authData.user) throw new Error("No user created")
+                if (!authData.user) throw new Error("Authentication failed: User account not created.")
 
                 userId = authData.user.id
-
-                // Check session availability
-                const { data: sessionData } = await supabase.auth.getSession()
-                if (!sessionData?.session) {
-                    // Attempt immediate sign-in
-                    const { error: signInError } = await supabase.auth.signInWithPassword({
-                        email: formData.email,
-                        password: formData.password
-                    })
-
-                    if (signInError) {
-                        setError('Account created! Please check your email to confirm, then log in.')
-                        setLoading(false)
-                        return
-                    }
-                }
+                console.log('Account created successfully:', userId)
             }
 
+            // 3. PROFILE CREATION
             console.log('Saving profile for user:', userId)
 
-            // 2. Save Profile (Upsert to prevent duplicates)
+            const profileData = {
+                user_id: userId,
+                first_name: formData.firstName.trim(),
+                last_name: formData.lastName.trim(),
+                name: fullName,
+                grad_year: parsedGradYear,
+                sport: formData.sport,
+                position: formData.position,
+                gpa_range: formData.gpaRange,
+                location_city: formData.locationCity,
+                location_state: formData.locationState,
+                search_preference: formData.searchPreference,
+                distance_preference: formData.searchPreference,
+                target_divisions: formData.targetDivisions,
+                dream_school: formData.dreamSchool?.trim() || null,
+                onboarding_completed: true
+            }
+
             const { error: profileError } = await supabase
                 .from('athletes')
-                .upsert({
-                    user_id: userId,
-                    first_name: formData.firstName,
-                    last_name: formData.lastName,
-                    name: `${formData.firstName} ${formData.lastName}`, // Ensure mapped name
-                    grad_year: parseInt(formData.gradYear),
-                    sport: formData.sport,
-                    position: formData.position,
-                    gpa_range: formData.gpaRange,
-                    location_city: formData.locationCity,
-                    location_state: formData.locationState,
-                    search_preference: formData.searchPreference,
-                    distance_preference: formData.searchPreference,
-                    target_divisions: formData.targetDivisions,
-                    dream_school: formData.dreamSchool || null,
-                    onboarding_completed: true
-                }, { onConflict: 'user_id' })
+                .upsert(profileData, { onConflict: 'user_id' })
 
-            if (profileError) throw profileError
+            if (profileError) {
+                console.error("Database upsert error:", profileError)
+                // Specific messaging for common errors
+                if (profileError.code === '23505') {
+                    throw new Error("A profile already exists for this account.")
+                }
+                throw new Error(`Profile storage failed: ${profileError.message}`)
+            }
 
+            // 4. SYNC & FINALIZE
             console.log('Profile saved successfully!')
-            // Refresh the profile in context so App.jsx knows we have a profile now
-            if (refreshProfile) await refreshProfile()
+
+            // Critical: Wait for profile refresh before navigating
+            if (refreshProfile) {
+                await refreshProfile()
+            }
+
             setCompleted(true)
+            toast.success("Profile launched successfully!")
 
         } catch (err) {
-            console.error("Account creation failed:", err)
-            setError('Failed to save profile: ' + err.message)
+            console.error("Onboarding failed:", err)
+            const errorMessage = err.message || "An unexpected error occurred during setup."
+            setError(errorMessage)
+            toast.error(errorMessage)
         } finally {
             setLoading(false)
         }
