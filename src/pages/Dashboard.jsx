@@ -269,6 +269,31 @@ export default function Dashboard() {
         }
     }
 
+    const handleSharePost = async (postText) => {
+        if (!postText) return
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'My Recruiting Update',
+                    text: postText,
+                })
+                toast.success('Shared successfully!')
+            } catch (error) {
+                console.error('Error sharing:', error)
+                // If user cancels share, we don't necessarily error, but good to log
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(postText)
+                toast.success('Link copied to clipboard!')
+            } catch (error) {
+                console.error('Error copying to clipboard:', error)
+                toast.error('Failed to copy to clipboard.')
+            }
+        }
+    }
+
     return (
         <DashboardLayout phase={phase}>
             <div className="space-y-8">
@@ -357,7 +382,7 @@ export default function Dashboard() {
                                                     <DropdownMenuItem onClick={() => handleEditPost(post.id)}>
                                                         <Edit2 className="mr-2 h-4 w-4" /> Edit Post
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleSharePost(post.post_text)}>
                                                         <Share2 className="mr-2 h-4 w-4" /> Share
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
