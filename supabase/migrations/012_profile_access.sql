@@ -18,12 +18,12 @@ FOR ALL
 TO authenticated
 USING (
     athlete_id IN (
-        SELECT id FROM public.athletes WHERE user_id = auth.uid()
+        SELECT id FROM public.athletes WHERE user_id = auth.uid()::text
     )
 )
 WITH CHECK (
     athlete_id IN (
-        SELECT id FROM public.athletes WHERE user_id = auth.uid()
+        SELECT id FROM public.athletes WHERE user_id = auth.uid()::text
     )
 );
 

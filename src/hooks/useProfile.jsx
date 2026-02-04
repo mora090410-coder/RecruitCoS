@@ -58,7 +58,8 @@ export const ProfileProvider = ({ children }) => {
                         role,
                         athlete:athletes (
                             id,
-                            full_name,
+                            id,
+                            name,
                             sport,
                             grad_year
                         )
@@ -110,7 +111,7 @@ export const ProfileProvider = ({ children }) => {
 
         // Standardized Audit Names
         profile: athleteProfile,
-        hasProfile: !!athleteProfile,
+        hasProfile: !!athleteProfile || accessibleAthletes.length > 0,
         isProfileLoading: profileLoading,
         isInitialized,
 
