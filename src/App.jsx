@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import Login from './pages/Login'
+import SignUp from './pages/SignUp'
+import Landing from './pages/Landing'
 import Dashboard from './pages/Dashboard'
 import EventLogger from './pages/EventLogger'
 import ProfileSetup from './pages/ProfileSetup'
@@ -55,7 +57,7 @@ function ProfileGuard({ children, redirectToDashboard = false }) {
 
   if (redirectToDashboard) {
     // If we are at /setup but already have a profile, go to dashboard
-    return hasProfile ? <Navigate to="/" /> : children
+    return hasProfile ? <Navigate to="/dashboard" /> : children
   } else {
     // If we are at a private route but HAVE NO profile, go to setup
     return hasProfile ? children : <Navigate to="/setup" />
@@ -67,7 +69,9 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
           <Route
             path="/setup"
             element={
@@ -85,7 +89,7 @@ function App() {
             }
           />
           <Route
-            path="/"
+            path="/dashboard"
             element={
               <ProfileGuard>
                 <Dashboard />

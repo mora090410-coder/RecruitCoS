@@ -1,20 +1,22 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
 
 export default function Login() {
+    const [method, setMethod] = useState('password') // 'password' | 'magic'
     const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState('')
-    const { signIn, user, loading: authLoading } = useAuth()
+    const { signIn, signInWithPassword, user, loading: authLoading } = useAuth()
     const navigate = useNavigate()
 
     useEffect(() => {
         if (!authLoading && user) {
-            navigate('/')
+            navigate('/dashboard')
         }
     }, [user, authLoading, navigate])
 
@@ -23,53 +25,94 @@ export default function Login() {
         setLoading(true)
         setMessage('')
 
-        // For MVP/Demo, simple magic link
-        const { error } = await signIn({ email })
-
-        if (error) {
-            setMessage('Error: ' + error.message)
-        } else {
-            setMessage('Check your email for the login link!')
+        try {
+            if (method === 'password') {
+                const { error } = await signInWithPassword({ email, password })
+                if (error) throw error
+                // Redirect handled by useEffect
+            } else {
+                const { error } = await signIn({ email })
+                if (error) throw error
+                setMessage('Check your email for the login link!')
+            }
+        } catch (error) {
+            setMessage('Error: ' + (error.message || 'Failed to login'))
+        } finally {
+            setLoading(false)
         }
-        setLoading(false)
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-            <Card className="w-full max-w-md">
-                <CardHeader className="text-center">
-                    <CardTitle className="text-2xl text-brand-primary">Welcome Back</CardTitle>
-                    <p className="text-sm text-gray-500">Enter your email to sign in</p>
+        <div className="min-h-screen flex items-center justify-center bg-zinc-950 px-4">
+            <Card className="w-full max-w-md bg-zinc-900 border-zinc-800 text-white shadow-2xl">
+                <CardHeader className="text-center space-y-2">
+                    <CardTitle className="text-2xl font-bold tracking-tight">Welcome Back</CardTitle>
+                    <p className="text-sm text-zinc-400">Sign in to your account</p>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleLogin} className="space-y-4">
-                        <div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-zinc-300">Email</label>
                             <Input
                                 type="email"
-                                placeholder="your@email.com"
+                                placeholder="name@example.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                className="bg-white"
+                                className="bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-600 focus:border-blue-600 focus:ring-blue-600/20"
                             />
                         </div>
-                        <Button type="submit" className="w-full" disabled={loading}>
-                            {loading ? 'Sending Link...' : 'Send Magic Link'}
-                        </Button>
-                        {message && (
+
+                        {method === 'password' && (
                             <div className="space-y-2">
-                                <p className={`text-sm text-center ${message.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>
-                                    {message}
-                                </p>
-                                {!message.includes('Error') && (
-                                    <p className="text-xs text-center text-gray-500">
-                                        (Local Dev: Emails are trapped at <a href="http://127.0.0.1:54324" target="_blank" rel="noreferrer" className="underline text-brand-primary">localhost:54324</a>)
-                                    </p>
-                                )}
+                                <label className="text-sm font-medium text-zinc-300">Password</label>
+                                <Input
+                                    type="password"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    className="bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-600 focus:border-blue-600 focus:ring-blue-600/20"
+                                />
+                            </div>
+                        )}
+
+                        <Button
+                            type="submit"
+                            className="w-full bg-[#007AFF] hover:bg-[#0056b3] text-white"
+                            disabled={loading}
+                        >
+                            {loading ? 'Processing...' : (method === 'password' ? 'Sign In' : 'Send Magic Link')}
+                        </Button>
+
+                        {message && (
+                            <div className={`text-sm text-center p-2 rounded ${message.includes('Error') ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`}>
+                                {message}
                             </div>
                         )}
                     </form>
+
+                    <div className="mt-6 text-center">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setMethod(method === 'password' ? 'magic' : 'password')
+                                setMessage('')
+                            }}
+                            className="text-sm text-zinc-500 hover:text-white transition-colors"
+                        >
+                            {method === 'password' ? 'Use a Magic Link instead' : 'Sign in with Password'}
+                        </button>
+                    </div>
                 </CardContent>
+                <CardFooter className="justify-center border-t border-zinc-800 pt-6">
+                    <p className="text-sm text-zinc-500">
+                        Don't have an account?{' '}
+                        <Link to="/signup" className="text-[#007AFF] hover:underline font-medium">
+                            Get Started
+                        </Link>
+                    </p>
+                </CardFooter>
             </Card>
         </div>
     )
