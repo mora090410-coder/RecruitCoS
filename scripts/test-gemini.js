@@ -27,46 +27,53 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
-async function listModels() {
+async function testGeminiModels() {
+    console.log("=".repeat(50));
+    console.log("RecruitCoS Gemini API Diagnostic (2026 Standards)");
+    console.log("=".repeat(50));
+
+    // Primary: Gemini 3 Flash (Production)
+    console.log("\n1. Testing gemini-3-flash-preview (PRODUCTION)...");
     try {
-        const modelResponse = await genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Just to test init
-        // Actually SDK doesn't have listModels on the instance directly usually, it's on the class or via model query
-        // Wait, the SDK has a ModelManager or we can just try to generate content to test
-        // But the error message suggested listModels.
-        // The SDK documentation says request "models" endpoint manually or use correct method if available.
-        // Actually the SDK *does* not expose listModels easily in v0.1.
-        // Let's use the REST API for listModels or just try a simple generation with a fallback model.
-
-        console.log("Testing gemini-1.5-flash generation...");
-        try {
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const result = await model.generateContent("Hello");
-            console.log("Success with gemini-1.5-flash:", result.response.text());
-        } catch (e) {
-            console.error("Failed with gemini-1.5-flash:", e.message);
-        }
-
-        console.log("\nTesting gemini-pro generation...");
-        try {
-            const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-            const result = await model.generateContent("Hello");
-            console.log("Success with gemini-pro:", result.response.text());
-        } catch (e) {
-            console.error("Failed with gemini-pro:", e.message);
-        }
-
-        console.log("\nTesting gemini-2.0-flash generation (if avail)...");
-        try {
-            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-            const result = await model.generateContent("Hello");
-            console.log("Success with gemini-2.0-flash:", result.response.text());
-        } catch (e) {
-            console.error("Failed with gemini-2.0-flash:", e.message);
-        }
-
-    } catch (error) {
-        console.error("Error:", error);
+        const model = genAI.getGenerativeModel(
+            { model: "gemini-3-flash-preview" },
+            { apiVersion: "v1" }
+        );
+        const result = await model.generateContent("Say 'Gemini 3 Flash is online' in exactly 5 words.");
+        console.log("   ✅ SUCCESS:", result.response.text().trim());
+    } catch (e) {
+        console.error("   ❌ FAILED:", e.message);
     }
+
+    // Fallback: Gemini 2.0 Flash (Legacy)
+    console.log("\n2. Testing gemini-2.0-flash (LEGACY FALLBACK)...");
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const result = await model.generateContent("Hello");
+        console.log("   ✅ Available:", result.response.text().substring(0, 50));
+    } catch (e) {
+        console.error("   ⚠️  Unavailable (expected):", e.message.substring(0, 60));
+    }
+
+    // JSON Response Test (Critical for Chief of Staff logic)
+    console.log("\n3. Testing JSON response format (Chief of Staff)...");
+    try {
+        const model = genAI.getGenerativeModel(
+            {
+                model: "gemini-3-flash-preview",
+                generationConfig: { responseMimeType: "application/json" }
+            },
+            { apiVersion: "v1" }
+        );
+        const result = await model.generateContent('Return a JSON object with keys "status" and "message". Status should be "ok".');
+        const json = JSON.parse(result.response.text());
+        console.log("   ✅ JSON Parse Success:", JSON.stringify(json));
+    } catch (e) {
+        console.error("   ❌ JSON FAILED:", e.message);
+    }
+
+    console.log("\n" + "=".repeat(50));
+    console.log("Diagnostic complete.");
 }
 
-listModels();
+testGeminiModels();

@@ -39,9 +39,9 @@ export async function generateSocialPosts(eventData, coaches = [], voiceProfile 
   if (!genAI) throw new Error("Gemini AI not initialized");
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
+    model: "gemini-3-flash-preview",
     generationConfig: { responseMimeType: "application/json" }
-  });
+  }, { apiVersion: "v1" });
 
   // Sanitized Inputs
   const safeTitle = sanitizeInput(eventData.title);
@@ -125,9 +125,9 @@ export async function getRecruitingInsight(phase, signalData) {
   if (!genAI) throw new Error("Gemini AI not initialized");
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
+    model: "gemini-3-flash-preview",
     generationConfig: { responseMimeType: "application/json" }
-  });
+  }, { apiVersion: "v1" });
 
   const safePhase = sanitizeInput(phase);
 

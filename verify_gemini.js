@@ -31,30 +31,48 @@ if (!process.env.VITE_GEMINI_API_KEY) {
 // 2. Initialize Key
 const API_KEY = process.env.VITE_GEMINI_API_KEY;
 
-async function testGeneration() {
-    console.log("🤖 Listing Available Gemini Models (REST API)...");
+async function verifyGeminiAPI() {
+    console.log("🤖 RecruitCoS Gemini API Verification (2026 Standards)");
+    console.log("=".repeat(55));
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`;
+    // Test v1 endpoint (Production)
+    console.log("\n1. Checking v1 API endpoint for Gemini 3 Flash...");
+    const v1Url = `https://generativelanguage.googleapis.com/v1/models?key=${API_KEY}`;
 
     try {
-        const response = await fetch(url);
+        const response = await fetch(v1Url);
         const data = await response.json();
 
         if (data.models) {
-            console.log("✅ API Connection Successful! Found models:");
-            const modelNames = data.models.map(m => m.name);
-            console.log(modelNames.join('\n'));
-
-            // Check for flash
-            const hasFlash = modelNames.some(n => n.includes('flash'));
-            console.log("Has Flash model:", hasFlash);
+            console.log("   ✅ v1 API Connection Successful!");
+            const flashModels = data.models
+                .map(m => m.name)
+                .filter(n => n.includes('flash') || n.includes('gemini-3'));
+            console.log("   Flash/Gemini-3 models available:");
+            flashModels.forEach(m => console.log(`      - ${m}`));
         } else {
-            console.error("❌ Failed to list models:", JSON.stringify(data, null, 2));
+            console.error("   ❌ v1 API Error:", JSON.stringify(data, null, 2));
         }
-
     } catch (error) {
-        console.error("❌ Fetch Error:", error.message);
+        console.error("   ❌ v1 Fetch Error:", error.message);
     }
+
+    // Test SDK initialization with Gemini 3 Flash
+    console.log("\n2. Testing SDK with gemini-3-flash-preview...");
+    try {
+        const genAI = new GoogleGenerativeAI(API_KEY);
+        const model = genAI.getGenerativeModel(
+            { model: "gemini-3-flash-preview" },
+            { apiVersion: "v1" }
+        );
+        const result = await model.generateContent("Respond with exactly: 'Gemini 3 Flash verified.'");
+        console.log("   ✅ SDK Test:", result.response.text().trim());
+    } catch (error) {
+        console.error("   ❌ SDK Test Failed:", error.message);
+    }
+
+    console.log("\n" + "=".repeat(55));
+    console.log("Verification complete.");
 }
 
-testGeneration();
+verifyGeminiAPI();
