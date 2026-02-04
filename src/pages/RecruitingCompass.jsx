@@ -251,7 +251,7 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
             if (!genAI) throw new Error("Gemini API Key missing")
 
             const model = genAI.getGenerativeModel({
-                model: "gemini-1.5-flash",
+                model: "gemini-2.0-flash",
                 generationConfig: { responseMimeType: "application/json" }
             })
 

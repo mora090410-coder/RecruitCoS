@@ -39,7 +39,7 @@ export async function generateSocialPosts(eventData, coaches = [], voiceProfile 
   if (!genAI) throw new Error("Gemini AI not initialized");
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
+    model: "gemini-2.0-flash",
     generationConfig: { responseMimeType: "application/json" }
   });
 
@@ -125,7 +125,7 @@ export async function getRecruitingInsight(phase, signalData) {
   if (!genAI) throw new Error("Gemini AI not initialized");
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
+    model: "gemini-2.0-flash",
     generationConfig: { responseMimeType: "application/json" }
   });
 

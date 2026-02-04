@@ -35,12 +35,23 @@ const SEARCH_PREFERENCES = [
 ]
 
 export default function ProfileSetup() {
-    const { signUp, user } = useAuth()
+    const { signUp, user, athleteProfile, checkingProfile, accessibleAthletes, refreshProfile } = useAuth()
     const navigate = useNavigate()
     const [step, setStep] = useState(1)
     const [loading, setLoading] = useState(false)
     const [completed, setCompleted] = useState(false)
     const [error, setError] = useState(null)
+
+    // Onboarding Guard: Redirect if profile already exists
+    useEffect(() => {
+        if (!checkingProfile && user) {
+            const hasProfile = !!athleteProfile || (accessibleAthletes && accessibleAthletes.length > 0)
+            if (hasProfile) {
+                console.log('Profile detected, bypassing onboarding...')
+                navigate('/')
+            }
+        }
+    }, [checkingProfile, user, athleteProfile, accessibleAthletes, navigate])
 
     // Form State
     const [formData, setFormData] = useState({
@@ -183,6 +194,8 @@ export default function ProfileSetup() {
             if (profileError) throw profileError
 
             console.log('Profile saved successfully!')
+            // Refresh the profile in context so App.jsx knows we have a profile now
+            if (refreshProfile) await refreshProfile()
             setCompleted(true)
 
         } catch (err) {
@@ -538,6 +551,23 @@ export default function ProfileSetup() {
             </div>
         </div>
     )
+
+    // --- Render ---
+
+    if (checkingProfile) {
+        return (
+            <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-4">
+                <div className="w-12 h-12 relative mb-8">
+                    <div className="absolute inset-0 border-4 border-zinc-900 rounded-full"></div>
+                    <div className="absolute inset-0 border-4 border-green-500 rounded-full border-t-transparent animate-spin"></div>
+                </div>
+                <div className="space-y-2 text-center">
+                    <h2 className="text-xl font-bold text-white tracking-tight animate-pulse">Setting up your Command Center...</h2>
+                    <p className="text-zinc-500 text-sm">Verifying athlete credentials</p>
+                </div>
+            </div>
+        )
+    }
 
     // Completion Screen (Step 8 equivalent)
     if (completed) {
