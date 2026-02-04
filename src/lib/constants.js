@@ -38,6 +38,13 @@ export const STATUS_CONFIG = {
         description: 'Saved for reference'
     }
 }
+export const INTERACTION_TYPES = [
+    'Email Sent',
+    'Camp Attended',
+    'Letter Received',
+    'Phone Call',
+    'Social DM'
+];
 
 export const RECRUITING_PHASES = {
     DISCOVERY: 'Discovery',
