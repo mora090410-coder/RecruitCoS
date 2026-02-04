@@ -1,78 +1,71 @@
-import fs from 'fs';
-import path from 'path';
+/**
+ * Gemini 3 API Verification (2026 Standards)
+ * Tests v1beta endpoint availability and model access
+ * 
+ * Usage: node verify_gemini.js
+ */
+import "dotenv/config";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const API_KEY = process.env.VITE_GEMINI_API_KEY;
 
-// 1. Manually load .env
-try {
-    const envPath = path.resolve(__dirname, '.env');
-    if (fs.existsSync(envPath)) {
-        const envContent = fs.readFileSync(envPath, 'utf-8');
-        envContent.split('\n').forEach(line => {
-            const parts = line.split('=');
-            if (parts.length >= 2) {
-                const key = parts[0].trim();
-                const value = parts.slice(1).join('=').trim();
-                process.env[key] = value;
-            }
-        });
-    }
-} catch (e) {
-    console.log("Could not load .env file");
-}
+console.log("\n=== Gemini 3 API Verification (2026 Standards) ===\n");
 
-if (!process.env.VITE_GEMINI_API_KEY) {
-    console.error("❌ No VITE_GEMINI_API_KEY found in .env");
+if (!API_KEY) {
+    console.error("❌ CRITICAL: VITE_GEMINI_API_KEY not found");
+    console.log("   Add VITE_GEMINI_API_KEY=your_key to your .env file");
     process.exit(1);
 }
 
-// 2. Initialize Key
-const API_KEY = process.env.VITE_GEMINI_API_KEY;
+console.log("✅ API Key detected (", API_KEY.length, "chars)\n");
 
-async function verifyGeminiAPI() {
-    console.log("🤖 RecruitCoS Gemini API Verification (2026 Standards)");
-    console.log("=".repeat(55));
+// Test 1: v1beta API endpoint
+console.log("1. Testing v1beta API endpoint...");
+const v1betaUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`;
 
-    // Test v1 endpoint (Production)
-    console.log("\n1. Checking v1 API endpoint for Gemini 3 Flash...");
-    const v1Url = `https://generativelanguage.googleapis.com/v1/models?key=${API_KEY}`;
+try {
+    const response = await fetch(v1betaUrl);
+    const data = await response.json();
 
-    try {
-        const response = await fetch(v1Url);
-        const data = await response.json();
-
-        if (data.models) {
-            console.log("   ✅ v1 API Connection Successful!");
-            const flashModels = data.models
-                .map(m => m.name)
-                .filter(n => n.includes('flash') || n.includes('gemini-3'));
-            console.log("   Flash/Gemini-3 models available:");
-            flashModels.forEach(m => console.log(`      - ${m}`));
-        } else {
-            console.error("   ❌ v1 API Error:", JSON.stringify(data, null, 2));
-        }
-    } catch (error) {
-        console.error("   ❌ v1 Fetch Error:", error.message);
+    if (data.models) {
+        console.log("   ✅ v1beta API Connection Successful!");
+        const gemini3Models = data.models
+            .map(m => m.name)
+            .filter(n => n.includes('gemini-3') || n.includes('flash'));
+        console.log("   Gemini 3/Flash models available:");
+        gemini3Models.slice(0, 8).forEach(m => console.log(`      - ${m}`));
+        if (gemini3Models.length > 8) console.log(`      ... and ${gemini3Models.length - 8} more`);
+    } else {
+        console.error("   ❌ v1beta API Error:", JSON.stringify(data, null, 2));
     }
-
-    // Test SDK initialization with Gemini 3 Flash
-    console.log("\n2. Testing SDK with gemini-3-flash-preview...");
-    try {
-        const genAI = new GoogleGenerativeAI(API_KEY);
-        const model = genAI.getGenerativeModel(
-            { model: "gemini-3-flash-preview" },
-            { apiVersion: "v1" }
-        );
-        const result = await model.generateContent("Respond with exactly: 'Gemini 3 Flash verified.'");
-        console.log("   ✅ SDK Test:", result.response.text().trim());
-    } catch (error) {
-        console.error("   ❌ SDK Test Failed:", error.message);
-    }
-
-    console.log("\n" + "=".repeat(55));
-    console.log("Verification complete.");
+} catch (error) {
+    console.error("   ❌ v1beta Fetch Error:", error.message);
 }
 
-verifyGeminiAPI();
+// Test 2: SDK with gemini-3-flash + systemInstruction
+console.log("\n2. Testing SDK with gemini-3-flash...");
+try {
+    const genAI = new GoogleGenerativeAI(API_KEY);
+    const model = genAI.getGenerativeModel({
+        model: "gemini-3-flash-preview",
+        systemInstruction: "You are a verification bot. Respond concisely.",
+        generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 1.0
+        }
+    }, { apiVersion: "v1beta" });
+
+    const result = await model.generateContent('Return JSON: {"verified": true, "model": "gemini-3-flash"}');
+    const text = result.response.text().trim();
+    console.log("   ✅ SDK Test Response:", text);
+
+    // Validate JSON
+    const parsed = JSON.parse(text);
+    if (parsed.verified) {
+        console.log("   ✅ JSON validation passed!");
+    }
+} catch (error) {
+    console.error("   ❌ SDK Test Failed:", error.message);
+}
+
+console.log("\n=== Verification Complete ===\n");

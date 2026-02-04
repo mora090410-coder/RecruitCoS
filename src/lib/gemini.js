@@ -17,12 +17,27 @@ export function getGenAI() {
   return genAIInstance;
 }
 
-// Helper for Exponential Backoff
+// Helper for Exponential Backoff with enhanced error handling
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function callGeminiWithRetry(model, prompt, retries = 3, delay = 2000) {
   try {
-    return await model.generateContent(prompt);
+    const result = await model.generateContent(prompt);
+
+    // Check for blocked responses (2026 safety filter handling)
+    const response = result.response;
+    if (response.promptFeedback?.blockReason) {
+      const reason = response.promptFeedback.blockReason;
+      if (import.meta.env.DEV) console.warn("Response blocked:", reason);
+
+      // Handle BlockedReason.OTHER gracefully
+      if (reason === "OTHER" || reason === "BLOCKED_REASON_UNSPECIFIED") {
+        throw new Error(`Content filtered: ${reason}. Please try rephrasing.`);
+      }
+      throw new Error(`Content blocked: ${reason}`);
+    }
+
+    return result;
   } catch (error) {
     const isRateLimit = error.message?.includes('429') || error.status === 429;
     if (retries > 0 && isRateLimit) {
@@ -34,14 +49,30 @@ export async function callGeminiWithRetry(model, prompt, retries = 3, delay = 20
   }
 }
 
+// JSON Schema for Social Posts (2026 Gemini 3 Standards)
+const SOCIAL_POSTS_SCHEMA = {
+  type: "object",
+  properties: {
+    options: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          style: { type: "string", description: "Post style: Hype, Humble, Professional, or My Voice" },
+          content: { type: "string", description: "The social media post content (280 chars max)" }
+        },
+        required: ["style", "content"]
+      },
+      minItems: 3,
+      maxItems: 3
+    }
+  },
+  required: ["options"]
+};
+
 export async function generateSocialPosts(eventData, coaches = [], voiceProfile = "", phase = "Discovery") {
   const genAI = getGenAI();
   if (!genAI) throw new Error("Gemini AI not initialized");
-
-  const model = genAI.getGenerativeModel({
-    model: "gemini-3-flash-preview",
-    generationConfig: { responseMimeType: "application/json" }
-  }, { apiVersion: "v1" });
 
   // Sanitized Inputs
   const safeTitle = sanitizeInput(eventData.title);
@@ -51,53 +82,53 @@ export async function generateSocialPosts(eventData, coaches = [], voiceProfile 
   const safeVoice = sanitizeInput(voiceProfile);
   const safePhase = sanitizeInput(phase);
 
-  const prompt = `
-    You are a social media expert for high school athletes in the "${safePhase}" phase of their recruiting journey.
-    Based on the following event, generate 3 distinct social media post options (Twitter/X style).
-    
-    Event Type: ${safeEventType}
-    Headline: ${safeTitle}
-    Details: ${safeDescription}
-    Date: ${safeDate}
-    
-    Coaches to Tag: ${coaches.map(c => {
+  const coachTags = coaches.map(c => {
     const handle = c.twitter_handle || 'no_handle';
     return `${sanitizeInput(c.name)} (${handle.startsWith('@') ? handle : '@' + handle})`;
-  }).join(', ') || "None"}
+  }).join(', ') || "None";
 
-    ${safeVoice ? `
-    CRITICAL TONE INSTRUCTION:
-    The user has a specific voice preference: "${safeVoice}".
-    Ensure EXACTLY ONE of the options matches this specific instruction perfectly. Label that style as "My Voice".
-    ` : ''}
+  // 2026 Gemini 3 Standards: systemInstruction with JSON schema
+  const systemInstruction = `You are a social media expert for high school athletes.
 
-    NCAA COMPLIANCE & PHASE-AWARE RULES:
-    1. If phase is "Discovery" or "Foundation": Focus on gratitude, progress, and training. AVOID any language that implies a "call to action" for coaches (e.g., "Coach, call me").
-    2. If phase is "Exposure": Use more proactive language. Mention being "excited for the next level" or "open to conversations".
-    3. If phase is "Commitment": Focus on decision-making, visits, and thanking programs.
-    4. NEVER mention specific dollar amounts or inducements.
-    5. Always keep the tone humble yet confident.
+OUTPUT FORMAT:
+Return ONLY a valid JSON object matching this schema:
+${JSON.stringify(SOCIAL_POSTS_SCHEMA, null, 2)}
 
-    Return the response as a valid JSON object with the following structure:
-    {
-      "options": [
-        { "style": "Hype", "content": "..." },
-        { "style": "Humble", "content": "..." },
-        { "style": "${safeVoice ? "My Voice" : "Professional"}", "content": "..." }
-      ]
+NCAA COMPLIANCE RULES:
+1. Discovery/Foundation phase: Focus on gratitude, progress, training. NO "call to action" for coaches.
+2. Exposure phase: Proactive language, "excited for the next level", "open to conversations".
+3. Commitment phase: Decision-making, visits, thanking programs.
+4. NEVER mention dollar amounts or inducements.
+5. Keep tone humble yet confident.
+
+STYLE GUIDELINES:
+- Humble: Grateful, team-focused, mentioning coaches/teammates.
+- Professional: Concise, factual, respectful.
+- Hype: Energetic, determined, confident.
+${safeVoice ? `- My Voice: Match this exact instruction: "${safeVoice}"` : ''}
+
+CRITICAL: Include exact Twitter handles from "Coaches to Tag" in ALL 3 options.`;
+
+  const model = genAI.getGenerativeModel({
+    model: "gemini-3-flash-preview",
+    systemInstruction,
+    generationConfig: {
+      responseMimeType: "application/json",
+      temperature: 1.0
     }
-    
-    Style Guidelines (if not overriding with "My Voice"):
-    - Humble: Grateful, team-focused, mentioning coaches/teammates.
-    - Professional: Concise, factual, respectful.
-    - Hype/Grind: Energetic, determined, confident.
-    
-    CRITICAL INSTRUCTION:
-    You HAVE been provided with "Coaches to Tag". You MUST output the exact Twitter handles provided in that list in the post content.
-    - Example: If the list contains "@CoachSark", the output text MUST include "@CoachSark".
-    - Do NOT just write their name. Use the handle.
-    - Include these tags in ALL 3 options if possible.
-  `;
+  }, { apiVersion: "v1beta" });
+
+  // Context first, then instruction (2026 long-context optimization)
+  const prompt = `CONTEXT (Event Data):
+- Phase: ${safePhase}
+- Event Type: ${safeEventType}
+- Headline: ${safeTitle}
+- Details: ${safeDescription}
+- Date: ${safeDate}
+- Coaches to Tag: ${coachTags}
+
+INSTRUCTION:
+Generate 3 distinct social media post options for this event. Each post should be Twitter/X style (max 280 characters). Include the provided coach handles in each post.`;
 
   if (import.meta.env.DEV) {
     console.log("Generating social posts for phase:", safePhase);
@@ -113,6 +144,17 @@ export async function generateSocialPosts(eventData, coaches = [], voiceProfile 
   }
 }
 
+// JSON Schema for Recruiting Insight (2026 Gemini 3 Standards)
+const RECRUITING_INSIGHT_SCHEMA = {
+  type: "object",
+  properties: {
+    insight: { type: "string", description: "Concise 1-2 sentence tactical advice" },
+    isTractionShift: { type: "boolean", description: "True if athlete has better traction at target level than reach level" },
+    recommendation: { type: "string", enum: ["Lean In", "Stay Course", "Broaden Search"] }
+  },
+  required: ["insight", "isTractionShift", "recommendation"]
+};
+
 /**
  * getRecruitingInsight
  * Generates strategic advice based on relationship traction across divisions.
@@ -124,39 +166,41 @@ export async function getRecruitingInsight(phase, signalData) {
   const genAI = getGenAI();
   if (!genAI) throw new Error("Gemini AI not initialized");
 
-  const model = genAI.getGenerativeModel({
-    model: "gemini-3-flash-preview",
-    generationConfig: { responseMimeType: "application/json" }
-  }, { apiVersion: "v1" });
-
   const safePhase = sanitizeInput(phase);
 
-  const prompt = `
-    You are an elite recruiting advisor (Chief of Staff) for a high school athlete.
-    The athlete is in the "${safePhase}" phase of their journey.
-    
-    Current Traction (High Signal Schools):
-    - NCAA Division 1 (D1): ${signalData.D1 || 0}
-    - NCAA Division 2 (D2): ${signalData.D2 || 0}
-    - NCAA Division 3 (D3): ${signalData.D3 || 0}
-    
-    LOGIC INSTRUCTIONS:
-    1. Analyze the distribution of high signal schools.
-    2. Detect a "Traction Shift":
-       - A shift occurs if the athlete has 0 traction at their likely "Reach" level (D1) but significant traction (2+) at a "Target" level (D2/D3).
-       - Also detect if traction is balanced or non-existent.
-    3. Style Guidelines:
-       - Be professional, motivating, and straight-talking.
-       - If traction shift: Encourage them to lean into where they are wanted, while keeping the reach goals as secondary development targets.
-       - If no shift: Provide a "Keep Grinding" message focusing on daily habits and signal building.
-    
-    Return a valid JSON object:
-    {
-      "insight": "Concise 1-2 sentence tactical advice.",
-      "isTractionShift": boolean,
-      "recommendation": "Lean In" | "Stay Course" | "Broaden Search"
+  // 2026 Gemini 3 Standards: systemInstruction with JSON schema
+  const systemInstruction = `You are an elite recruiting advisor (Chief of Staff) for a high school athlete.
+
+OUTPUT FORMAT:
+Return ONLY a valid JSON object matching this schema:
+${JSON.stringify(RECRUITING_INSIGHT_SCHEMA, null, 2)}
+
+ANALYSIS LOGIC:
+1. A "Traction Shift" occurs if athlete has 0 traction at D1 (Reach) but 2+ traction at D2/D3 (Target).
+2. If traction shift: Encourage leaning into where they are wanted, keep reach goals as secondary.
+3. If no shift: Provide "Keep Grinding" message focusing on daily habits and signal building.
+
+STYLE:
+Be professional, motivating, and straight-talking. No fluff.`;
+
+  const model = genAI.getGenerativeModel({
+    model: "gemini-3-flash-preview",
+    systemInstruction,
+    generationConfig: {
+      responseMimeType: "application/json",
+      temperature: 1.0
     }
-  `;
+  }, { apiVersion: "v1beta" });
+
+  // Context first, then instruction (2026 long-context optimization)
+  const prompt = `CONTEXT (Traction Data):
+- Athlete Phase: ${safePhase}
+- D1 High Signal Schools: ${signalData.D1 || 0}
+- D2 High Signal Schools: ${signalData.D2 || 0}
+- D3 High Signal Schools: ${signalData.D3 || 0}
+
+INSTRUCTION:
+Analyze the traction distribution and provide strategic advice for this athlete.`;
 
   try {
     const result = await callGeminiWithRetry(model, prompt);

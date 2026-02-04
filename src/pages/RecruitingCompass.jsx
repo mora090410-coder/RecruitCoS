@@ -214,51 +214,72 @@ export default function RecruitingCompass() {
             // --- API CALL ---
             if (import.meta.env.DEV) console.log('Cache miss. Calling Gemini API for:', searchSchool)
 
-            const prompt = `
-Role: You are an elite Collegiate Recruiting Advisor with expert knowledge of NCAA athletics, academic requirements, and geographic regions.
+            // JSON Schema for School Recommendations (2026 Gemini 3 Standards)
+            const SCHOOL_SCHEMA = {
+                type: "array",
+                items: {
+                    type: "object",
+                    properties: {
+                        school_name: { type: "string" },
+                        category: { type: "string", enum: ["reach", "target", "solid"] },
+                        conference: { type: "string" },
+                        division: { type: "string", enum: ["D1", "D2", "D3", "NAIA", "JUCO"] },
+                        distance_miles: { type: "number" },
+                        atomic_region: { type: "string" },
+                        athletic_level: { type: "string", enum: ["Elite", "Highly Competitive", "Competitive", "Developing"] },
+                        academic_selectivity: { type: "string", enum: ["Highly Selective", "Selective", "Moderately Selective", "Less Selective"] },
+                        gpa_requirement: { type: "number" },
+                        insight: { type: "string" }
+                    },
+                    required: ["school_name", "category", "conference", "division", "insight"]
+                },
+                minItems: 30,
+                maxItems: 40
+            }
 
-Task: Find 35 schools similar to "${searchSchool}" and categorize them for this athlete.
+            // 2026 Gemini 3 Standards: systemInstruction with JSON schema
+            const systemInstruction = `You are an elite Collegiate Recruiting Advisor with expert knowledge of NCAA athletics, academic requirements, and geographic regions.
 
-ATHLETE PROFILE:
-- Position: ${sanitizeInput(athleteProfile?.position) || 'Unknown'}
-- Sport: ${sanitizeInput(athleteProfile?.sport) || 'Unknown'}
-- GPA: ${sanitizeInput(athleteProfile?.gpa) || 'Not provided'}
-- Academic Tier Preference: ${sanitizeInput(athleteProfile?.academicTier) || 'selective'}
-- Home Location: ${sanitizeInput(athleteProfile?.location) || 'Unknown'}
-- Search Preference: ${sanitizeInput(athleteProfile?.searchPreference) || 'regional'}
-- Graduation Year: ${sanitizeInput(athleteProfile?.gradYear) || 'Unknown'}
+OUTPUT FORMAT:
+Return ONLY a valid JSON array matching this schema:
+${JSON.stringify(SCHOOL_SCHEMA, null, 2)}
 
 CATEGORIZATION RULES:
-1. **REACH (10-12 schools):** More competitive than athlete's profile. Higher academic standards or elite athletics. Worth pursuing with strong performance.
+1. REACH (10-12 schools): More competitive than athlete's profile. Higher academic standards or elite athletics.
+2. TARGET (12-15 schools): Good fit for current profile. Similar academic/athletic level. Realistic admissions.
+3. SOLID (10-12 schools): Less competitive options. Strong programs with likely serious interest.
 
-2. **TARGET (12-15 schools):** Good fit for current profile. Similar academic/athletic level to "${searchSchool}". Realistic admissions.
-
-3. **SOLID (10-12 schools):** Less competitive options. Strong programs where athlete will likely get serious interest. Reliable fallback options.
-
-IMPORTANT: Generate schools from DIFFERENT REGIONS than "${searchSchool}" to broaden the athlete's horizons.
-
-For each school provide:
-- school_name: Full official name
-- category: "reach" | "target" | "solid"
-- conference: e.g., "Big Ten", "SEC", "ACC"
-- division: "D1", "D2", "D3", "NAIA"
-- distance_miles: Approximate distance from ${athleteProfile?.location || 'athlete location'}
-- atomic_region: e.g., "West Coast", "Midwest", "Northeast", "Southeast", "Southwest"
-- athletic_level: "Elite" | "Highly Competitive" | "Competitive" | "Developing"
-- academic_selectivity: "Highly Selective" | "Selective" | "Moderately Selective" | "Less Selective"
-- gpa_requirement: Typical minimum GPA (number like 3.5)
-- insight: One compelling sentence on why this school is a good match (mention conference similarities, program strength, or unique opportunity)
-
-OUTPUT: Valid JSON array only. No markdown, no extra text.
-`
+REQUIREMENTS:
+- Include schools from DIFFERENT REGIONS to broaden horizons
+- Each insight should be one compelling sentence explaining the match
+- Use accurate conference and division information
+- Distance estimates should be reasonable based on athlete location`
 
             const genAI = getGenAI()
             if (!genAI) throw new Error("Gemini API Key missing")
 
             const model = genAI.getGenerativeModel({
                 model: "gemini-3-flash-preview",
-                generationConfig: { responseMimeType: "application/json" }
-            }, { apiVersion: "v1" })
+                systemInstruction,
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    temperature: 1.0
+                }
+            }, { apiVersion: "v1beta" })
+
+            // Context first, then instruction (2026 long-context optimization)
+            const prompt = `CONTEXT (Athlete Profile):
+- Reference School: ${searchSchool}
+- Position: ${sanitizeInput(athleteProfile?.position) || 'Unknown'}
+- Sport: ${sanitizeInput(athleteProfile?.sport) || 'Unknown'}
+- GPA: ${sanitizeInput(athleteProfile?.gpa) || 'Not provided'}
+- Academic Tier: ${sanitizeInput(athleteProfile?.academicTier) || 'selective'}
+- Home Location: ${sanitizeInput(athleteProfile?.location) || 'Unknown'}
+- Search Preference: ${sanitizeInput(athleteProfile?.searchPreference) || 'regional'}
+- Graduation Year: ${sanitizeInput(athleteProfile?.gradYear) || 'Unknown'}
+
+INSTRUCTION:
+Find 35 schools similar to "${searchSchool}" and categorize them as reach, target, or solid based on this athlete's profile.`
 
             const result = await callGeminiWithRetry(model, prompt)
             const response = await result.response
