@@ -404,14 +404,11 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
         try {
             // Sanitize numeric fields
             const distanceMiles = parseInt(school.distance_miles, 10)
-            const gpaRequirement = parseFloat(school.gpa_requirement)
+            const gpaValue = parseFloat(school.gpa_requirement)
 
             // Determine targeting
             const targetAthleteId = isImpersonating ? activeAthlete?.id : user?.id
             if (!targetAthleteId) throw new Error("No target athlete found")
-
-            // Determine approval status
-            const approvalStatus = isImpersonating ? 'pending' : 'approved'
 
             const { error } = await supabase
                 .from('athlete_saved_schools')
@@ -424,15 +421,14 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
                     distance_miles: isNaN(distanceMiles) ? null : distanceMiles,
                     athletic_level: school.athletic_level,
                     academic_selectivity: school.academic_selectivity,
-                    gpa_requirement: isNaN(gpaRequirement) ? null : gpaRequirement,
-                    insight: school.insight,
-                    added_by: user.id,
-                    approval_status: approvalStatus
+                    gpa: isNaN(gpaValue) ? null : gpaValue,
+                    insight: school.insight
                 })
 
             if (error) {
+                // Handle Duplicate Entry (Schema 23505 Unique Violation)
                 if (error.code === '23505') {
-                    alert('This school is already in your list!')
+                    toast.error(`${school.school_name} is already in your My List.`)
                     return
                 }
                 throw error
@@ -441,8 +437,6 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
             // Update local state
             const schoolWithStatus = {
                 ...school,
-                approval_status: approvalStatus,
-                added_by: user.id,
                 athlete_id: targetAthleteId
             }
             setSavedSchools(prev => ({
@@ -450,11 +444,11 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
                 [school.category]: [...prev[school.category], schoolWithStatus]
             }))
 
-            alert(isImpersonating ? `Suggestion for ${school.school_name} sent to athlete!` : `${school.school_name} added to your list!`)
+            toast.success(isImpersonating ? `Suggestion for ${school.school_name} sent to athlete!` : `${school.school_name} added to your list!`)
 
         } catch (error) {
-            console.error("Error saving school:", error)
-            alert('Failed to add school: ' + error.message)
+            console.error("[RecruitingCompass] Error saving school (Code: " + error.code + "):", error)
+            toast.error('Failed to add school: ' + (error.message || 'Unknown database error'))
         }
     }
 

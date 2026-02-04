@@ -7,4 +7,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Missing Supabase environment variables')
 }
 
+// Diagnostic Logging (2026 Dev Environment verification)
+if (import.meta.env.DEV) {
+    console.log('[Supabase] Initializing with URL:', supabaseUrl)
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
