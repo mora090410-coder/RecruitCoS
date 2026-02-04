@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { useProfile } from '../contexts/ProfileContext'
+import { useProfile } from '../hooks/useProfile'
 import { Button } from '../components/ui/button'
 import {
     ChevronRight, ChevronLeft, User, Trophy, MapPin,
@@ -37,14 +37,14 @@ const SEARCH_PREFERENCES = [
 
 export default function ProfileSetup() {
     const { signUp, user } = useAuth()
-    const { athleteProfile, loading: checkingProfile, accessibleAthletes, refreshProfile } = useProfile()
+    const { athleteProfile, accessibleAthletes, refreshProfile } = useProfile()
     const navigate = useNavigate()
     const [step, setStep] = useState(1)
     const [loading, setLoading] = useState(false)
     const [completed, setCompleted] = useState(false)
     const [error, setError] = useState(null)
 
-    // Onboarding Guard: Handled by App.jsx Traffic Controller now
+
 
     // Form State
     const [formData, setFormData] = useState({
@@ -547,20 +547,7 @@ export default function ProfileSetup() {
 
     // --- Render ---
 
-    if (checkingProfile) {
-        return (
-            <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-4">
-                <div className="w-12 h-12 relative mb-8">
-                    <div className="absolute inset-0 border-4 border-zinc-900 rounded-full"></div>
-                    <div className="absolute inset-0 border-4 border-green-500 rounded-full border-t-transparent animate-spin"></div>
-                </div>
-                <div className="space-y-2 text-center">
-                    <h2 className="text-xl font-bold text-white tracking-tight animate-pulse">Setting up your Command Center...</h2>
-                    <p className="text-zinc-500 text-sm">Verifying athlete credentials</p>
-                </div>
-            </div>
-        )
-    }
+
 
     // Completion Screen (Step 8 equivalent)
     if (completed) {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { ChevronLeft, Plus, Zap, Heart } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
-import { useProfile } from '../../contexts/ProfileContext'
+import { useProfile } from '../../hooks/useProfile'
 import { Button } from '../ui/button'
 import { supabase } from '../../lib/supabase'
 import { SCHOOL_STATUSES, STATUS_CONFIG } from '../../lib/constants'

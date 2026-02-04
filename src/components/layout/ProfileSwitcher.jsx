@@ -1,5 +1,5 @@
 import { useAuth } from '../../contexts/AuthContext'
-import { useProfile } from '../../contexts/ProfileContext'
+import { useProfile } from '../../hooks/useProfile'
 import {
     DropdownMenu,
     DropdownMenuContent,

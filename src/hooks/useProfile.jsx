@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import { useAuth } from './AuthContext'
+import { useAuth } from '../contexts/AuthContext'
 
 const ProfileContext = createContext({})
 
@@ -105,11 +105,12 @@ export const ProfileProvider = ({ children }) => {
         athleteProfile,
         loading: profileLoading,
 
-        // Stage 1 Audit Standard Names
+        // Standardized Audit Names
         profile: athleteProfile,
         hasProfile: !!athleteProfile,
         isProfileLoading: profileLoading,
 
+        // Access Control
         accessibleAthletes,
         activeAthlete,
         error,

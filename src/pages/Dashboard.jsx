@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { useProfile } from '../contexts/ProfileContext'
+import { useProfile } from '../hooks/useProfile'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import DashboardLayout from '../components/DashboardLayout'
@@ -17,7 +17,7 @@ export default function Dashboard() {
     const navigate = useNavigate()
     const [coaches, setCoaches] = useState([])
     const { user } = useAuth()
-    const { activeAthlete, isImpersonating } = useProfile()
+    const { activeAthlete, isImpersonating, profile } = useProfile()
     const [stats, setStats] = useState({ eventCount: 0 })
     const [posts, setPosts] = useState([])
     const [activeTab, setActiveTab] = useState('All Sources') // Visual state for tabs
@@ -29,48 +29,44 @@ export default function Dashboard() {
 
     useEffect(() => {
         async function fetchData() {
-            // Fetch coaches (initial load)
-            await loadCoaches(1)
-
-            // Determine which athlete ID to use
+            // 1. Determine which athlete to view
+            // If impersonating, use the active athlete from context.
+            // Otherwise, use our own profile (which we know exists because of App.jsx guard).
             let targetAthleteId = null
             let targetGradYear = null
 
             if (isImpersonating && activeAthlete) {
                 targetAthleteId = activeAthlete.id
                 targetGradYear = activeAthlete.grad_year
-            } else {
-                const { data: athlete, error } = await supabase.from('athletes').select('id, grad_year').eq('user_id', user.id).single()
-                if (error || !athlete) {
-                    // Redirect handled by Global Traffic Controller now
-                    return
-                }
-                targetAthleteId = athlete.id
-                targetGradYear = athlete.grad_year
+            } else if (profile) {
+                targetAthleteId = profile.id
+                targetGradYear = profile.grad_year
             }
 
-            // Calculate Phase
+            if (!targetAthleteId) return
+
+            // 2. Fetch Coaches (Initial Load)
+            await loadCoaches(1)
+
+            // 3. Calculate Phase
             const currentPhase = getAthletePhase(targetGradYear)
             setPhase(currentPhase)
 
-            if (targetAthleteId) {
-                // Get Stats
-                const { count } = await supabase.from('events').select('*', { count: 'exact', head: true }).eq('athlete_id', targetAthleteId)
-                setStats({ eventCount: count || 0 })
+            // 4. Get Stats & Recent Posts
+            const { count } = await supabase.from('events').select('*', { count: 'exact', head: true }).eq('athlete_id', targetAthleteId)
+            setStats({ eventCount: count || 0 })
 
-                // Get Recent Posts
-                const { data: recentPosts } = await supabase
-                    .from('posts')
-                    .select('*, events(event_name, event_date)')
-                    .eq('athlete_id', targetAthleteId)
-                    .order('created_at', { ascending: false })
-                    .limit(10)
+            const { data: recentPosts } = await supabase
+                .from('posts')
+                .select('*, events(event_name, event_date)')
+                .eq('athlete_id', targetAthleteId)
+                .order('created_at', { ascending: false })
+                .limit(10)
 
-                setPosts(recentPosts || [])
-            }
+            setPosts(recentPosts || [])
         }
-        if (user) fetchData()
-    }, [user, activeAthlete, isImpersonating, navigate])
+        if (user && (profile || (isImpersonating && activeAthlete))) fetchData()
+    }, [user, profile, activeAthlete, isImpersonating, navigate])
 
     // Load AI Insight
     useEffect(() => {
@@ -83,11 +79,11 @@ export default function Dashboard() {
                 let targetAthleteId = null
                 if (isImpersonating && activeAthlete) {
                     targetAthleteId = activeAthlete.id
-                } else {
-                    const { data: athlete } = await supabase.from('athletes').select('id').eq('user_id', user.id).single()
-                    if (!athlete) return
-                    targetAthleteId = athlete.id
+                } else if (profile) {
+                    targetAthleteId = profile.id
                 }
+
+                if (!targetAthleteId) return
 
                 // 2. Get saved schools with interactions
                 const { data: savedSchools } = await supabase

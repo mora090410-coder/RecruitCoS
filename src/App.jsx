@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
-import { ProfileProvider, useProfile } from './contexts/ProfileContext'
+import { ProfileProvider, useProfile } from './hooks/useProfile'
 import AppLoading from './components/AppLoading'
 
 // Pages

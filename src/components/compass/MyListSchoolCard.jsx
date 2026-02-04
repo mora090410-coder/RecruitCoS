@@ -4,7 +4,7 @@ import StatusDropdown from './StatusDropdown'
 import { formatDistanceToNow } from 'date-fns'
 import SignalMeter from '../crm/SignalMeter'
 import { useAuth } from '../../contexts/AuthContext'
-import { useProfile } from '../../contexts/ProfileContext'
+import { useProfile } from '../../hooks/useProfile'
 
 export default function MyListSchoolCard({
     school, // This is the saved school record 

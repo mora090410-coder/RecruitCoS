@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { useProfile } from '../contexts/ProfileContext'
+import { useProfile } from '../hooks/useProfile'
 import DashboardLayout from '../components/DashboardLayout'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getGenAI, callGeminiWithRetry } from '../lib/gemini'
