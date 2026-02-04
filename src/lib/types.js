@@ -11,7 +11,7 @@
  * @property {string} [city]
  * @property {string} [state]
  * @property {string} [academic_tier]
- * @property {string} [dream_school]
+ * @property {{division_priority: string, geographic_preference: string, academic_interest: string, primary_objective: string, north_star?: string}} [goals] - Recruiting goals
  * @property {string[]} [target_divisions]
  * @property {boolean} [onboarding_completed]
  * @property {string} [created_at]

@@ -64,7 +64,7 @@ export default function RecruitingCompass() {
             // Load profile
             const { data: athlete, error: athleteError } = await supabase
                 .from('athletes')
-                .select('id, name, position, sport, grad_year, gpa, city, state, dream_school, academic_tier, search_preference, latitude, longitude')
+                .select('id, name, position, sport, grad_year, gpa, city, state, goals, academic_tier, search_preference, latitude, longitude')
                 .eq('id', user.id)
                 .single()
 
@@ -74,7 +74,7 @@ export default function RecruitingCompass() {
             }
 
             if (athlete) {
-                if (import.meta.env.DEV) console.log('🎯 Loaded dream_school from DB:', athlete.dream_school)
+                if (import.meta.env.DEV) console.log('🎯 Loaded goals from DB:', athlete.goals)
                 setAthleteProfile({
                     id: athlete.id,
                     name: athlete.name || 'Athlete',
@@ -85,13 +85,13 @@ export default function RecruitingCompass() {
                     academicTier: athlete.academic_tier || 'selective',
                     searchPreference: athlete.search_preference || 'regional',
                     location: [athlete.city, athlete.state].filter(Boolean).join(', ') || 'Unknown',
-                    dreamSchool: athlete.dream_school || '', // Store persistent DB value
+                    goals: athlete.goals || {},
                     lat: athlete.latitude,
                     lng: athlete.longitude
                 })
-                if (athlete.dream_school) {
-                    if (import.meta.env.DEV) console.log('🎯 Setting dreamSchool state to:', athlete.dream_school)
-                    setDreamSchool(athlete.dream_school)
+                if (athlete.goals?.north_star) {
+                    if (import.meta.env.DEV) console.log('🎯 Setting state from goals:', athlete.goals.north_star)
+                    setDreamSchool(athlete.goals.north_star)
                 }
 
                 // Initialize filters based on athlete profile preference
@@ -203,10 +203,11 @@ export default function RecruitingCompass() {
             // CACHE CHECK
             // Generate a simple key based on school and user's primary characteristics
             // Ideally we'd hash the whole profile, but user requested dream_school + athlete_id
-            const queryKey = `${searchSchool}_${JSON.stringify({
+            const queryKey = `strategic_${JSON.stringify({
                 sport: athleteProfile?.sport,
                 gpa: athleteProfile?.gpa,
-                tier: athleteProfile?.academicTier
+                goals: athleteProfile?.goals,
+                search_school: searchSchool
             })}`.replace(/\s+/g, '_').toLowerCase()
 
             if (user?.id) {
@@ -253,22 +254,20 @@ export default function RecruitingCompass() {
             }
 
             // 2026 Gemini 3 Standards: systemInstruction with JSON schema
-            const systemInstruction = `You are an elite Collegiate Recruiting Advisor with expert knowledge of NCAA athletics, academic requirements, and geographic regions.
-
+            const systemInstruction = `You are an elite Collegiate Recruiting Advisor.
+            
 OUTPUT FORMAT:
 Return ONLY a valid JSON array matching this schema:
 ${JSON.stringify(SCHOOL_SCHEMA, null, 2)}
 
 CATEGORIZATION RULES:
-1. REACH (10-12 schools): More competitive than athlete's profile. Higher academic standards or elite athletics.
-2. TARGET (12-15 schools): Good fit for current profile. Similar academic/athletic level. Realistic admissions.
-3. SOLID (10-12 schools): Less competitive options. Strong programs with likely serious interest.
+1. REACH (10-12 schools): More competitive than athlete's profile.
+2. TARGET (12-15 schools): Good fit for current profile.
+3. SOLID (10-12 schools): Likely serious interest.
 
-REQUIREMENTS:
-- Include schools from DIFFERENT REGIONS to broaden horizons
-- Each insight should be one compelling sentence explaining the match
-- Use accurate conference and division information
-- Distance estimates should be reasonable based on athlete location`
+IMPORTANT INSTRUCTION:
+Instead of finding schools similar to one name, find 35 schools that best satisfy the provided athlete goals. 
+If the objective is 'Playing Time', prioritize high-tier D2/D3/NAIA schools where the athlete's GPA and stats would place them in the top 10% of recruits (meaning the school's average requirements are significantly lower than the athlete's profile).`
 
             const genAI = getGenAI()
             if (!genAI) throw new Error("Gemini API Key missing")
@@ -283,18 +282,24 @@ REQUIREMENTS:
             }, { apiVersion: "v1beta" })
 
             // Context first, then instruction (2026 long-context optimization)
-            const prompt = `CONTEXT (Athlete Profile):
-- Reference School: ${searchSchool}
+            const prompt = `STRATEGIC RECRUITMENT PARAMETERS:
+Athlete Profile:
 - Position: ${sanitizeInput(athleteProfile?.position) || 'Unknown'}
 - Sport: ${sanitizeInput(athleteProfile?.sport) || 'Unknown'}
 - GPA: ${sanitizeInput(athleteProfile?.gpa) || 'Not provided'}
 - Academic Tier: ${sanitizeInput(athleteProfile?.academicTier) || 'selective'}
 - Home Location: ${sanitizeInput(athleteProfile?.location) || 'Unknown'}
-- Search Preference: ${sanitizeInput(athleteProfile?.searchPreference) || 'regional'}
-- Graduation Year: ${sanitizeInput(athleteProfile?.gradYear) || 'Unknown'}
+
+ATHLETE GOALS:
+${JSON.stringify({
+                north_star: athleteProfile?.goals?.north_star || searchSchool,
+                division_priority: athleteProfile?.goals?.division_priority || 'any',
+                academic_interest: athleteProfile?.goals?.academic_interest || 'General',
+                primary_objective: athleteProfile?.goals?.primary_objective || 'prestige'
+            }, null, 2)}
 
 INSTRUCTION:
-Find 35 schools similar to "${searchSchool}" and categorize them as reach, target, or solid based on this athlete's profile.`
+Find 35 schools that best satisfy these athlete goals. Focus on the 'primary_objective' to weigh the results.`
 
             // Clear retry status before starting
             setRetryStatus(null)
@@ -367,27 +372,24 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
         }
     }
 
-    // Explore based on profile (uses profile data instead of dream school)
+    // Explore based on strategic goals
     const handleExploreProfile = async () => {
-        console.log('handleExploreProfile triggered')
+        console.log('handleExploreProfile (Strategic) triggered')
 
-        // 1. PRIORITY: Check for Existing Dream School in DB PROFILE (Source of Truth)
-        // We use the DB value if available to ensure "Michigan" bug doesn't happen for users who set a school.
-        if (athleteProfile?.dreamSchool && athleteProfile.dreamSchool.trim() !== '') {
-            console.log('Using persistent DB dream school:', athleteProfile.dreamSchool)
-            setDreamSchool(athleteProfile.dreamSchool) // Sync UI
-            await handleSearch(athleteProfile.dreamSchool)
+        // Priority 1: Use North Star from Goals
+        if (athleteProfile?.goals?.north_star) {
+            console.log('Using North Star from goals:', athleteProfile.goals.north_star)
+            await handleSearch(athleteProfile.goals.north_star)
             return
         }
 
-        // 2. Check current UI state (fallback if profile not loaded or empty)
+        // Priority 2: Use current UI input
         if (dreamSchool && dreamSchool.trim() !== '') {
-            console.log('Using current UI input dream school:', dreamSchool)
             await handleSearch(dreamSchool)
             return
         }
 
-        // 3. Fallback: Use a representative school based on their academic tier
+        // Priority 3: Strategic default based on Academic Tier
         const representativeSchools = {
             'highly_selective': 'Stanford University',
             'selective': 'University of Michigan',
@@ -397,9 +399,6 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
 
         const tier = athleteProfile?.academicTier || 'selective'
         const representativeSchool = representativeSchools[tier] || 'University of Michigan'
-
-        console.log('No dream school set in profile or UI. Using fallback:', representativeSchool)
-        setDreamSchool(representativeSchool)
         await handleSearch(representativeSchool)
     }
 

@@ -73,13 +73,19 @@ export default function ProfileSetup() {
         // Step 4: Geographic
         locationCity: '',
         locationState: '',
-        searchPreference: 'regional',
+        searchPreference: 'national',
 
         // Step 5: Recruiting Level
         targetDivisions: [],
 
-        // Step 6: Dream School
-        dreamSchool: '',
+        // Step 6: Strategic Goals
+        goals: {
+            northStar: '',
+            divisionPriority: 'any',
+            geographicPreference: 'national',
+            academicInterest: '',
+            primaryObjective: 'prestige' // 'playing_time' or 'prestige'
+        },
 
         // Step 7: Account
         email: '',
@@ -196,7 +202,13 @@ export default function ProfileSetup() {
                 search_preference: formData.searchPreference,
                 distance_preference: formData.searchPreference,
                 target_divisions: formData.targetDivisions,
-                dream_school: formData.dreamSchool?.trim() || null,
+                goals: {
+                    north_star: formData.goals.northStar.trim(),
+                    division_priority: formData.goals.divisionPriority,
+                    geographic_preference: formData.searchPreference,
+                    academic_interest: formData.goals.academicInterest.trim(),
+                    primary_objective: formData.goals.primaryObjective
+                },
                 onboarding_completed: true
             }
 
@@ -450,45 +462,96 @@ export default function ProfileSetup() {
     )
 
     const renderStep6 = () => (
-        <div className="space-y-6 animate-in fade-in slide-in-from-right duration-300">
+        <div className="space-y-8 animate-in fade-in slide-in-from-right duration-300">
             <div className="flex items-center gap-2 text-green-400 mb-4">
                 <Sparkles className="w-5 h-5" />
-                <span className="text-sm font-semibold uppercase tracking-wider">Dream School</span>
+                <span className="text-sm font-semibold uppercase tracking-wider">Strategic Goals</span>
             </div>
 
-            <div className="space-y-2">
-                <h2 className="text-xl font-bold text-white">What's your dream school?</h2>
-                <p className="text-zinc-400 text-sm">
-                    Think of one school you'd love to attend—we'll use it to find similar options.
-                </p>
-            </div>
+            <div className="space-y-6">
+                {/* Division Priority Toggle */}
+                <div className="space-y-3">
+                    <label className="text-zinc-400 text-sm font-medium">Division Priority</label>
+                    <div className="grid grid-cols-4 gap-2">
+                        {['Any', 'D1', 'D2', 'D3'].map(div => (
+                            <button
+                                key={div}
+                                type="button"
+                                onClick={() => setFormData({
+                                    ...formData,
+                                    goals: { ...formData.goals, divisionPriority: div.toLowerCase() }
+                                })}
+                                className={`py-2 rounded-lg text-sm font-bold transition-all border-2 ${formData.goals.divisionPriority === div.toLowerCase()
+                                    ? 'bg-zinc-800 border-green-400 text-green-400'
+                                    : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700'
+                                    }`}
+                            >
+                                {div}
+                            </button>
+                        ))}
+                    </div>
+                </div>
 
-            <div className="space-y-2 pt-4">
-                <input
-                    type="text"
-                    className="w-full bg-zinc-800 border-none rounded-lg p-4 text-white text-lg focus:ring-2 focus:ring-green-400 outline-none"
-                    placeholder="e.g. Duke University"
-                    value={formData.dreamSchool}
-                    onChange={e => setFormData({ ...formData, dreamSchool: e.target.value })}
-                />
-                <p className="text-xs text-zinc-500">
-                    Popular: Stanford • Ohio State • UCLA • Michigan
-                </p>
-            </div>
+                {/* Choice for Primary Objective */}
+                <div className="space-y-4">
+                    <label className="text-zinc-400 text-sm font-medium">Primary Recruiting Objective</label>
+                    <div className="grid grid-cols-2 gap-4">
+                        {[
+                            { id: 'prestige', label: 'Program Prestige', icon: '🏛️', sub: 'Elite brands & D1 legacy' },
+                            { id: 'playing_time', label: 'Early Playing Time', icon: '⚡', sub: 'Impact player from Day 1' }
+                        ].map(obj => (
+                            <button
+                                key={obj.id}
+                                type="button"
+                                onClick={() => setFormData({
+                                    ...formData,
+                                    goals: { ...formData.goals, primaryObjective: obj.id }
+                                })}
+                                className={`p-4 rounded-xl text-left transition-all border-2 ${formData.goals.primaryObjective === obj.id
+                                    ? 'bg-zinc-800 border-green-400 shadow-[0_0_15px_rgba(74,222,128,0.2)]'
+                                    : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700'
+                                    }`}
+                            >
+                                <span className="text-2xl block mb-2">{obj.icon}</span>
+                                <div className={`font-bold ${formData.goals.primaryObjective === obj.id ? 'text-green-400' : 'text-white'}`}>
+                                    {obj.label}
+                                </div>
+                                <p className="text-[10px] text-zinc-500 mt-1 leading-tight">{obj.sub}</p>
+                            </button>
+                        ))}
+                    </div>
+                </div>
 
-            <div className="bg-zinc-900/50 p-4 rounded-xl border border-dashed border-zinc-800">
-                <p className="text-zinc-400 text-sm text-center">
-                    Don't have one? No problem.
-                </p>
-                <button
-                    onClick={() => {
-                        setFormData({ ...formData, dreamSchool: '' })
-                        handleNext()
-                    }}
-                    className="w-full mt-2 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
-                >
-                    Skip for Now
-                </button>
+                {/* Academic Interest */}
+                <div className="space-y-2">
+                    <label className="text-zinc-400 text-sm font-medium">Academic Interest / Major</label>
+                    <input
+                        type="text"
+                        className="w-full bg-zinc-800 border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-green-400 outline-none"
+                        placeholder="e.g. Business, Engineering, Sports Management"
+                        value={formData.goals.academicInterest}
+                        onChange={e => setFormData({
+                            ...formData,
+                            goals: { ...formData.goals, academicInterest: e.target.value }
+                        })}
+                    />
+                </div>
+
+                {/* North Star (Renamed from Dream School) */}
+                <div className="space-y-2">
+                    <label className="text-zinc-400 text-sm font-medium">The "North Star" School</label>
+                    <input
+                        type="text"
+                        className="w-full bg-zinc-800 border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-green-400 outline-none"
+                        placeholder="e.g. Duke University"
+                        value={formData.goals.northStar}
+                        onChange={e => setFormData({
+                            ...formData,
+                            goals: { ...formData.goals, northStar: e.target.value }
+                        })}
+                    />
+                    <p className="text-[10px] text-zinc-500">A school that sets the standard for your recruitment.</p>
+                </div>
             </div>
         </div>
     )

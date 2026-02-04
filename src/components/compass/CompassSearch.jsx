@@ -53,51 +53,99 @@ export default function CompassSearch({
                 </div>
             )}
 
-            {/* Search Input */}
-            <div className="w-full max-w-lg mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
-                    Start with a school you're interested in:
-                </label>
-                <div className="relative">
-                    <input
-                        type="text"
-                        value={dreamSchool}
-                        onChange={(e) => setDreamSchool(e.target.value)}
-                        placeholder="University of Texas"
-                        className="w-full p-4 pr-12 text-lg border-2 border-gray-200 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all"
-                    />
-                    <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                </div>
-            </div>
+            {/* Strategic Summary Card */}
+            {athleteProfile?.goals ? (
+                <div className="w-full max-w-lg mb-8 p-6 bg-white rounded-2xl border-2 border-brand-primary/10 shadow-xl shadow-brand-primary/5 text-left animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex justify-between items-start mb-4">
+                        <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                            <Target className="w-5 h-5 text-brand-primary" />
+                            STRATEGIC RECRUITMENT SUMMARY
+                        </h3>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.location.href = '/profile-setup'}
+                            className="text-[10px] uppercase font-bold text-brand-primary h-6"
+                        >
+                            Adjust Goals
+                        </Button>
+                    </div>
 
-            {/* Popular Picks */}
-            <div className="mb-8">
-                <span className="text-sm text-gray-500">Popular: </span>
-                {POPULAR_SCHOOLS.map((school, idx) => (
-                    <button
-                        key={school}
-                        onClick={() => handleQuickPick(school)}
-                        className="text-sm text-brand-primary hover:text-brand-secondary hover:underline mx-1"
-                    >
-                        {school}{idx < POPULAR_SCHOOLS.length - 1 && ' •'}
-                    </button>
-                ))}
-            </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Division Priority</p>
+                            <p className="text-sm font-bold text-gray-700 capitalize">
+                                {athleteProfile.goals.division_priority || 'Universal'}
+                            </p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">North Star School</p>
+                            <p className="text-sm font-bold text-gray-700">
+                                {athleteProfile.goals.north_star || 'Not Specified'}
+                            </p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Primary Objective</p>
+                            <p className="text-sm font-bold text-gray-700 capitalize">
+                                {athleteProfile.goals.primary_objective === 'playing_time' ? 'Early Impact' : 'Program Prestige'}
+                            </p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Academic Interest</p>
+                            <p className="text-sm font-bold text-gray-700 truncate">
+                                {athleteProfile.goals.academic_interest || 'General Studies'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                /* Fallback Search Input if no profile/goals */
+                <div className="w-full max-w-lg mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+                        Start with a school you're interested in:
+                    </label>
+                    <div className="relative">
+                        <input
+                            type="text"
+                            value={dreamSchool}
+                            onChange={(e) => setDreamSchool(e.target.value)}
+                            placeholder="University of Texas"
+                            className="w-full p-4 pr-12 text-lg border-2 border-gray-200 rounded-xl focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all"
+                        />
+                        <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    </div>
+                </div>
+            )}
+
+            {/* Popular Picks (Only if no North Star) */}
+            {(!athleteProfile?.goals?.north_star && !dreamSchool) && (
+                <div className="mb-8">
+                    <span className="text-sm text-gray-500">Popular: </span>
+                    {POPULAR_SCHOOLS.map((school, idx) => (
+                        <button
+                            key={school}
+                            onClick={() => handleQuickPick(school)}
+                            className="text-sm text-brand-primary hover:text-brand-secondary hover:underline mx-1"
+                        >
+                            {school}{idx < POPULAR_SCHOOLS.length - 1 && ' •'}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* Primary CTA */}
             <Button
-                onClick={onSearch}
-                disabled={loading || !dreamSchool.trim()}
-                variant={hasEnoughSchools ? "outline" : "default"}
-                className={`w-full max-w-sm h-14 text-lg font-bold rounded-xl shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 mb-6 ${!hasEnoughSchools ? 'bg-brand-primary hover:bg-brand-secondary text-white' : 'border-2 border-brand-primary text-brand-primary hover:bg-brand-primary/5'}`}
+                onClick={onSearch} // handleSearch will handle the logic
+                disabled={loading}
+                className={`w-full max-w-sm h-14 text-lg font-bold rounded-xl shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 mb-6 bg-brand-primary hover:bg-brand-secondary text-white shadow-brand-primary/20`}
             >
                 {loading ? (
                     <span className="flex items-center gap-2">
                         <Sparkles className="w-5 h-5 animate-pulse" />
-                        {retryStatus || 'Finding Schools...'}
+                        {retryStatus || 'Building Blueprint...'}
                     </span>
                 ) : (
-                    hasEnoughSchools ? 'Refine List' : 'Find Similar Schools'
+                    'Generate My Recruiting Blueprint'
                 )}
             </Button>
 
