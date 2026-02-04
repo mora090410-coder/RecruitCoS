@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
-import { ChevronLeft, Plus } from 'lucide-react'
+import { ChevronLeft, Plus, Zap } from 'lucide-react'
 import { Button } from '../ui/button'
 import { supabase } from '../../lib/supabase'
 import { SCHOOL_STATUSES, STATUS_CONFIG } from '../../lib/constants'
 import MyListFilterTabs from './MyListFilterTabs'
 import MyListSchoolCard from './MyListSchoolCard'
 import { CATEGORIES } from './CategoryBadge'
+import { getSchoolHeat } from '../../lib/signalEngine'
 
 export default function MyList({
     savedSchools, // Passed from parent (legacy prop, we'll reload fresh data)
@@ -33,12 +34,18 @@ export default function MyList({
 
             const { data, error } = await supabase
                 .from('athlete_saved_schools')
-                .select('*')
+                .select('*, interactions:athlete_interactions(*)')
                 .eq('athlete_id', currentUser.id)
                 .order('created_at', { ascending: false })
 
             if (error) throw error
-            setSchools(data || [])
+
+            const schoolsWithHeat = (data || []).map(school => ({
+                ...school,
+                heat: getSchoolHeat(school.interactions || [])
+            }))
+
+            setSchools(schoolsWithHeat)
         } catch (error) {
             console.error('Error loading my list:', error)
         } finally {
@@ -99,10 +106,14 @@ export default function MyList({
 
     // Group by category for display
     const groupedSchools = useMemo(() => {
+        const highMatch = filteredSchools.filter(s => s.heat && s.heat.bars >= 4)
+        const others = filteredSchools.filter(s => !s.heat || s.heat.bars < 4)
+
         return {
-            reach: filteredSchools.filter(s => s.category === 'reach'),
-            target: filteredSchools.filter(s => s.category === 'target'),
-            solid: filteredSchools.filter(s => s.category === 'solid')
+            highSignal: highMatch,
+            reach: others.filter(s => s.category === 'reach'),
+            target: others.filter(s => s.category === 'target'),
+            solid: others.filter(s => s.category === 'solid')
         }
     }, [filteredSchools])
 
@@ -110,10 +121,10 @@ export default function MyList({
     const targetCount = 20
     const progress = Math.min((totalCount / targetCount) * 100, 100)
 
-    const renderCategorySection = (categoryId, categorySchools) => {
+    const renderCategorySection = (categoryId, categorySchools, customConfig = null) => {
         if (categorySchools.length === 0) return null
 
-        const config = CATEGORIES[categoryId]
+        const config = customConfig || CATEGORIES[categoryId]
         const Icon = config.icon
 
         return (
@@ -139,6 +150,20 @@ export default function MyList({
                 </div>
             </div>
         )
+    }
+
+    const renderHighSignalSection = () => {
+        if (!groupedSchools.highSignal || groupedSchools.highSignal.length === 0) return null
+
+        const config = {
+            label: 'High Signal',
+            icon: Zap,
+            bgClass: 'bg-cyan-50',
+            iconClass: 'text-cyan-600',
+            borderClass: 'border-cyan-200'
+        }
+
+        return renderCategorySection('highSignal', groupedSchools.highSignal, config)
     }
 
     if (loading) {
@@ -217,6 +242,7 @@ export default function MyList({
             )}
 
             {/* Schools List - Grouped by Category */}
+            {renderHighSignalSection()}
             {renderCategorySection('reach', groupedSchools.reach)}
             {renderCategorySection('target', groupedSchools.target)}
             {renderCategorySection('solid', groupedSchools.solid)}

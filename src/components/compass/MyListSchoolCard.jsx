@@ -2,6 +2,7 @@ import { Eye, Trash2 } from 'lucide-react'
 import { Button } from '../ui/button'
 import StatusDropdown from './StatusDropdown'
 import { formatDistanceToNow } from 'date-fns'
+import SignalMeter from '../crm/SignalMeter'
 
 export default function MyListSchoolCard({
     school, // This is the saved school record 
@@ -27,7 +28,7 @@ export default function MyListSchoolCard({
                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-bold text-lg text-gray-900">{school.school_name}</h3>
-                        {/* Optional badges could go here */}
+                        <SignalMeter heat={school.heat} />
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                         <span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-medium">{school.division}</span>

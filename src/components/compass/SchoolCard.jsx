@@ -1,6 +1,7 @@
 import { Zap, GraduationCap, MapPin, Plus, Check } from 'lucide-react'
 import { Button } from '../ui/button'
 import { CATEGORIES, CategoryBadge } from './CategoryBadge'
+import SignalMeter from '../crm/SignalMeter'
 
 export default function SchoolCard({
     school,
@@ -17,7 +18,10 @@ export default function SchoolCard({
             <div className="flex justify-between items-start mb-3">
                 <div>
                     <CategoryBadge category={category} className="mb-2" />
-                    <h3 className="text-lg font-bold text-gray-900">{school.school_name}</h3>
+                    <div className="flex items-center justify-between gap-2">
+                        <h3 className="text-lg font-bold text-gray-900 truncate">{school.school_name}</h3>
+                        <SignalMeter heat={school.heat} />
+                    </div>
                     <p className="text-sm text-gray-500">{school.conference} • {school.division}</p>
                 </div>
             </div>

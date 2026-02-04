@@ -6,6 +6,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getGenAI, callGeminiWithRetry } from '../lib/gemini'
 import { calculateDistance } from '../lib/utils'
 import { sanitizeInput } from '../lib/security'
+import { getSchoolHeat } from '../lib/signalEngine'
 
 // Screen Components
 import CompassSearch from '../components/compass/CompassSearch'
@@ -92,14 +93,19 @@ export default function RecruitingCompass() {
             // Load saved schools
             const { data: saved } = await supabase
                 .from('athlete_saved_schools')
-                .select('*')
+                .select('*, interactions:athlete_interactions(*)')
                 .eq('athlete_id', user.id)
 
             if (saved) {
+                const schoolsWithHeat = saved.map(school => ({
+                    ...school,
+                    heat: getSchoolHeat(school.interactions || [])
+                }))
+
                 const grouped = {
-                    reach: saved.filter(s => s.category === 'reach'),
-                    target: saved.filter(s => s.category === 'target'),
-                    solid: saved.filter(s => s.category === 'solid')
+                    reach: schoolsWithHeat.filter(s => s.category === 'reach'),
+                    target: schoolsWithHeat.filter(s => s.category === 'target'),
+                    solid: schoolsWithHeat.filter(s => s.category === 'solid')
                 }
                 setSavedSchools(grouped)
             }
