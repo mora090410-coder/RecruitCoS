@@ -10,6 +10,7 @@ export default function CategoryOverview({
     onSelectCategory,
     onBack,
     onViewMyList,
+    onFinalize,
     filters,
     onFiltersChange,
     onResetFilters
@@ -138,8 +139,35 @@ export default function CategoryOverview({
                 {renderCategoryCard('solid')}
             </div>
 
+            {/* AI Recommendation Context */}
+            <div className="bg-gray-900 text-white p-8 rounded-2xl shadow-xl mt-8 relative overflow-hidden">
+                <div className="relative z-10 flex flex-col items-center text-center">
+                    <h2 className="text-xl font-bold mb-3">Done discovering?</h2>
+                    <p className="text-gray-400 text-sm mb-6 max-w-sm">
+                        Great work! Once you have at least 5 schools per tier, you're ready to start your outreach campaign.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
+                        <Button
+                            onClick={onViewMyList}
+                            variant="outline"
+                            className="bg-transparent border-white/20 hover:bg-white/10 text-white h-12 px-8"
+                        >
+                            📋 View My Full List
+                        </Button>
+                        <Button
+                            onClick={onFinalize}
+                            className="bg-brand-primary hover:bg-brand-secondary text-white font-bold h-12 px-8 shadow-lg shadow-brand-primary/20"
+                        >
+                            🚀 Finalize My List & Draft Outreach
+                        </Button>
+                    </div>
+                </div>
+                {/* Decorative background element */}
+                <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-brand-primary/10 rounded-full blur-3xl" />
+            </div>
+
             {/* Search Again */}
-            <div className="text-center pt-4">
+            <div className="text-center pt-4 mb-12">
                 <button
                     onClick={onBack}
                     className="text-brand-primary hover:underline text-sm"

@@ -16,6 +16,7 @@ import CategoryOverview from '../components/compass/CategoryOverview'
 import SchoolList from '../components/compass/SchoolList'
 import SchoolDetail from '../components/compass/SchoolDetail'
 import MyList from '../components/compass/MyList'
+import Toast from '../components/ui/Toast'
 
 // Gemini initialization moved inside component
 
@@ -49,6 +50,10 @@ export default function RecruitingCompass() {
     const [profileLoading, setProfileLoading] = useState(true)
     const [searchError, setSearchError] = useState(null)
     const [lastSearchTime, setLastSearchTime] = useState(0)
+
+    // Toast state
+    const [showToast, setShowToast] = useState(false)
+    const [toastConfig, setToastConfig] = useState(null)
 
     // Load athlete profile and saved schools on mount
     useEffect(() => {
@@ -444,7 +449,20 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
                 [school.category]: [...prev[school.category], schoolWithStatus]
             }))
 
-            toast.success(isImpersonating ? `Suggestion for ${school.school_name} sent to athlete!` : `${school.school_name} added to your list!`)
+            toast.success(isImpersonating ? `Suggestion for ${school.school_name} sent to athlete!` : `${school.school_name} added to your list!`, {
+                action: {
+                    label: 'View My List',
+                    onClick: () => setView('mylist')
+                }
+            })
+
+            // Also show our custom toast (requested by user)
+            setToastConfig({
+                message: `${school.school_name} added to your ${school.category} list!`,
+                actionLabel: 'View My List',
+                onAction: () => setView('mylist')
+            })
+            setShowToast(true)
 
         } catch (error) {
             console.error("[RecruitingCompass] Error saving school (Code: " + error.code + "):", error)
@@ -503,10 +521,12 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
                         setDreamSchool={setDreamSchool}
                         onSearch={handleSearch}
                         onExploreProfile={handleExploreProfile}
+                        onViewMyList={() => setView('mylist')}
                         loading={loading}
                         retryStatus={retryStatus}
                         error={searchError}
                         athleteProfile={athleteProfile}
+                        savedSchools={savedSchools}
                     />
                 )
 
@@ -525,6 +545,10 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
                         }}
                         onBack={() => setView('search')}
                         onViewMyList={() => setView('mylist')}
+                        onFinalize={() => {
+                            // Link to Dashboard
+                            window.location.href = '/'
+                        }}
                     />
                 )
 
@@ -540,6 +564,7 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
                             setView('detail')
                         }}
                         onAddToList={handleAddToList}
+                        onViewMyList={() => setView('mylist')}
                         onBack={() => setView('overview')}
                     />
                 )
@@ -549,6 +574,7 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
                     <SchoolDetail
                         school={selectedSchool}
                         onAddToList={handleAddToList}
+                        onViewMyList={() => setView('mylist')}
                         onBack={() => setView('list')}
                         isInList={savedSchoolNames.includes(selectedSchool?.school_name)}
                         athleteId={athleteProfile?.id}
@@ -586,6 +612,16 @@ Find 35 schools similar to "${searchSchool}" and categorize them as reach, targe
                     </div>
                 ) : (
                     renderView()
+                )}
+
+                {/* Custom Toast Notification */}
+                {showToast && toastConfig && (
+                    <Toast
+                        message={toastConfig.message}
+                        actionLabel={toastConfig.actionLabel}
+                        onAction={toastConfig.onAction}
+                        onClose={() => setShowToast(false)}
+                    />
                 )}
             </div>
         </DashboardLayout>

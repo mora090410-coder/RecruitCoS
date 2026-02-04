@@ -10,6 +10,7 @@ export default function SchoolList({
     savedSchoolNames,
     onSelectSchool,
     onAddToList,
+    onViewMyList,
     onBack
 }) {
     const [showCount, setShowCount] = useState(6)
@@ -53,6 +54,7 @@ export default function SchoolList({
                         school={school}
                         onViewDetails={onSelectSchool}
                         onAddToList={onAddToList}
+                        onViewMyList={onViewMyList}
                         isInList={savedSchoolNames.includes(school.school_name)}
                     />
                 ))}

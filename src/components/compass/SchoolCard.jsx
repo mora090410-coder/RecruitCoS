@@ -7,6 +7,7 @@ export default function SchoolCard({
     school,
     onViewDetails,
     onAddToList,
+    onViewMyList,
     isInList = false
 }) {
     const category = school.category || 'target'
@@ -54,14 +55,13 @@ export default function SchoolCard({
                 </Button>
                 <Button
                     size="sm"
-                    className={`flex-1 ${isInList ? 'bg-green-600 hover:bg-green-600' : config.buttonClass}`}
-                    onClick={() => onAddToList(school)}
-                    disabled={isInList}
+                    className={`flex-1 ${isInList ? 'bg-green-600 hover:bg-green-700' : config.buttonClass}`}
+                    onClick={() => isInList ? onViewMyList() : onAddToList(school)}
                 >
                     {isInList ? (
                         <>
                             <Check className="w-4 h-4 mr-1" />
-                            Added
+                            View List
                         </>
                     ) : (
                         <>

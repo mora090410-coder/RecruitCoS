@@ -8,17 +8,33 @@ export default function CompassSearch({
     setDreamSchool,
     onSearch,
     onExploreProfile,
+    onViewMyList,
     loading,
     retryStatus,
     athleteProfile,
-    error
+    error,
+    savedSchools = { reach: [], target: [], solid: [] }
 }) {
     const handleQuickPick = (school) => {
         setDreamSchool(school)
     }
 
+    // Check if any category has 5+ schools
+    const hasEnoughSchools = Object.values(savedSchools).some(list => list.length >= 5)
+    const totalSaved = Object.values(savedSchools).flat().length
+
     return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+            {/* View My List Shortcut (if they have schools) */}
+            {totalSaved > 0 && (
+                <button
+                    onClick={onViewMyList}
+                    className="mb-4 px-4 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium border border-green-100 flex items-center gap-2 hover:bg-green-100 transition-colors animate-in fade-in slide-in-from-top-4"
+                >
+                    📋 {totalSaved} schools in your list. <span className="underline">View My List</span>
+                </button>
+            )}
+
             {/* Hero */}
             <div className="mb-8">
                 <h1 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
@@ -72,7 +88,8 @@ export default function CompassSearch({
             <Button
                 onClick={onSearch}
                 disabled={loading || !dreamSchool.trim()}
-                className="w-full max-w-sm h-14 text-lg bg-brand-primary hover:bg-brand-secondary text-white font-bold rounded-xl shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 mb-6"
+                variant={hasEnoughSchools ? "outline" : "default"}
+                className={`w-full max-w-sm h-14 text-lg font-bold rounded-xl shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 mb-6 ${!hasEnoughSchools ? 'bg-brand-primary hover:bg-brand-secondary text-white' : 'border-2 border-brand-primary text-brand-primary hover:bg-brand-primary/5'}`}
             >
                 {loading ? (
                     <span className="flex items-center gap-2">
@@ -80,7 +97,7 @@ export default function CompassSearch({
                         {retryStatus || 'Finding Schools...'}
                     </span>
                 ) : (
-                    'Find Similar Schools'
+                    hasEnoughSchools ? 'Refine List' : 'Find Similar Schools'
                 )}
             </Button>
 

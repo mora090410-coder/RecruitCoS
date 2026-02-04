@@ -8,6 +8,7 @@ import { useState } from 'react'
 export default function SchoolDetail({
     school,
     onAddToList,
+    onViewMyList,
     onBack,
     isInList = false,
     athleteId
@@ -37,14 +38,13 @@ export default function SchoolDetail({
                 <p className="text-gray-600">{school.conference} • {school.division}</p>
 
                 <Button
-                    className={`mt-4 ${isInList ? 'bg-green-600 hover:bg-green-600' : config.buttonClass}`}
-                    onClick={() => onAddToList(school)}
-                    disabled={isInList}
+                    className={`mt-4 ${isInList ? 'bg-green-600 hover:bg-green-700' : config.buttonClass}`}
+                    onClick={() => isInList ? onViewMyList() : onAddToList(school)}
                 >
                     {isInList ? (
                         <>
                             <Check className="w-4 h-4 mr-2" />
-                            Added to My List
+                            View Full List
                         </>
                     ) : (
                         <>
@@ -171,14 +171,13 @@ export default function SchoolDetail({
             {/* Sticky CTA */}
             <div className="sticky bottom-4 pt-4">
                 <Button
-                    className={`w-full h-12 ${isInList ? 'bg-green-600 hover:bg-green-600' : config.buttonClass}`}
-                    onClick={() => onAddToList(school)}
-                    disabled={isInList}
+                    className={`w-full h-12 ${isInList ? 'bg-green-600 hover:bg-green-700' : config.buttonClass}`}
+                    onClick={() => isInList ? onViewMyList() : onAddToList(school)}
                 >
                     {isInList ? (
                         <>
                             <Check className="w-5 h-5 mr-2" />
-                            Added to My List
+                            View Full List
                         </>
                     ) : (
                         <>
