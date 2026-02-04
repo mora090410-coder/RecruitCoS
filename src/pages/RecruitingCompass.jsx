@@ -57,15 +57,17 @@ export default function RecruitingCompass() {
             // Load profile
             const { data: athlete, error: athleteError } = await supabase
                 .from('athletes')
-                .select('id, name, position, sport, grad_year, gpa, city, state, dream_school, academic_tier, search_preference, lat, lng')
+                .select('id, name, position, sport, grad_year, gpa, city, state, dream_school, academic_tier, search_preference, latitude, longitude')
                 .eq('user_id', user.id)
                 .single()
 
             if (import.meta.env.DEV && (athlete || athleteError)) {
-                // console.log('Athlete query result:', { athlete, athleteError }) 
+                console.log('Athlete query result:', { athlete, athleteError })
+                if (athleteError) console.error('❌ Athlete query FAILED:', athleteError.message, athleteError.code)
             }
 
             if (athlete) {
+                if (import.meta.env.DEV) console.log('🎯 Loaded dream_school from DB:', athlete.dream_school)
                 setAthleteProfile({
                     id: athlete.id,
                     name: athlete.name || 'Athlete',
@@ -77,10 +79,11 @@ export default function RecruitingCompass() {
                     searchPreference: athlete.search_preference || 'regional',
                     location: [athlete.city, athlete.state].filter(Boolean).join(', ') || 'Unknown',
                     dreamSchool: athlete.dream_school || '', // Store persistent DB value
-                    lat: athlete.lat,
-                    lng: athlete.lng
+                    lat: athlete.latitude,
+                    lng: athlete.longitude
                 })
                 if (athlete.dream_school) {
+                    if (import.meta.env.DEV) console.log('🎯 Setting dreamSchool state to:', athlete.dream_school)
                     setDreamSchool(athlete.dream_school)
                 }
 
