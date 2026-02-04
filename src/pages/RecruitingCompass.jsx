@@ -18,7 +18,7 @@ import MyList from '../components/compass/MyList'
 // Gemini initialization moved inside component
 
 export default function RecruitingCompass() {
-    const { user } = useAuth()
+    const { user, isImpersonating, activeAthlete } = useAuth()
 
     // Gemini client (lazy init via getGenAI helper)
 
@@ -347,16 +347,24 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
     }
 
     // Add school to saved list
+    // Add school to saved list
     const handleAddToList = async (school) => {
         try {
-            // Sanitize numeric fields - AI sometimes returns "N/A" or strings
+            // Sanitize numeric fields
             const distanceMiles = parseInt(school.distance_miles, 10)
             const gpaRequirement = parseFloat(school.gpa_requirement)
+
+            // Determine targeting
+            const targetAthleteId = isImpersonating ? activeAthlete?.id : user?.id
+            if (!targetAthleteId) throw new Error("No target athlete found")
+
+            // Determine approval status
+            const approvalStatus = isImpersonating ? 'pending' : 'approved'
 
             const { error } = await supabase
                 .from('athlete_saved_schools')
                 .insert({
-                    athlete_id: user.id,
+                    athlete_id: targetAthleteId,
                     school_name: school.school_name,
                     category: school.category,
                     conference: school.conference,
@@ -365,8 +373,9 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
                     athletic_level: school.athletic_level,
                     academic_selectivity: school.academic_selectivity,
                     gpa_requirement: isNaN(gpaRequirement) ? null : gpaRequirement,
-                    insight: school.insight
-                    // Default 'status' and 'updated_at' handled by DB defaults/triggers
+                    insight: school.insight,
+                    added_by: user.id,
+                    approval_status: approvalStatus
                 })
 
             if (error) {
@@ -378,12 +387,18 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
             }
 
             // Update local state
+            const schoolWithStatus = {
+                ...school,
+                approval_status: approvalStatus,
+                added_by: user.id,
+                athlete_id: targetAthleteId
+            }
             setSavedSchools(prev => ({
                 ...prev,
-                [school.category]: [...prev[school.category], school]
+                [school.category]: [...prev[school.category], schoolWithStatus]
             }))
 
-            alert(`${school.school_name} added to your list!`)
+            alert(isImpersonating ? `Suggestion for ${school.school_name} sent to athlete!` : `${school.school_name} added to your list!`)
 
         } catch (error) {
             console.error("Error saving school:", error)
@@ -394,10 +409,12 @@ OUTPUT: Valid JSON array only. No markdown, no extra text.
     // Remove school from saved list
     const handleRemoveFromList = async (school) => {
         try {
+            const targetAthleteId = isImpersonating ? activeAthlete?.id : user?.id
+
             const { error } = await supabase
                 .from('athlete_saved_schools')
                 .delete()
-                .eq('athlete_id', user.id)
+                .eq('athlete_id', targetAthleteId)
                 .eq('school_name', school.school_name)
 
             if (error) throw error

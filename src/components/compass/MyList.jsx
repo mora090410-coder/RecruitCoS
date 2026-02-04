@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { ChevronLeft, Plus, Zap } from 'lucide-react'
+import { ChevronLeft, Plus, Zap, Heart } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
 import { Button } from '../ui/button'
 import { supabase } from '../../lib/supabase'
 import { SCHOOL_STATUSES, STATUS_CONFIG } from '../../lib/constants'
@@ -19,6 +20,7 @@ export default function MyList({
     const [schools, setSchools] = useState([])
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState('all')
+    const { isImpersonating, activeAthlete } = useAuth()
 
     // Initial load
     useEffect(() => {
@@ -28,14 +30,17 @@ export default function MyList({
     const loadMyList = async () => {
         setLoading(true)
         try {
-            // Get current user if not passed
-            const { data: { user: currentUser } } = await supabase.auth.getUser()
-            if (!currentUser) return // Should be handled by AuthContext but safe guard
+            // targetId should be the athlete's ID
+            const targetId = isImpersonating ? activeAthlete?.id : currentUser.id
+            if (!targetId) return
 
             const { data, error } = await supabase
                 .from('athlete_saved_schools')
                 .select('*, interactions:athlete_interactions(*)')
-                .eq('athlete_id', currentUser.id)
+                .eq('athlete_id', targetId)
+                // Also include pending suggestions unless user is impersonating and wants to hide them? 
+                // No, managers should see their own pending suggestions too.
+                .neq('approval_status', 'dismissed')
                 .order('created_at', { ascending: false })
 
             if (error) throw error
@@ -83,6 +88,46 @@ export default function MyList({
 
         // Call parent handler which does the DB delete
         await onRemove(school)
+    }
+
+    const handleApproveSuggestion = async (schoolId) => {
+        // Optimistic update
+        setSchools(prev => prev.map(s =>
+            s.id === schoolId ? { ...s, approval_status: 'approved' } : s
+        ))
+
+        try {
+            const { error } = await supabase
+                .from('athlete_saved_schools')
+                .update({ approval_status: 'approved' })
+                .eq('id', schoolId)
+
+            if (error) throw error
+        } catch (error) {
+            console.error('Error approving school:', error)
+            loadMyList()
+            alert('Failed to approve school')
+        }
+    }
+
+    const handleDismissSuggestion = async (schoolId) => {
+        // Optimistic remove
+        setSchools(prev => prev.filter(s => s.id !== schoolId))
+
+        try {
+            // We just update status to dismissed instead of deleting, 
+            // so we have a record of "we didn't like this"
+            const { error } = await supabase
+                .from('athlete_saved_schools')
+                .update({ approval_status: 'dismissed' })
+                .eq('id', schoolId)
+
+            if (error) throw error
+        } catch (error) {
+            console.error('Error dismissing school:', error)
+            loadMyList()
+            alert('Failed to dismiss school')
+        }
     }
 
     // Calculate counts
@@ -145,6 +190,8 @@ export default function MyList({
                             onStatusChange={handleStatusChange}
                             onRemove={handleRemoveSchool}
                             onView={onViewSchool}
+                            onApprove={handleApproveSuggestion}
+                            onDismiss={handleDismissSuggestion}
                         />
                     ))}
                 </div>
