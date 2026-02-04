@@ -34,7 +34,7 @@ export async function callGeminiWithRetry(model, prompt, retries = 3, delay = 20
   }
 }
 
-export async function generateSocialPosts(eventData, coaches = [], voiceProfile = "") {
+export async function generateSocialPosts(eventData, coaches = [], voiceProfile = "", phase = "Discovery") {
   const genAI = getGenAI();
   if (!genAI) throw new Error("Gemini AI not initialized");
 
@@ -49,10 +49,11 @@ export async function generateSocialPosts(eventData, coaches = [], voiceProfile 
   const safeEventType = sanitizeInput(eventData.event_type);
   const safeDate = sanitizeInput(eventData.date);
   const safeVoice = sanitizeInput(voiceProfile);
+  const safePhase = sanitizeInput(phase);
 
   const prompt = `
-    You are a social media expert for high school athletes. 
-    based on the following event, generate 3 distinct social media post options (Twitter/X style).
+    You are a social media expert for high school athletes in the "${safePhase}" phase of their recruiting journey.
+    Based on the following event, generate 3 distinct social media post options (Twitter/X style).
     
     Event Type: ${safeEventType}
     Headline: ${safeTitle}
@@ -67,16 +68,22 @@ export async function generateSocialPosts(eventData, coaches = [], voiceProfile 
     ${safeVoice ? `
     CRITICAL TONE INSTRUCTION:
     The user has a specific voice preference: "${safeVoice}".
-    Ensure EXACTLY ONE of the options matches this specific instruction perfectly. Label that option as "My Voice".
-    The other two options should provide variety (e.g. Hype, Humble, or Professional) but usually distinct from the user's specific instruction to offer choice.
+    Ensure EXACTLY ONE of the options matches this specific instruction perfectly. Label that style as "My Voice".
     ` : ''}
+
+    NCAA COMPLIANCE & PHASE-AWARE RULES:
+    1. If phase is "Discovery" or "Foundation": Focus on gratitude, progress, and training. AVOID any language that implies a "call to action" for coaches (e.g., "Coach, call me").
+    2. If phase is "Exposure": Use more proactive language. Mention being "excited for the next level" or "open to conversations".
+    3. If phase is "Commitment": Focus on decision-making, visits, and thanking programs.
+    4. NEVER mention specific dollar amounts or inducements.
+    5. Always keep the tone humble yet confident.
 
     Return the response as a valid JSON object with the following structure:
     {
       "options": [
-        { "style": "${safeVoice ? "My Voice" : "Hype"}", "content": "..." },
+        { "style": "Hype", "content": "..." },
         { "style": "Humble", "content": "..." },
-        { "style": "Professional", "content": "..." }
+        { "style": "${safeVoice ? "My Voice" : "Professional"}", "content": "..." }
       ]
     }
     
@@ -93,7 +100,7 @@ export async function generateSocialPosts(eventData, coaches = [], voiceProfile 
   `;
 
   if (import.meta.env.DEV) {
-    console.log("Generating social posts...");
+    console.log("Generating social posts for phase:", safePhase);
   }
 
   try {

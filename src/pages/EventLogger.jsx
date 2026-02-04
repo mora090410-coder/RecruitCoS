@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { getAthletePhase } from '../lib/constants'
 import { useAuth } from '../contexts/AuthContext'
 import { generateSocialPosts } from '../lib/gemini'
 import { Button } from '../components/ui/button'
@@ -168,7 +169,8 @@ export default function EventLogger() {
 
         // 3. Generate Content
         try {
-            const aiResponse = await generateSocialPosts(formData, selectedCoaches, currentAthlete.voice_profile || "");
+            const currentPhase = getAthletePhase(currentAthlete.grad_year);
+            const aiResponse = await generateSocialPosts(formData, selectedCoaches, currentAthlete.voice_profile || "", currentPhase);
             setGeneratedPosts(aiResponse.options);
         } catch (aiError) {
             console.error("AI Gen Error", aiError);

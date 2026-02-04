@@ -6,6 +6,8 @@ import { Button } from '../components/ui/button'
 import DashboardLayout from '../components/DashboardLayout'
 import { PlusCircle, Copy, Calendar, User as UserIcon } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { getAthletePhase, PHASE_CONFIG, RECRUITING_PHASES } from '../lib/constants'
+import WeeklyBriefing from '../components/WeeklyBriefing'
 
 export default function Dashboard() {
     const navigate = useNavigate()
@@ -14,6 +16,7 @@ export default function Dashboard() {
     const [stats, setStats] = useState({ eventCount: 0 })
     const [posts, setPosts] = useState([])
     const [activeTab, setActiveTab] = useState('All Sources') // Visual state for tabs
+    const [phase, setPhase] = useState('Discovery')
     const [page, setPage] = useState(1)
     const COACHES_PER_PAGE = 20
 
@@ -24,12 +27,16 @@ export default function Dashboard() {
 
             // Fetch stats for current user
             // Fetch stats for current user
-            const { data: athlete, error } = await supabase.from('athletes').select('id').eq('user_id', user.id).single()
+            const { data: athlete, error } = await supabase.from('athletes').select('id, grad_year').eq('user_id', user.id).single()
 
             if (error || !athlete) {
                 navigate('/setup')
                 return
             }
+
+            // Calculate Phase
+            const currentPhase = getAthletePhase(athlete.grad_year)
+            setPhase(currentPhase)
 
             if (athlete) {
                 // Get Stats
@@ -68,12 +75,17 @@ export default function Dashboard() {
     }
 
     return (
-        <DashboardLayout>
+        <DashboardLayout phase={phase}>
             <div className="space-y-8">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                        <h1 className="text-4xl font-serif font-medium text-gray-900">Content Feed</h1>
+                        <div className="flex items-center gap-3 mb-1">
+                            <h1 className="text-4xl font-serif font-medium text-gray-900">Content Feed</h1>
+                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${PHASE_CONFIG[phase]?.badgeClass || 'bg-gray-100 text-gray-600'}`}>
+                                {phase} Phase
+                            </span>
+                        </div>
                         <p className="text-gray-500 mt-1">Manage your generated posts and upcoming events.</p>
                     </div>
                     <Button onClick={() => navigate('/log-event')} className="bg-brand-primary hover:bg-brand-secondary text-white">
@@ -105,6 +117,7 @@ export default function Dashboard() {
 
                     {/* Left Column: Feed (2 spans) */}
                     <div className="lg:col-span-2 space-y-6">
+                        <WeeklyBriefing phase={phase} />
                         {posts.length === 0 ? (
                             <div className="text-center py-20 bg-white rounded-lg border border-dashed">
                                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -189,7 +202,11 @@ export default function Dashboard() {
                             <CardHeader className="pb-3">
                                 <div className="flex justify-between items-center">
                                     <CardTitle className="text-base">Suggested Coaches</CardTitle>
-                                    <Button variant="link" className="text-xs px-0 h-auto">View All</Button>
+                                    <Button variant="link" className="text-xs px-0 h-auto">
+                                        {(phase === RECRUITING_PHASES.DISCOVERY || phase === RECRUITING_PHASES.FOUNDATION)
+                                            ? "Explore Campus Vibes"
+                                            : "View All Coaches"}
+                                    </Button>
                                 </div>
                             </CardHeader>
                             <CardContent className="space-y-4">

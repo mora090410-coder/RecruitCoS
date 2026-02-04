@@ -3,7 +3,9 @@ import { useAuth } from '../contexts/AuthContext'
 import { Button } from './ui/button'
 import { Bell, Search, User } from 'lucide-react'
 
-export default function DashboardLayout({ children }) {
+import { PHASE_CONFIG } from '../lib/constants'
+
+export default function DashboardLayout({ children, phase }) {
     const { signOut, user } = useAuth()
     const navigate = useNavigate()
 
@@ -18,6 +20,12 @@ export default function DashboardLayout({ children }) {
                             <div className="w-8 h-8 bg-brand-primary text-white flex items-center justify-center rounded-md font-sans">R</div>
                             RecruitCoS
                         </Link>
+
+                        {phase && (
+                            <div className={`hidden lg:flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tight border ${PHASE_CONFIG[phase]?.badgeClass || ''}`}>
+                                {phase}
+                            </div>
+                        )}
 
                         {/* Main Nav Links */}
                         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
