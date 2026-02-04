@@ -17,6 +17,8 @@ function MainNavigator() {
   const { user, loading: authLoading } = useAuth()
   const { hasProfile, isProfileLoading } = useProfile()
 
+
+
   // 1. GLOBAL LOADING SHIELD
   // Wait for auth to settle. If user exists, also wait for profile to settle.
   if (authLoading || (user && isProfileLoading)) {
