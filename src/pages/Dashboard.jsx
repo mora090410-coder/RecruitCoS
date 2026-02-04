@@ -8,16 +8,21 @@ import { PlusCircle, Copy, Calendar, User as UserIcon } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { getAthletePhase, PHASE_CONFIG, RECRUITING_PHASES } from '../lib/constants'
 import WeeklyBriefing from '../components/WeeklyBriefing'
+import { getGenAI, getRecruitingInsight } from '../lib/gemini'
+import { getSchoolHeat } from '../lib/signalEngine'
+import { Sparkles, ArrowRight, Zap } from 'lucide-react'
 
 export default function Dashboard() {
     const navigate = useNavigate()
     const [coaches, setCoaches] = useState([])
-    const { user } = useAuth()
+    const { user, activeAthlete, isImpersonating } = useAuth()
     const [stats, setStats] = useState({ eventCount: 0 })
     const [posts, setPosts] = useState([])
     const [activeTab, setActiveTab] = useState('All Sources') // Visual state for tabs
     const [phase, setPhase] = useState('Discovery')
     const [page, setPage] = useState(1)
+    const [aiInsight, setAiInsight] = useState(null)
+    const [loadingInsight, setLoadingInsight] = useState(false)
     const COACHES_PER_PAGE = 20
 
     useEffect(() => {
@@ -25,29 +30,37 @@ export default function Dashboard() {
             // Fetch coaches (initial load)
             await loadCoaches(1)
 
-            // Fetch stats for current user
-            // Fetch stats for current user
-            const { data: athlete, error } = await supabase.from('athletes').select('id, grad_year').eq('user_id', user.id).single()
+            // Determine which athlete ID to use
+            let targetAthleteId = null
+            let targetGradYear = null
 
-            if (error || !athlete) {
-                navigate('/setup')
-                return
+            if (isImpersonating && activeAthlete) {
+                targetAthleteId = activeAthlete.id
+                targetGradYear = activeAthlete.grad_year
+            } else {
+                const { data: athlete, error } = await supabase.from('athletes').select('id, grad_year').eq('user_id', user.id).single()
+                if (error || !athlete) {
+                    if (!isImpersonating) navigate('/setup')
+                    return
+                }
+                targetAthleteId = athlete.id
+                targetGradYear = athlete.grad_year
             }
 
             // Calculate Phase
-            const currentPhase = getAthletePhase(athlete.grad_year)
+            const currentPhase = getAthletePhase(targetGradYear)
             setPhase(currentPhase)
 
-            if (athlete) {
+            if (targetAthleteId) {
                 // Get Stats
-                const { count } = await supabase.from('events').select('*', { count: 'exact', head: true }).eq('athlete_id', athlete.id)
+                const { count } = await supabase.from('events').select('*', { count: 'exact', head: true }).eq('athlete_id', targetAthleteId)
                 setStats({ eventCount: count || 0 })
 
                 // Get Recent Posts
                 const { data: recentPosts } = await supabase
                     .from('posts')
                     .select('*, events(event_name, event_date)')
-                    .eq('athlete_id', athlete.id)
+                    .eq('athlete_id', targetAthleteId)
                     .order('created_at', { ascending: false })
                     .limit(10)
 
@@ -55,7 +68,63 @@ export default function Dashboard() {
             }
         }
         if (user) fetchData()
-    }, [user])
+    }, [user, activeAthlete, isImpersonating, navigate])
+
+    // Load AI Insight
+    useEffect(() => {
+        async function fetchInsight() {
+            if (!user || !phase) return
+            setLoadingInsight(true)
+
+            try {
+                // Get active athlete ID
+                let targetAthleteId = null
+                if (isImpersonating && activeAthlete) {
+                    targetAthleteId = activeAthlete.id
+                } else {
+                    const { data: athlete } = await supabase.from('athletes').select('id').eq('user_id', user.id).single()
+                    if (!athlete) return
+                    targetAthleteId = athlete.id
+                }
+
+                // 2. Get saved schools with interactions
+                const { data: savedSchools } = await supabase
+                    .from('athlete_saved_schools')
+                    .select('*, interactions:athlete_interactions(*)')
+                    .eq('athlete_id', targetAthleteId)
+
+                if (!savedSchools || savedSchools.length === 0) {
+                    setAiInsight({
+                        insight: "Your list is empty. Add schools to get relationship insights.",
+                        isTractionShift: false,
+                        recommendation: "Broaden Search"
+                    })
+                    return
+                }
+
+                // 3. Count high signal schools per division
+                const divisionCounts = { D1: 0, D2: 0, D3: 0 }
+                savedSchools.forEach(school => {
+                    const heat = getSchoolHeat(school.interactions || [])
+                    if (heat.bars >= 4) {
+                        const div = school.division?.substring(0, 2) || 'D3' // fallback
+                        if (divisionCounts[div] !== undefined) {
+                            divisionCounts[div]++
+                        }
+                    }
+                })
+
+                // 4. Call Gemini
+                const insight = await getRecruitingInsight(phase, divisionCounts)
+                setAiInsight(insight)
+            } catch (error) {
+                console.error("Dashboard Insight error:", error)
+            } finally {
+                setLoadingInsight(false)
+            }
+        }
+        fetchInsight()
+    }, [user, phase])
 
     const loadCoaches = async (pageNumber) => {
         const from = (pageNumber - 1) * COACHES_PER_PAGE
@@ -181,6 +250,59 @@ export default function Dashboard() {
 
                     {/* Right Column: Sidebar (1 span) */}
                     <div className="space-y-6">
+                        {/* Chief of Staff Insight Card */}
+                        <Card className="overflow-hidden border-brand-primary/20 bg-gradient-to-br from-white to-brand-primary/5">
+                            <CardHeader className="pb-3">
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-brand-primary" />
+                                    <CardTitle className="text-base">Chief of Staff Insight</CardTitle>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                {loadingInsight ? (
+                                    <div className="space-y-2 animate-pulse">
+                                        <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                    </div>
+                                ) : aiInsight ? (
+                                    <div className="space-y-4">
+                                        <p className="text-sm text-gray-700 leading-relaxed italic">
+                                            "{aiInsight.insight}"
+                                        </p>
+
+                                        {aiInsight.isTractionShift ? (
+                                            <div className="space-y-3">
+                                                <div className="bg-cyan-50 border border-cyan-100 rounded-lg p-3">
+                                                    <p className="text-xs text-cyan-800 font-medium flex items-center gap-1.5">
+                                                        <Zap className="w-3 h-3" />
+                                                        Level Traction Shift Detected
+                                                    </p>
+                                                </div>
+                                                <Button
+                                                    onClick={() => navigate('/compass')}
+                                                    className="w-full bg-brand-primary text-white text-xs h-9"
+                                                >
+                                                    Refine My Compass
+                                                    <ArrowRight className="w-3 h-3 ml-2" />
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <div className="pt-2">
+                                                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                                    Status: {aiInsight.recommendation === 'Stay Course' ? 'Signal Steady' : 'Broaden Search'}
+                                                </p>
+                                                <p className="text-sm font-medium text-gray-900 mt-1">
+                                                    {aiInsight.recommendation === 'Stay Course' ? 'Keep Grinding' : 'Find Your Fit'}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-gray-500 italic">"Your signal is steady. Stay focused on your development goals."</p>
+                                )}
+                            </CardContent>
+                        </Card>
+
                         {/* Stats Card */}
                         <Card>
                             <CardHeader>

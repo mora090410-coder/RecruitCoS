@@ -112,3 +112,64 @@ export async function generateSocialPosts(eventData, coaches = [], voiceProfile 
     throw new Error("Failed to generate posts");
   }
 }
+
+/**
+ * getRecruitingInsight
+ * Generates strategic advice based on relationship traction across divisions.
+ * 
+ * @param {string} phase - The athlete's current phase (Discovery, Exposure, etc.)
+ * @param {Object} signalData - Count of High Signal schools per division { D1: count, D2: count, D3: count }
+ */
+export async function getRecruitingInsight(phase, signalData) {
+  const genAI = getGenAI();
+  if (!genAI) throw new Error("Gemini AI not initialized");
+
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+    generationConfig: { responseMimeType: "application/json" }
+  });
+
+  const safePhase = sanitizeInput(phase);
+
+  const prompt = `
+    You are an elite recruiting advisor (Chief of Staff) for a high school athlete.
+    The athlete is in the "${safePhase}" phase of their journey.
+    
+    Current Traction (High Signal Schools):
+    - NCAA Division 1 (D1): ${signalData.D1 || 0}
+    - NCAA Division 2 (D2): ${signalData.D2 || 0}
+    - NCAA Division 3 (D3): ${signalData.D3 || 0}
+    
+    LOGIC INSTRUCTIONS:
+    1. Analyze the distribution of high signal schools.
+    2. Detect a "Traction Shift":
+       - A shift occurs if the athlete has 0 traction at their likely "Reach" level (D1) but significant traction (2+) at a "Target" level (D2/D3).
+       - Also detect if traction is balanced or non-existent.
+    3. Style Guidelines:
+       - Be professional, motivating, and straight-talking.
+       - If traction shift: Encourage them to lean into where they are wanted, while keeping the reach goals as secondary development targets.
+       - If no shift: Provide a "Keep Grinding" message focusing on daily habits and signal building.
+    
+    Return a valid JSON object:
+    {
+      "insight": "Concise 1-2 sentence tactical advice.",
+      "isTractionShift": boolean,
+      "recommendation": "Lean In" | "Stay Course" | "Broaden Search"
+    }
+  `;
+
+  try {
+    const result = await callGeminiWithRetry(model, prompt);
+    const text = result.response.text().trim();
+    // Handle potential markdown backticks in response
+    const jsonString = text.replace(/^```json\n?|\n?```$/g, '');
+    return JSON.parse(jsonString);
+  } catch (error) {
+    if (import.meta.env.DEV) console.error("Gemini Insight Error:", error);
+    return {
+      insight: "Your signal is steady. Stay focused on your development goals.",
+      isTractionShift: false,
+      recommendation: "Stay Course"
+    };
+  }
+}

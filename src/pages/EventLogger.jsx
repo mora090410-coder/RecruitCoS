@@ -38,7 +38,7 @@ const TONES = [
 
 export default function EventLogger() {
     const navigate = useNavigate()
-    const { user } = useAuth()
+    const { user, isImpersonating } = useAuth()
     const [loading, setLoading] = useState(false)
     const [pageLoading, setPageLoading] = useState(true)
     const [generatedPosts, setGeneratedPosts] = useState(null)
@@ -268,6 +268,11 @@ export default function EventLogger() {
                                 <Twitter size={20} />
                             </span>
                             Log New Event
+                            {isImpersonating && (
+                                <span className="ml-2 px-2 py-0.5 bg-brand-primary/10 text-brand-primary text-[10px] font-bold uppercase rounded-md">
+                                    Manager Mode
+                                </span>
+                            )}
                         </CardTitle>
                         <p className="text-sm text-gray-500">
                             Log your stats, tag coaches, and let AI generate your post.
@@ -349,9 +354,18 @@ export default function EventLogger() {
                                 <Button type="button" variant="ghost" className="w-full" onClick={() => navigate('/')}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" className="w-full bg-brand-primary hover:bg-brand-primary/90" disabled={loading}>
-                                    {loading ? 'Generating...' : 'Generate Posts'}
+                                <Button
+                                    type="submit"
+                                    className="w-full bg-brand-primary hover:bg-brand-primary/90"
+                                    disabled={loading || isImpersonating}
+                                >
+                                    {isImpersonating ? 'Authenticity Lock' : (loading ? 'Generating...' : 'Generate Posts')}
                                 </Button>
+                                {isImpersonating && (
+                                    <p className="text-[10px] text-center text-gray-400 mt-2">
+                                        Social posting is locked to the athlete for authenticity.
+                                    </p>
+                                )}
                             </div>
 
                         </form>

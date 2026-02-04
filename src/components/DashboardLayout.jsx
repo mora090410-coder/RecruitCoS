@@ -2,8 +2,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from './ui/button'
 import { Bell, Search, User } from 'lucide-react'
-
 import { PHASE_CONFIG } from '../lib/constants'
+import ProfileSwitcher from './layout/ProfileSwitcher'
 
 export default function DashboardLayout({ children, phase }) {
     const { signOut, user } = useAuth()
@@ -20,6 +20,8 @@ export default function DashboardLayout({ children, phase }) {
                             <div className="w-8 h-8 bg-brand-primary text-white flex items-center justify-center rounded-md font-sans">R</div>
                             RecruitCoS
                         </Link>
+
+                        <ProfileSwitcher />
 
                         {phase && (
                             <div className={`hidden lg:flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tight border ${PHASE_CONFIG[phase]?.badgeClass || ''}`}>
