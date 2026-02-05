@@ -403,6 +403,7 @@ If the objective is close to 'Playing Time' (100), prioritize schools where the 
     // Add school to saved list
     // Add school to saved list
     const handleAddToList = async (school) => {
+        setLoading(true)
         try {
             // Sanitize numeric fields
             const distanceMiles = parseInt(school.distance_miles, 10)
@@ -428,6 +429,7 @@ If the objective is close to 'Playing Time' (100), prioritize schools where the 
                 })
 
             if (error) {
+                setLoading(false)
                 // Handle Duplicate Entry (Schema 23505 Unique Violation)
                 if (error.code === '23505') {
                     setToastConfig({
@@ -440,6 +442,8 @@ If the objective is close to 'Playing Time' (100), prioritize schools where the 
                 }
                 throw error
             }
+
+            setLoading(false)
 
             // Update local state
             const schoolWithStatus = {
@@ -459,12 +463,9 @@ If the objective is close to 'Playing Time' (100), prioritize schools where the 
             })
             setShowToast(true)
 
-            // Auto-navigate to mylist after a short delay
-            setTimeout(() => {
-                setView('mylist')
-            }, 1500)
-
+            // Auto-navigation removed to prevent "dead-end" but forced interruption
         } catch (error) {
+            setLoading(false)
             console.error("[RecruitingCompass] Error saving school (Code: " + error.code + "):", error)
             setToastConfig({
                 message: 'Failed to add school: ' + (error.message || 'Unknown database error'),
