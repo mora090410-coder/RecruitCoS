@@ -21,27 +21,27 @@ export default function TestWeeklyPlan() {
 
         const load = async () => {
             try {
-                const profile = await buildAthleteProfile(athleteId);
-                const positionGroup = profile?.positions?.primary?.group || null;
-                const targetLevel = profile?.goals?.targetLevels?.[0] || DEFAULT_TARGET_LEVEL;
-                const sportSchema = getSportSchema(profile?.sport);
+                const athleteProfile = await buildAthleteProfile(athleteId);
+                const positionGroup = athleteProfile?.positions?.primary?.group || null;
+                const targetLevel = athleteProfile?.goals?.targetLevels?.[0] || DEFAULT_TARGET_LEVEL;
+                const sportSchema = getSportSchema(athleteProfile?.sport);
                 const benchmarks = sportSchema && positionGroup
-                    ? await fetchBenchmarks(profile.sport, positionGroup, targetLevel)
+                    ? await fetchBenchmarks(athleteProfile.sport, positionGroup, targetLevel)
                     : [];
 
-                const gapResult = computeGap(profile, { targetLevel, benchmarks });
-                const weeklyPlan = generateWeeklyPlan(profile, gapResult);
+                const gapResult = computeGap(athleteProfile, { targetLevel, benchmarks });
+                const weeklyPlan = generateWeeklyPlan(athleteProfile, gapResult);
 
                 if (!active) return;
                 setState({
                     loading: false,
-                    error: null,
-                    payload: {
-                        phase: profile?.phase,
-                        primaryGap: gapResult?.primaryGap || null,
-                        priorities: weeklyPlan?.priorities || []
-                    }
-                });
+                        error: null,
+                        payload: {
+                            phase: athleteProfile?.phase,
+                            primaryGap: gapResult?.primaryGap || null,
+                            priorities: weeklyPlan?.priorities || []
+                        }
+                    });
             } catch (error) {
                 if (!active) return;
                 setState({
@@ -70,7 +70,7 @@ export default function TestWeeklyPlan() {
     if (!import.meta.env.DEV) {
         return (
             <div className="min-h-screen bg-zinc-950 text-white p-6">
-                <h1 className="text-lg font-semibold">Test Weekly Plan</h1>
+                <h1 className="text-lg font-semibold">Weekly Plan Debug</h1>
                 <p className="text-sm text-zinc-400 mt-2">This route is available in development only.</p>
             </div>
         );
@@ -78,7 +78,7 @@ export default function TestWeeklyPlan() {
 
     return (
         <div className="min-h-screen bg-zinc-950 text-white p-6">
-            <h1 className="text-lg font-semibold">Test Weekly Plan</h1>
+            <h1 className="text-lg font-semibold">Weekly Plan Debug</h1>
             <p className="text-sm text-zinc-400 mt-2">
                 Athlete ID: <span className="font-mono">{athleteId}</span>
             </p>

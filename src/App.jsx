@@ -93,7 +93,10 @@ function MainNavigator() {
       <Route path="/log-event" element={<EventLogger />} />
       <Route path="/strategy" element={<StrategyEdit />} />
       {import.meta.env.DEV && (
-        <Route path="/test-weekly-plan/:athleteId" element={<TestWeeklyPlan />} />
+        <>
+          <Route path="/test-weekly-plan/:athleteId" element={<TestWeeklyPlan />} />
+          <Route path="/debug/weekly-plan/:athleteId" element={<TestWeeklyPlan />} />
+        </>
       )}
 
       {/* Catch-all */}
