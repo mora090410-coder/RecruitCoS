@@ -4,12 +4,14 @@ import {
     saveGapResult,
     fetchExecutionSignals,
     saveReadinessResult,
-    saveInterestResults
+    saveInterestResults,
+    saveWeeklyPlan
 } from '../lib/recruitingData';
 import { supabase } from '../lib/supabase';
 import { computeGapScore } from '../lib/gapEngine';
 import { computeReadinessScore } from '../lib/readinessEngine';
-import { computeSchoolInterest } from '../lib/interestEngine';
+import { computeSchoolInterest } from './interestEngine';
+import { generateWeeklyPlan } from '../lib/weeklyPlanEngine';
 
 /**
  * Recomputes the gap score for an athlete.
@@ -109,6 +111,9 @@ export async function recomputeReadiness(athleteId, sport, targetLevel, athleteP
         // 4. Trigger Interest Recompute for all saved schools
         await recomputeInterestForAllSchools(athleteId, readinessOutput);
 
+        // 5. Regenerate Weekly Plan
+        await regenerateWeeklyPlan(athleteId, phase, gapResult, readinessOutput);
+
         return savedResult;
 
     } catch (error) {
@@ -157,5 +162,63 @@ export async function recomputeInterestForAllSchools(athleteId, readinessResult)
 
     } catch (error) {
         console.error('[recomputeInterest] Error:', error);
+    }
+}
+
+/**
+ * Regenerates the weekly plan for an athlete.
+ */
+export async function regenerateWeeklyPlan(athleteId, phase, gapResult, readinessResult) {
+    try {
+        console.log(`[regenerateWeeklyPlan] Starting for athlete ${athleteId}...`);
+
+        // 1. Fetch saved schools with interest data
+        const { data: schools, error } = await supabase
+            .from('athlete_saved_schools')
+            .select('*, interactions:athlete_interactions(*)')
+            .eq('athlete_id', athleteId);
+
+        if (error) throw error;
+
+        // Fetch interest for these schools to include in the plan
+        const { data: interestData } = await supabase
+            .from('athlete_school_interest_results')
+            .select('*')
+            .eq('athlete_id', athleteId);
+
+        const interestMap = new Map((interestData || []).map(i => [i.school_id, i]));
+        const schoolsWithInterest = (schools || []).map(s => ({
+            ...s,
+            interest: interestMap.get(s.id)
+        }));
+
+        // 2. Fetch upcoming events
+        const { data: events } = await supabase
+            .from('athlete_events')
+            .select('*')
+            .eq('athlete_id', athleteId)
+            .gte('start_date', new Date().toISOString())
+            .lte('start_date', new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString());
+
+        // 3. Simple post count check (placeholder - assuming interaction type 'Social Post' or similar if it existed)
+        // For now, we'll just use a baseline or count recent interactions of specific types
+        const recentPostsCount = (schools || []).reduce((acc, s) => acc + (s.interactions?.filter(i => i.type === 'Social DM').length || 0), 0);
+
+        // 4. Generate Plan
+        const plan = generateWeeklyPlan({
+            phase,
+            gapResult,
+            readinessResult,
+            savedSchools: schoolsWithInterest,
+            upcomingEvents: events || [],
+            recentPostsCount
+        });
+
+        // 5. Save Plan
+        await saveWeeklyPlan(athleteId, plan.weekOf, plan);
+        console.log(`[regenerateWeeklyPlan] Success for week ${plan.weekOf}`);
+
+    } catch (error) {
+        console.error('[regenerateWeeklyPlan] Error:', error);
     }
 }

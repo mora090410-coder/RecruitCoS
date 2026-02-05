@@ -9,11 +9,13 @@ import {
     Calendar, CheckCircle, Clock, Search, SlidersHorizontal,
     Plus, ChevronRight, Share2, MoreHorizontal, Edit2,
     Trash2, Archive, ExternalLink, PlusCircle, Copy, User as UserIcon, Sparkles, ArrowRight, Zap,
-    Rocket
+    Rocket, RefreshCw
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { getAthletePhase, PHASE_CONFIG, RECRUITING_PHASES } from '../lib/constants'
 import WeeklyBriefing from '../components/WeeklyBriefing'
+import { recomputeGap } from '../services/recomputeScores';
+import { toast } from 'sonner' // Keep sonner toast, as it's already used. The diff had react-hot-toast, but sonner is consistent.
 import { getGenAI, getRecruitingInsight } from '../lib/gemini'
 import { getSchoolHeat } from '../lib/signalEngine'
 import {
@@ -23,7 +25,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu'
-import { toast } from 'sonner'
 import { ReadinessScoreCard } from '../components/ReadinessScoreCard'
 import { fetchLatestReadiness } from '../lib/recruitingData'
 
@@ -32,7 +33,8 @@ import { fetchLatestReadiness } from '../lib/recruitingData'
 export default function Dashboard() {
     const navigate = useNavigate()
     const { user } = useAuth()
-    const { activeAthlete, isImpersonating, profile } = useProfile()
+    const { profile, activeAthlete, isImpersonating } = useProfile();
+    const [isRecomputing, setIsRecomputing] = useState(false);
     const [stats, setStats] = useState({ eventCount: 0, targetCount: 0, recentPostCount: 0 })
     const [posts, setPosts] = useState([])
     const [activeTab, setActiveTab] = useState('All Sources')
@@ -45,6 +47,7 @@ export default function Dashboard() {
     const [readinessResult, setReadinessResult] = useState(null)
     const [loadingReadiness, setLoadingReadiness] = useState(false)
 
+    if (!profile) return null;
 
     useEffect(() => {
         async function fetchData() {
@@ -191,6 +194,35 @@ export default function Dashboard() {
         }
     }
 
+    const handleRecompute = async () => {
+        setIsRecomputing(true);
+        try {
+            const currentAthleteProfile = isImpersonating ? activeAthlete : profile;
+            if (!currentAthleteProfile) {
+                toast.error("No active athlete profile found.");
+                return;
+            }
+            const athletePhase = currentAthleteProfile.phase || getAthletePhase(currentAthleteProfile.grad_year);
+
+            await recomputeGap(
+                currentAthleteProfile.id,
+                currentAthleteProfile.sport,
+                currentAthleteProfile.position,
+                currentAthleteProfile.goals?.division_priority || 'D1',
+                currentAthleteProfile,
+                athletePhase
+            );
+            toast.success("Recruiting analysis updated!");
+            // Reload the page to refresh all data components
+            window.location.reload();
+        } catch (error) {
+            toast.error("Failed to recompute. Try again.");
+            console.error(error);
+        } finally {
+            setIsRecomputing(false);
+        }
+    };
+
     const handleFollowCoach = async (coachId) => {
         const targetAthleteId = isImpersonating ? activeAthlete?.id : profile?.id
         if (!targetAthleteId) return
@@ -281,6 +313,22 @@ export default function Dashboard() {
     return (
         <DashboardLayout phase={phase}>
             <div className="space-y-8">
+                <div className="flex items-center justify-between mb-8">
+                    <div>
+                        <h1 className="text-4xl font-serif text-gray-900 mb-2">Recruiting Dashboard</h1>
+                        <p className="text-gray-500">Welcome back, {profile.first_name}</p>
+                    </div>
+
+                    <button
+                        onClick={handleRecompute}
+                        disabled={isRecomputing}
+                        className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all text-sm font-bold text-gray-700 disabled:opacity-50"
+                    >
+                        <RefreshCw className={`w-4 h-4 text-brand-primary ${isRecomputing ? 'animate-spin' : ''}`} />
+                        {isRecomputing ? 'Analyzing...' : 'Recompute Analysis'}
+                    </button>
+                </div>
+
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
