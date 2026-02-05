@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import { buildAthleteProfile } from '../services/buildAthleteProfile';
 import { computeGap } from '../services/engines/gapEngine';
 import { generateWeeklyPlan } from '../services/engines/weeklyPlanEngine';
-import { fetchBenchmarks } from '../lib/recruitingData';
 import { getSportSchema } from '../config/sportSchema';
 
 const DEFAULT_TARGET_LEVEL = 'D2';
@@ -24,24 +23,46 @@ export default function TestWeeklyPlan() {
                 const athleteProfile = await buildAthleteProfile(athleteId);
                 const positionGroup = athleteProfile?.positions?.primary?.group || null;
                 const targetLevel = athleteProfile?.goals?.targetLevels?.[0] || DEFAULT_TARGET_LEVEL;
-                const sportSchema = getSportSchema(athleteProfile?.sport);
-                const benchmarks = sportSchema && positionGroup
-                    ? await fetchBenchmarks(athleteProfile.sport, positionGroup, targetLevel)
-                    : [];
-
-                const gapResult = computeGap(athleteProfile, { targetLevel, benchmarks });
+                const sportSchema = getSportSchema(athleteProfile?.sportKey || athleteProfile?.sport);
+                const gapResult = computeGap(athleteProfile);
                 const weeklyPlan = generateWeeklyPlan(athleteProfile, gapResult);
+                const latestMetricKeys = Object.keys(athleteProfile?.measurables?.latestByMetric || {});
+                const measurablesRawCount = athleteProfile?.measurables?.rawCount || 0;
+                const benchmarksUsed = athleteProfile?.benchmarkDiagnostics?.benchmarksUsed
+                    || (athleteProfile?.benchmarks || []).map((row) => ({
+                        metric: row.metric,
+                        p50: row.p50,
+                        direction: row.direction
+                    }));
+                const applicableMetricKeys = (sportSchema?.metrics || [])
+                    .filter((metric) => metric.appliesToGroups?.includes(positionGroup))
+                    .map((metric) => metric.key);
+                const matchedMetrics = gapResult?.diagnostics?.matchedMetrics || [];
 
                 if (!active) return;
                 setState({
                     loading: false,
-                        error: null,
-                        payload: {
-                            phase: athleteProfile?.phase,
-                            primaryGap: gapResult?.primaryGap || null,
-                            priorities: weeklyPlan?.priorities || []
-                        }
-                    });
+                    error: null,
+                    payload: {
+                        sport: athleteProfile?.sport || null,
+                        position: athleteProfile?.athlete?.position || athleteProfile?.positions?.primary?.display || null,
+                        positionGroupUsed: athleteProfile?.positions?.primary?.group || null,
+                        benchmarkLevelUsed: gapResult?.benchmarkLevelUsed || null,
+                        sportKeyUsed: athleteProfile?.benchmarkDiagnostics?.sportKeyUsed || athleteProfile?.sportKey || null,
+                        benchmarkQueryFilters: athleteProfile?.benchmarkDiagnostics?.benchmarkQueryFilters || null,
+                        benchmarksFoundCount: athleteProfile?.benchmarkDiagnostics?.benchmarksFoundCount || 0,
+                        benchmarkError: athleteProfile?.benchmarkDiagnostics?.benchmarkError || null,
+                        measurablesRawCount,
+                        latestMetricKeys,
+                        latestByMetric: athleteProfile?.measurables?.latestByMetric || {},
+                        benchmarksUsed,
+                        applicableMetricKeys,
+                        matchedMetrics,
+                        phase: athleteProfile?.phase,
+                        primaryGap: gapResult?.primaryGap || null,
+                        priorities: weeklyPlan?.priorities || []
+                    }
+                });
             } catch (error) {
                 if (!active) return;
                 setState({

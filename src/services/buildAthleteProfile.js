@@ -40,22 +40,19 @@ const computeSignalHeat = (interactions) => {
 };
 
 const buildLatestByMetric = (rows) => {
-    const latestMap = new Map();
+    const latest = {};
     rows.forEach((row) => {
         const key = row.metric;
         if (!key) return;
-        const existing = latestMap.get(key);
-        if (!existing) {
-            latestMap.set(key, row);
-            return;
-        }
-        const existingDate = new Date(existing.measured_at || existing.created_at || 0).getTime();
-        const rowDate = new Date(row.measured_at || row.created_at || 0).getTime();
-        if (rowDate >= existingDate) {
-            latestMap.set(key, row);
-        }
+        if (latest[key]) return;
+        const value = Number(row.value);
+        latest[key] = {
+            value: Number.isNaN(value) ? null : value,
+            unit: row.unit || null,
+            measured_at: row.measured_at || null
+        };
     });
-    return Object.fromEntries(latestMap.entries());
+    return latest;
 };
 
 const getDateWindow = (days) => {
@@ -97,7 +94,8 @@ export async function buildAthleteProfile(athleteId) {
     if (!rawAthlete) throw new Error('Athlete not found');
     const athlete = normalizeAthleteRow(rawAthlete);
 
-    const sportSchema = getSportSchema(athlete.sport);
+    const sportKey = athlete?.sport ? athlete.sport.toString().trim().toLowerCase() : null;
+    const sportSchema = getSportSchema(sportKey || athlete.sport);
     const sportSupported = !!sportSchema;
 
     const primaryDisplay = normalizeText(athlete.primary_position_display || athlete.position || '');
@@ -127,23 +125,32 @@ export async function buildAthleteProfile(athleteId) {
         unmappedInputs
     };
 
+    console.log('[buildAthleteProfile] athleteId', athleteId);
     const { data: measurablesRaw } = await safeSelect('athlete_measurables', (table) =>
         table
-            .select('*')
+            .select('sport, metric, value, unit, measured_at')
             .eq('athlete_id', athleteId)
-            .eq('sport', athlete.sport)
             .order('measured_at', { ascending: false })
-            .limit(200)
     );
+    console.log('[buildAthleteProfile] measurables rows length', measurablesRaw?.length || 0);
+    if (Array.isArray(measurablesRaw) && measurablesRaw.length > 0) {
+        const firstRow = measurablesRaw[0];
+        console.log('[buildAthleteProfile] measurables first row', {
+            sport: firstRow.sport,
+            metric: firstRow.metric,
+            value: firstRow.value,
+            unit: firstRow.unit,
+            measured_at: firstRow.measured_at
+        });
+    }
 
     const allowedMetrics = new Set(getMetricKeysForSport(athlete.sport));
     const measurablesHistory = (measurablesRaw || []).map((row) => {
-        const canonicalMetric = row.metric_canonical
-            || canonicalizeMetricKeyForGroup(athlete.sport, row.metric, positions.primary.group);
+        const canonicalMetric = canonicalizeMetricKeyForGroup(athlete.sport, row.metric, positions.primary.group);
         return {
             ...row,
             metric: canonicalMetric,
-            unit: row.unit_canonical || normalizeUnit(row.unit)
+            unit: normalizeUnit(row.unit)
         };
     });
 
@@ -151,17 +158,50 @@ export async function buildAthleteProfile(athleteId) {
         .map((row) => row.metric)
         .filter((metric) => metric && !allowedMetrics.has(metric));
 
+    const latestByMetric = buildLatestByMetric(measurablesHistory);
     const measurables = {
         positionGroup: positions.primary.group || null,
-        latestByMetric: buildLatestByMetric(measurablesHistory),
+        latestByMetric,
+        rawCount: measurablesHistory.length,
+        latestKeys: Object.keys(latestByMetric),
         history: measurablesHistory.slice(0, 25),
         unknownMetrics: Array.from(new Set(unknownMetrics))
     };
 
     const targetLevel = athlete?.goals?.targetLevels?.[0] || 'D2';
-    const benchmarks = sportSupported && positions.primary.group
-        ? await fetchBenchmarks(athlete.sport, positions.primary.group, targetLevel)
+    const applicableMetricKeys = sportSchema && positions.primary.group
+        ? (sportSchema.metrics || [])
+            .filter((metric) => metric.appliesToGroups?.includes(positions.primary.group))
+            .map((metric) => metric.key)
         : [];
+    const benchmarkQueryFilters = {
+        sport: sportKey,
+        position_group: positions.primary.group || null,
+        target_level: targetLevel,
+        metrics: applicableMetricKeys
+    };
+    const { data: benchmarksRaw, error: benchmarksError } = sportSupported && positions.primary.group
+        ? await safeSelect('measurable_benchmarks', (table) =>
+            table
+                .select('metric, p50, direction')
+                .eq('sport', sportKey)
+                .eq('position_group', positions.primary.group)
+                .eq('target_level', targetLevel)
+                .in('metric', applicableMetricKeys)
+        )
+        : { data: [], error: null };
+    const benchmarks = benchmarksRaw || [];
+    const benchmarkDiagnostics = {
+        sportKeyUsed: sportKey,
+        benchmarkQueryFilters,
+        benchmarksFoundCount: benchmarks.length,
+        benchmarksUsed: benchmarks.map((row) => ({
+            metric: row.metric,
+            p50: row.p50,
+            direction: row.direction
+        })),
+        benchmarkError: benchmarksError ? (benchmarksError.message || String(benchmarksError)) : null
+    };
 
     const { data: savedSchools } = await safeSelect('athlete_saved_schools', (table) =>
         table
@@ -307,10 +347,12 @@ export async function buildAthleteProfile(athleteId) {
             created_at: athlete.created_at,
             updated_at: athlete.updated_at
         },
+        sportKey,
         sportSupported,
         positions,
         measurables,
         benchmarks,
+        benchmarkDiagnostics,
         executionSignals,
         schools,
         upcomingEvents: eventsNext14Days,

@@ -101,6 +101,9 @@ export function computeGap(profile, _options = {}) {
 
     const missingMetrics = [];
     const gapsByMetric = [];
+    const diagnostics = {
+        matchedMetrics: []
+    };
 
     let totalDeficit = 0;
     let totalMeasured = 0;
@@ -121,11 +124,34 @@ export function computeGap(profile, _options = {}) {
             missingMetrics.push(metric.key);
         }
 
+        const a = athleteValue === null ? null : Number(athleteValue);
+        const b = benchmarkP50 === null ? null : Number(benchmarkP50);
+        const athleteValueIsNan = a !== null && Number.isNaN(a);
+        const benchmarkIsNan = b !== null && Number.isNaN(b);
+
+        if (athleteValueIsNan || benchmarkIsNan) {
+            diagnostics.matchedMetrics.push({
+                metricKey: metric.key,
+                athleteValue,
+                p50: benchmarkP50,
+                direction: metric.direction,
+                deficit: 'NaN',
+                normalizedDeficit: 'NaN'
+            });
+            return;
+        }
+
+        const deficit = (a === null || b === null)
+            ? null
+            : metric.direction === 'higher_better'
+                ? Math.max(0, b - a)
+                : Math.max(0, a - b);
+
         const normalizedDeficit = athleteValue === null
             ? null
             : computeNormalizedDeficit({
-                value: athleteValue,
-                p50: benchmarkP50,
+                value: a,
+                p50: b,
                 direction: metric.direction,
                 meaningfulDelta: metric.meaningfulDelta || 1
             });
@@ -134,6 +160,15 @@ export function computeGap(profile, _options = {}) {
             totalDeficit += normalizedDeficit;
             totalMeasured += 1;
         }
+
+        diagnostics.matchedMetrics.push({
+            metricKey: metric.key,
+            athleteValue: a,
+            p50: b,
+            direction: metric.direction,
+            deficit,
+            normalizedDeficit
+        });
 
         gapsByMetric.push({
             metricKey: metric.key,
@@ -158,6 +193,8 @@ export function computeGap(profile, _options = {}) {
         primaryGap,
         gapsByMetric,
         benchmarkLevelUsed,
-        missingMetrics
+        missingMetrics,
+        diagnostics,
+        notes: primaryGap ? undefined : { reason: 'NO_DEFICIT' }
     };
 }

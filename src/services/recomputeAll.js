@@ -20,31 +20,31 @@ export async function recomputeAll(profile) {
     const athleteId = profile?.athlete?.id || profile?.id;
     if (!athleteId) throw new Error('No athlete id provided for recomputeAll');
 
-    const profile = await buildAthleteProfile(athleteId);
+    const athleteProfile = await buildAthleteProfile(athleteId);
 
-    console.log('[recomputeAll] profile.sport', profile.sport);
-    console.log('[recomputeAll] profile.positions.primary.group', profile.positions?.primary?.group);
-    console.log('[recomputeAll] profile.measurables.positionGroup', profile.measurables?.positionGroup);
-    console.log('[recomputeAll] profile.flags', profile.flags);
+    console.log('[recomputeAll] profile.sport', athleteProfile.sport);
+    console.log('[recomputeAll] profile.positions.primary.group', athleteProfile.positions?.primary?.group);
+    console.log('[recomputeAll] profile.measurables.positionGroup', athleteProfile.measurables?.positionGroup);
+    console.log('[recomputeAll] profile.flags', athleteProfile.flags);
 
-    const positionGroup = profile.positions?.primary?.group || null;
-    const targetLevel = profile?.goals?.targetLevels?.[0] || 'D2';
+    const positionGroup = athleteProfile.positions?.primary?.group || null;
+    const targetLevel = athleteProfile?.goals?.targetLevels?.[0] || 'D2';
 
-    console.log(`[recomputeAll] Executing global analysis for ${profile.first_name}...`);
+    console.log(`[recomputeAll] Executing global analysis for ${athleteProfile.first_name}...`);
 
-    const phase = profile.phase || getAthletePhase(profile.grad_year);
+    const phase = athleteProfile.phase || getAthletePhase(athleteProfile.grad_year);
 
-    const gapResult = computeGap(profile);
+    const gapResult = computeGap(athleteProfile);
 
     console.log('[recomputeAll] athleteId', athleteId);
-    console.log('[recomputeAll] sport', profile.sport);
+    console.log('[recomputeAll] sport', athleteProfile.sport);
     console.log('[recomputeAll] position_group', positionGroup);
     console.log('[recomputeAll] primaryGap.metricKey', gapResult?.primaryGap?.metricKey || null);
 
     if (gapResult?.notes?.reason) {
         return {
             success: false,
-            athlete_id: profile.id,
+            athlete_id: athleteProfile.id,
             timestamp: new Date().toISOString(),
             reason: gapResult.notes
         };
@@ -52,22 +52,22 @@ export async function recomputeAll(profile) {
 
     await saveGapResult({
         athlete_id: athleteId,
-        sport: profile.sport,
+        sport: athleteProfile.sport,
         position_group: positionGroup,
         target_level: gapResult.benchmarkLevelUsed || targetLevel,
         gap_score: gapResult.gapScore0to100,
         details_json: gapResult
     });
 
-    const weeklyPlan = generateWeeklyPlan(profile, gapResult);
+    const weeklyPlan = generateWeeklyPlan(athleteProfile, gapResult);
     await saveWeeklyPlan(athleteId, weeklyPlan.weekOfDate, weeklyPlan);
 
-    const { readinessResult } = await computeReadiness({ ...profile, phase }, gapResult);
-    await computeSchoolInterest(profile, readinessResult);
+    const { readinessResult } = await computeReadiness({ ...athleteProfile, phase }, gapResult);
+    await computeSchoolInterest(athleteProfile, readinessResult);
 
     return {
         success: true,
-        athlete_id: profile.id,
+        athlete_id: athleteProfile.id,
         timestamp: new Date().toISOString(),
         summary: "Full analysis complete: Gap results, Readiness, School Interest, and Weekly Plan updated."
     };
