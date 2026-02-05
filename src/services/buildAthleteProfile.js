@@ -64,15 +64,38 @@ const getDateWindow = (days) => {
     return { now, start };
 };
 
+const normalizeAthleteRow = (row) => {
+    if (!row) return null;
+    return {
+        ...row,
+        first_name: row.first_name ?? row.firstName ?? null,
+        last_name: row.last_name ?? row.lastName ?? null,
+        grad_year: row.grad_year ?? row.gradYear ?? null,
+        zip_code: row.zip_code ?? row.zipCode ?? null,
+        gpa_range: row.gpa_range ?? row.gpaRange ?? null,
+        academic_tier: row.academic_tier ?? row.academicTier ?? null,
+        dream_school: row.dream_school ?? row.dreamSchool ?? null,
+        target_divisions: row.target_divisions ?? row.targetDivisions ?? null,
+        preferred_regions: row.preferred_regions ?? row.preferredRegions ?? null,
+        distance_preference: row.distance_preference ?? row.distancePreference ?? null,
+        primary_position_display: row.primary_position_display ?? row.primaryPositionDisplay ?? null,
+        primary_position_canonical: row.primary_position_canonical ?? row.primaryPositionCanonical ?? null,
+        primary_position_group: row.primary_position_group ?? row.primaryPositionGroup ?? null,
+        secondary_positions_canonical: row.secondary_positions_canonical ?? row.secondaryPositionsCanonical ?? [],
+        secondary_position_groups: row.secondary_position_groups ?? row.secondaryPositionGroups ?? []
+    };
+};
+
 export async function buildAthleteProfile(athleteId) {
-    const { data: athlete, error: athleteError } = await supabase
+    const { data: rawAthlete, error: athleteError } = await supabase
         .from('athletes')
-        .select('id, first_name, last_name, name, sport, grad_year, position, city, state, zip_code, latitude, longitude, gpa, gpa_range, academic_tier, dream_school, target_divisions, preferred_regions, distance_preference, goals, created_at, updated_at, primary_position_display, primary_position_canonical, primary_position_group, secondary_positions_canonical, secondary_position_groups')
+        .select('*')
         .eq('id', athleteId)
         .maybeSingle();
 
     if (athleteError) throw athleteError;
-    if (!athlete) throw new Error('Athlete not found');
+    if (!rawAthlete) throw new Error('Athlete not found');
+    const athlete = normalizeAthleteRow(rawAthlete);
 
     const sportSchema = getSportSchema(athlete.sport);
     const sportSupported = !!sportSchema;
