@@ -6,6 +6,7 @@ import { fetchLatestMeasurables } from '../lib/recruitingData';
 import { recomputeGap } from '../services/recomputeScores';
 import { recomputeAll } from '../services/recomputeAll';
 import { getMetricLabel, getMetricOptionsForSport, getMetricUnit } from '../config/sportSchema';
+import { normalizeMetricKey, normalizeUnit } from '../lib/normalize';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
@@ -300,12 +301,19 @@ function MeasurableEntryForm({ athleteId, sport, onSave }) {
 
         setIsSaving(true);
         try {
+            const metricKey = normalizeMetricKey(formData.metric);
+            const unitValue = normalizeUnit(formData.unit);
+
             const { error } = await supabase
                 .from('athlete_measurables')
                 .insert([{
                     athlete_id: athleteId,
                     sport: sport,
                     ...formData,
+                    metric: metricKey,
+                    metric_canonical: metricKey,
+                    unit: unitValue,
+                    unit_canonical: unitValue,
                     value: Number(formData.value)
                 }]);
 

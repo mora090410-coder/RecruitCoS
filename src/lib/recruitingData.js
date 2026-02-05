@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { canonicalizeMeasurableRow } from '../config/sportSchema';
+import { canonicalizeMeasurableRow, getMetricKeysForSport } from '../config/sportSchema';
 
 /**
  * Fetches the most recent measurables for an athlete.
@@ -20,7 +20,14 @@ export async function fetchLatestMeasurables(athleteId) {
         return [];
     }
 
-    const canonicalized = (data || []).map(row => canonicalizeMeasurableRow(row.sport, row));
+    const canonicalized = (data || []).map(row => {
+        const canonicalRow = canonicalizeMeasurableRow(row.sport, row);
+        const preferredMetric = row.metric_canonical || canonicalRow.metric;
+        return {
+            ...canonicalRow,
+            metric: preferredMetric
+        };
+    });
 
     // Filter to get only the latest for each metric
     const latestMap = new Map();
@@ -47,6 +54,19 @@ export async function fetchBenchmarks(sport, positionGroup, targetLevel) {
     if (error) {
         console.error('[recruitingData] Error fetching benchmarks:', error);
         return [];
+    }
+
+    if (import.meta.env.DEV) {
+        const allowed = new Set(getMetricKeysForSport(sport));
+        const unknown = (data || []).filter(row => !allowed.has(row.metric));
+        if (unknown.length > 0) {
+            console.warn('[benchmarks] Unknown metric keys found:', {
+                sport,
+                positionGroup,
+                targetLevel,
+                metrics: unknown.map(row => row.metric)
+            });
+        }
     }
 
     return data;

@@ -9,7 +9,8 @@ import {
     GraduationCap, Check, Sparkles, Target, Mail, Lock, X
 } from 'lucide-react'
 import RecruitingGoals from '../components/profile/RecruitingGoals'
-import { SUPPORTED_SPORTS, derivePositionGroup, getPositionOptionsForSport } from '../config/sportSchema'
+import { SUPPORTED_SPORTS, getPositionOptionsForSport } from '../config/sportSchema'
+import { mapCanonicalToGroup, mapPositionToCanonical, normalizeText, logSamplePositionMappings } from '../lib/normalize'
 
 // Constants
 const TOTAL_STEPS = 7
@@ -123,6 +124,10 @@ export default function ProfileSetup() {
         }
     }, [user])
 
+    useEffect(() => {
+        logSamplePositionMappings(formData.sport || 'Softball')
+    }, [formData.sport])
+
     const handleNext = () => setStep(s => Math.min(s + 1, TOTAL_STEPS))
     const handleBack = () => setStep(s => Math.max(s - 1, 1))
 
@@ -138,7 +143,8 @@ export default function ProfileSetup() {
     const handlePositionChange = (value) => {
         const options = getPositionOptionsForSport(formData.sport)
         const selected = options.find(option => option.code === value)
-        const group = derivePositionGroup(formData.sport, selected?.label || value)
+        const canonical = mapPositionToCanonical(formData.sport, selected?.label || value)
+        const group = mapCanonicalToGroup(formData.sport, canonical)
         setFormData(prev => ({
             ...prev,
             primaryPositionDisplay: selected?.label || '',
@@ -211,6 +217,10 @@ export default function ProfileSetup() {
             // 3. PROFILE CREATION
             console.log('Saving profile for user:', userId)
 
+            const normalizedDisplay = normalizeText(formData.primaryPositionDisplay)
+            const canonicalPosition = mapPositionToCanonical(formData.sport, normalizedDisplay)
+            const normalizedGroup = mapCanonicalToGroup(formData.sport, canonicalPosition) || formData.positionGroup
+
             const profileData = {
                 id: userId,
                 first_name: formData.firstName.trim(),
@@ -218,9 +228,10 @@ export default function ProfileSetup() {
                 name: fullName,
                 grad_year: parsedGradYear,
                 sport: formData.sport,
-                position: formData.primaryPositionDisplay,
-                primary_position_display: formData.primaryPositionDisplay,
-                position_group: formData.positionGroup,
+                position: normalizedDisplay,
+                primary_position_display: normalizedDisplay,
+                position_canonical: canonicalPosition,
+                position_group: normalizedGroup,
                 gpa_range: formData.gpaRange,
                 city: formData.locationCity,
                 state: formData.locationState,
