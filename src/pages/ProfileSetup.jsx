@@ -9,6 +9,7 @@ import {
     GraduationCap, Check, Sparkles, Target, Mail, Lock, X
 } from 'lucide-react'
 import RecruitingGoals from '../components/profile/RecruitingGoals'
+import { SUPPORTED_SPORTS, derivePositionGroup, getPositionOptionsForSport } from '../config/sportSchema'
 
 // Constants
 const TOTAL_STEPS = 7
@@ -35,38 +36,6 @@ const SEARCH_PREFERENCES = [
     { id: 'regional', label: 'Regional', icon: '🗺️', description: 'Within 500 miles' },
     { id: 'national', label: 'Anywhere', icon: '🌎', description: 'Coast to coast' }
 ]
-
-const SPORT_OPTIONS = ['Softball', 'Baseball']
-
-const POSITION_OPTIONS_BY_SPORT = {
-    Softball: [
-        { label: 'Pitcher', group: 'P' },
-        { label: 'Catcher', group: 'C' },
-        { label: 'First Base', group: 'IF' },
-        { label: 'Second Base', group: 'IF' },
-        { label: 'Third Base', group: 'IF' },
-        { label: 'Shortstop', group: 'IF' },
-        { label: 'Left Field', group: 'OF' },
-        { label: 'Center Field', group: 'OF' },
-        { label: 'Right Field', group: 'OF' },
-        { label: 'Infield', group: 'IF' },
-        { label: 'Outfield', group: 'OF' },
-        { label: 'Utility', group: 'IF' }
-    ],
-    Baseball: [
-        { label: 'Pitcher', group: 'P' },
-        { label: 'Catcher', group: 'C' },
-        { label: 'First Base', group: 'IF' },
-        { label: 'Second Base', group: 'IF' },
-        { label: 'Third Base', group: 'IF' },
-        { label: 'Shortstop', group: 'IF' },
-        { label: 'Left Field', group: 'OF' },
-        { label: 'Center Field', group: 'OF' },
-        { label: 'Right Field', group: 'OF' },
-        { label: 'Infield', group: 'IF' },
-        { label: 'Outfield', group: 'OF' }
-    ]
-}
 
 export default function ProfileSetup() {
     const { signUp, user } = useAuth()
@@ -167,12 +136,13 @@ export default function ProfileSetup() {
     }
 
     const handlePositionChange = (value) => {
-        const options = POSITION_OPTIONS_BY_SPORT[formData.sport] || []
-        const selected = options.find(option => option.label === value)
+        const options = getPositionOptionsForSport(formData.sport)
+        const selected = options.find(option => option.code === value)
+        const group = derivePositionGroup(formData.sport, selected?.label || value)
         setFormData(prev => ({
             ...prev,
             primaryPositionDisplay: selected?.label || '',
-            positionGroup: selected?.group || ''
+            positionGroup: group || selected?.group || ''
         }))
     }
 
@@ -378,7 +348,7 @@ export default function ProfileSetup() {
                     onChange={e => handleSportChange(e.target.value)}
                 >
                     <option value="" disabled>Select your sport</option>
-                    {SPORT_OPTIONS.map(sport => (
+                    {SUPPORTED_SPORTS.map(sport => (
                         <option key={sport} value={sport}>{sport}</option>
                     ))}
                 </select>
@@ -387,13 +357,13 @@ export default function ProfileSetup() {
                 <label className="text-zinc-400 text-sm">Position</label>
                 <select
                     className="w-full bg-zinc-800 border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-green-400 outline-none cursor-pointer"
-                    value={formData.primaryPositionDisplay}
+                    value={getPositionOptionsForSport(formData.sport).find(option => option.label === formData.primaryPositionDisplay)?.code || ''}
                     onChange={e => handlePositionChange(e.target.value)}
                     disabled={!formData.sport}
                 >
                     <option value="" disabled>{formData.sport ? 'Select your position' : 'Select a sport first'}</option>
-                    {(POSITION_OPTIONS_BY_SPORT[formData.sport] || []).map(option => (
-                        <option key={option.label} value={option.label}>{option.label}</option>
+                    {getPositionOptionsForSport(formData.sport).map(option => (
+                        <option key={option.code} value={option.code}>{option.label}</option>
                     ))}
                 </select>
             </div>

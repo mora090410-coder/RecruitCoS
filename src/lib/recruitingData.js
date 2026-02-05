@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { canonicalizeMeasurableRow } from '../config/sportSchema';
 
 /**
  * Fetches the most recent measurables for an athlete.
@@ -19,9 +20,11 @@ export async function fetchLatestMeasurables(athleteId) {
         return [];
     }
 
+    const canonicalized = (data || []).map(row => canonicalizeMeasurableRow(row.sport, row));
+
     // Filter to get only the latest for each metric
     const latestMap = new Map();
-    data.forEach(m => {
+    canonicalized.forEach(m => {
         if (!latestMap.has(m.metric)) {
             latestMap.set(m.metric, m);
         }
@@ -215,4 +218,3 @@ export async function fetchLatestWeeklyPlan(athleteId) {
     }
     return data;
 }
-

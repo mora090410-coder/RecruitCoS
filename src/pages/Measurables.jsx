@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { fetchLatestMeasurables } from '../lib/recruitingData';
 import { recomputeGap } from '../services/recomputeScores';
 import { recomputeAll } from '../services/recomputeAll';
+import { getMetricLabel, getMetricOptionsForSport, getMetricUnit } from '../config/sportSchema';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
@@ -236,7 +237,7 @@ function MeasurablesList({ measurables, benchmarks = [] }) {
                             <div className="flex justify-between items-start mb-3">
                                 <div className="space-y-1">
                                     <h4 className="text-sm font-bold capitalize text-zinc-900 flex items-center gap-2">
-                                        {m.metric.replace(/_/g, ' ')}
+                                        {getMetricLabel(m.sport, m.metric)}
                                         {isVerified && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
                                     </h4>
                                     <p className="text-[10px] text-zinc-400 font-medium uppercase tracking-wider">
@@ -282,10 +283,20 @@ function MeasurableEntryForm({ athleteId, sport, onSave }) {
         measured_at: new Date().toISOString().split('T')[0]
     });
     const [isSaving, setIsSaving] = useState(false);
+    const metricOptions = getMetricOptionsForSport(sport);
+
+    const handleMetricChange = (value) => {
+        const expectedUnit = getMetricUnit(sport, value);
+        setFormData(prev => ({
+            ...prev,
+            metric: value,
+            unit: expectedUnit
+        }));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.metric || !formData.value) return;
+        if (!formData.metric || !formData.value || !formData.unit) return;
 
         setIsSaving(true);
         try {
@@ -300,8 +311,8 @@ function MeasurableEntryForm({ athleteId, sport, onSave }) {
 
             if (error) throw error;
 
-            toast.success(`${formData.metric} saved!`);
-            setFormData({ ...formData, metric: '', value: '' });
+            toast.success(`${getMetricLabel(sport, formData.metric)} saved!`);
+            setFormData({ ...formData, metric: '', value: '', unit: '' });
             onSave();
         } catch (error) {
             toast.error("Error saving data point.");
@@ -320,12 +331,19 @@ function MeasurableEntryForm({ athleteId, sport, onSave }) {
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                         <label className="text-xs font-bold uppercase text-zinc-500">Metric Name</label>
-                        <Input
-                            placeholder="e.g. forty_time, vertical_jump, exit_velocity"
+                        <select
+                            className="w-full bg-zinc-50 border border-zinc-200 h-11 rounded-md px-3 text-sm focus:ring-brand-primary focus:ring-2 outline-none"
                             value={formData.metric}
-                            onChange={e => setFormData({ ...formData, metric: e.target.value })}
-                            className="bg-zinc-50 border-zinc-200 h-11 focus:ring-brand-primary"
-                        />
+                            onChange={e => handleMetricChange(e.target.value)}
+                            disabled={!sport || metricOptions.length === 0}
+                        >
+                            <option value="" disabled>{sport ? 'Select a metric' : 'Select sport first'}</option>
+                            {metricOptions.map(option => (
+                                <option key={option.canonical_key} value={option.canonical_key}>
+                                    {option.display_label}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-bold uppercase text-zinc-500">Value</label>
@@ -342,7 +360,7 @@ function MeasurableEntryForm({ athleteId, sport, onSave }) {
                                 <Input
                                     placeholder="unit"
                                     value={formData.unit}
-                                    onChange={e => setFormData({ ...formData, unit: e.target.value })}
+                                    readOnly
                                     className="h-6 w-12 text-[10px] bg-white p-1 border-zinc-200"
                                 />
                             </div>
