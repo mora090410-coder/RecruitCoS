@@ -4,7 +4,7 @@ import { CheckCircle2, Circle, Target, Rocket, Search, Trophy, Calendar, Zap, Al
 import { PHASE_CONFIG } from '../lib/constants';
 import { supabase } from '../lib/supabase';
 import { fetchLatestWeeklyPlan } from '../lib/recruitingData';
-import { useProfile } from '../contexts/ProfileContext';
+import { useProfile } from '../hooks/useProfile';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 

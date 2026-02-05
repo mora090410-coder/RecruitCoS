@@ -10,7 +10,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { computeGapScore } from '../lib/gapEngine';
 import { computeReadinessScore } from '../lib/readinessEngine';
-import { computeSchoolInterest } from './interestEngine';
+import { computeSchoolInterest } from '../lib/interestEngine';
 import { generateWeeklyPlan } from '../lib/weeklyPlanEngine';
 
 /**

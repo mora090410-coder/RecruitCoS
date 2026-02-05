@@ -175,3 +175,44 @@ export async function saveInterestResults(results) {
     }
 }
 
+/**
+ * Saves a generated weekly plan.
+ */
+export async function saveWeeklyPlan(athleteId, weekOf, planData) {
+    const { data, error } = await supabase
+        .from('athlete_weekly_plans')
+        .insert([{
+            athlete_id: athleteId,
+            week_of_date: weekOf,
+            plan_json: planData
+        }])
+        .select();
+
+    if (error) {
+        console.error('[recruitingData] Error saving weekly plan:', error);
+        throw error;
+    }
+    return data[0];
+}
+
+/**
+ * Fetches the latest weekly plan for an athlete.
+ */
+export async function fetchLatestWeeklyPlan(athleteId) {
+    if (!athleteId) return null;
+
+    const { data, error } = await supabase
+        .from('athlete_weekly_plans')
+        .select('*')
+        .eq('athlete_id', athleteId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (error) {
+        console.error('[recruitingData] Error fetching latest weekly plan:', error);
+        return null;
+    }
+    return data;
+}
+
