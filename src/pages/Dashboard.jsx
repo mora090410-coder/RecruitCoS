@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { getAthletePhase, PHASE_CONFIG, RECRUITING_PHASES } from '../lib/constants'
-import WeeklyBriefing from '../components/WeeklyBriefing'
+import WeeklyPlanCards from '../components/WeeklyPlanCards'
 import { recomputeGap } from '../services/recomputeScores';
 import { recomputeAll } from '../services/recomputeAll';
 import { toast } from 'sonner'
@@ -29,6 +29,12 @@ import {
 import { ReadinessScoreCard } from '../components/ReadinessScoreCard'
 import { fetchLatestReadiness } from '../lib/recruitingData'
 
+const logMatchCoachesDisabledOnce = () => {
+    if (!import.meta.env.DEV) return;
+    if (window.__matchCoachesDisabledLogged) return;
+    window.__matchCoachesDisabledLogged = true;
+    console.info('[DEV] match-coaches integration disabled via VITE_DISABLE_MATCH_COACHES.');
+};
 
 
 export default function Dashboard() {
@@ -177,11 +183,17 @@ export default function Dashboard() {
         try {
             setLoadingCoaches(true)
             const targetAthleteId = isImpersonating ? activeAthlete?.id : profile?.id
-            const { data, error } = await supabase.functions.invoke('match-coaches', {
-                body: { athlete_id: targetAthleteId, page: pageNumber, limit: 3 }
-            })
-            if (error) throw error
-            const newCoaches = data?.coaches || []
+            let newCoaches = []
+            if (import.meta.env.VITE_DISABLE_MATCH_COACHES === 'true') {
+                logMatchCoachesDisabledOnce()
+                newCoaches = []
+            } else {
+                const { data, error } = await supabase.functions.invoke('match-coaches', {
+                    body: { athlete_id: targetAthleteId, page: pageNumber, limit: 3 }
+                })
+                if (error) throw error
+                newCoaches = data?.coaches || []
+            }
             if (pageNumber === 0) {
                 setSuggestedCoaches(newCoaches)
             } else {
@@ -358,7 +370,7 @@ export default function Dashboard() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
-                        <WeeklyBriefing phase={phase} />
+                        <WeeklyPlanCards />
                         {filteredPosts.length === 0 ? (
                             <div className="text-center py-20 bg-white rounded-lg border border-dashed">
                                 <PlusCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />

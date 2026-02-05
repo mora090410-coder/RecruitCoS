@@ -238,3 +238,83 @@ export async function fetchLatestWeeklyPlan(athleteId) {
     }
     return data;
 }
+
+/**
+ * Fetches weekly plan items for a given athlete + week start date.
+ */
+export async function fetchWeeklyPlanItems(athleteId, weekStartDate) {
+    if (!athleteId || !weekStartDate) return [];
+
+    const { data, error } = await supabase
+        .from('athlete_weekly_plan_items')
+        .select('*')
+        .eq('athlete_id', athleteId)
+        .eq('week_start_date', weekStartDate)
+        .order('priority_rank', { ascending: true });
+
+    if (error) {
+        console.error('[recruitingData] Error fetching weekly plan items:', error);
+        return [];
+    }
+    return data || [];
+}
+
+/**
+ * Inserts weekly plan items.
+ */
+export async function insertWeeklyPlanItems(items) {
+    if (!items || items.length === 0) return [];
+
+    const { data, error } = await supabase
+        .from('athlete_weekly_plan_items')
+        .insert(items)
+        .select();
+
+    if (error) {
+        console.error('[recruitingData] Error inserting weekly plan items:', error);
+        throw error;
+    }
+    return data || [];
+}
+
+/**
+ * Deletes weekly plan items for a given athlete + week start date.
+ */
+export async function deleteWeeklyPlanItemsForWeek(athleteId, weekStartDate) {
+    if (!athleteId || !weekStartDate) return;
+
+    const { error } = await supabase
+        .from('athlete_weekly_plan_items')
+        .delete()
+        .eq('athlete_id', athleteId)
+        .eq('week_start_date', weekStartDate);
+
+    if (error) {
+        console.error('[recruitingData] Error deleting weekly plan items:', error);
+        throw error;
+    }
+}
+
+/**
+ * Updates status for a weekly plan item.
+ */
+export async function updateWeeklyPlanItemStatus(itemId, status) {
+    if (!itemId || !status) return null;
+    const updates = {
+        status,
+        completed_at: status === 'done' ? new Date().toISOString() : null
+    };
+
+    const { data, error } = await supabase
+        .from('athlete_weekly_plan_items')
+        .update(updates)
+        .eq('id', itemId)
+        .select()
+        .maybeSingle();
+
+    if (error) {
+        console.error('[recruitingData] Error updating weekly plan item status:', error);
+        throw error;
+    }
+    return data;
+}

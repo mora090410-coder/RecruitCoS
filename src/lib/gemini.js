@@ -3,9 +3,23 @@ import { sanitizeInput } from "./security";
 import { withRetry, isRetryableError } from "./aiUtils";
 
 let genAIInstance = null;
+let genAIDisabledLogged = false;
+
+const logGenAIDisabledOnce = () => {
+  if (!import.meta.env.DEV) return;
+  if (genAIDisabledLogged) return;
+  genAIDisabledLogged = true;
+  console.info('[DEV] Generative AI integration disabled via VITE_DISABLE_GENAI.');
+};
+
+const isGenAIDisabled = () => import.meta.env.VITE_DISABLE_GENAI === 'true';
 
 // Safe initialization
 export function getGenAI() {
+  if (isGenAIDisabled()) {
+    logGenAIDisabledOnce();
+    return null;
+  }
   if (genAIInstance) return genAIInstance;
 
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -31,6 +45,10 @@ export function getGenAI() {
  */
 export async function callGeminiWithRetry(model, prompt, options = {}) {
   const { maxRetries = 3, onRetry = null } = options;
+  if (isGenAIDisabled()) {
+    logGenAIDisabledOnce();
+    return { response: { text: () => '' } };
+  }
 
   return withRetry(
     async () => {
@@ -77,6 +95,10 @@ const SOCIAL_POSTS_SCHEMA = {
 };
 
 export async function generateSocialPosts(eventData, coaches = [], voiceProfile = "", phase = "Discovery", priorityTags = []) {
+  if (isGenAIDisabled()) {
+    logGenAIDisabledOnce();
+    return { options: [] };
+  }
   const genAI = getGenAI();
   if (!genAI) throw new Error("Gemini AI not initialized");
 
@@ -182,6 +204,14 @@ const RECRUITING_INSIGHT_SCHEMA = {
  * @param {Object} signalData - Count of High Signal schools per division { D1: count, D2: count, D3: count }
  */
 export async function getRecruitingInsight(phase, signalData) {
+  if (isGenAIDisabled()) {
+    logGenAIDisabledOnce();
+    return {
+      insight: "Your signal is steady. Stay focused on your development goals.",
+      isTractionShift: false,
+      recommendation: "Stay Course"
+    };
+  }
   const genAI = getGenAI();
   if (!genAI) throw new Error("Gemini AI not initialized");
 

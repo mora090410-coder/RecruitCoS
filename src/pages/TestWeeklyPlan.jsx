@@ -4,6 +4,7 @@ import { buildAthleteProfile } from '../services/buildAthleteProfile';
 import { computeGap } from '../services/engines/gapEngine';
 import { generateWeeklyPlan } from '../services/engines/weeklyPlanEngine';
 import { getSportSchema } from '../config/sportSchema';
+import { generateAndPersistWeeklyPlan, getWeeklyPlanDebugSnapshot } from '../services/weeklyPlanService';
 
 const DEFAULT_TARGET_LEVEL = 'D2';
 
@@ -34,6 +35,8 @@ export default function WeeklyPlanDebug() {
                 const sportSchema = getSportSchema(athleteProfile?.sportKey || athleteProfile?.sport);
                 const gapResult = computeGap(athleteProfile);
                 const weeklyPlan = generateWeeklyPlan(athleteProfile, gapResult);
+                await generateAndPersistWeeklyPlan(athleteId);
+                const weeklyPlanDebug = await getWeeklyPlanDebugSnapshot(athleteId);
                 const latestMetricKeys = Object.keys(athleteProfile?.measurables?.latestByMetric || {});
                 const measurablesRawCount = athleteProfile?.measurables?.rawCount || 0;
                 const benchmarksUsed = athleteProfile?.benchmarkDiagnostics?.benchmarksUsed
@@ -70,7 +73,8 @@ export default function WeeklyPlanDebug() {
                         primaryGap: gapResult?.primaryGap || null,
                         strengths: gapResult?.strengths || [],
                         perMetric: gapResult?.perMetric || [],
-                        priorities: weeklyPlan?.priorities || []
+                        priorities: weeklyPlan?.priorities || [],
+                        weeklyPlanDebug
                     }
                 });
             } catch (error) {
@@ -188,6 +192,27 @@ export default function WeeklyPlanDebug() {
                     <div className="bg-zinc-900 rounded-lg p-4 overflow-auto">
                         <h2 className="text-sm font-semibold mb-3">Weekly Plan Output</h2>
                         <pre className="text-xs text-zinc-200">{JSON.stringify(state.payload.priorities, null, 2)}</pre>
+                    </div>
+
+                    <div className="bg-zinc-900 rounded-lg p-4 overflow-auto">
+                        <h2 className="text-sm font-semibold mb-3">Current Week Plan Items</h2>
+                        <pre className="text-xs text-zinc-200">
+                            {JSON.stringify(state.payload.weeklyPlanDebug?.currentWeekItems || [], null, 2)}
+                        </pre>
+                    </div>
+
+                    <div className="bg-zinc-900 rounded-lg p-4 overflow-auto">
+                        <h2 className="text-sm font-semibold mb-3">Last Week Plan Items</h2>
+                        <pre className="text-xs text-zinc-200">
+                            {JSON.stringify(state.payload.weeklyPlanDebug?.lastWeekItems || [], null, 2)}
+                        </pre>
+                    </div>
+
+                    <div className="bg-zinc-900 rounded-lg p-4 overflow-auto">
+                        <h2 className="text-sm font-semibold mb-3">Plan Decisions</h2>
+                        <pre className="text-xs text-zinc-200">
+                            {JSON.stringify(state.payload.weeklyPlanDebug?.decisions || {}, null, 2)}
+                        </pre>
                     </div>
                 </div>
             )}

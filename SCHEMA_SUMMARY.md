@@ -146,3 +146,21 @@ Stores computed readiness scores and narrative insights.
 | narrative_json | JSONB | No | Positives, Blockers, Focus |
 | computed_at | TIMESTAMPTZ | No | |
 
+---
+
+### 10. athlete_weekly_plan_items
+Tracks weekly plan action items with completion status.
+
+| Column Name | Data Type | Nullable | Notes |
+| :--- | :--- | :--- | :--- |
+| **id** | UUID | No | **Primary Key** |
+| **athlete_id** | UUID | No | **FK to athletes.id (ON DELETE CASCADE)** |
+| week_start_date | DATE | No | Monday-based week start |
+| priority_rank | INTEGER | No | 1..3 |
+| item_type | TEXT | No | gap, strength, phase |
+| title | TEXT | No | |
+| why | TEXT | No | |
+| actions | JSONB | No | Array of strings |
+| status | TEXT | No | open, done, skipped |
+| completed_at | TIMESTAMPTZ | Yes | |
+| created_at | TIMESTAMPTZ | No | |
