@@ -160,7 +160,7 @@ export async function buildAthleteProfile(athleteId) {
 
     const { data: interestResults } = await safeSelect('athlete_school_interest_results', (table) =>
         table
-            .select('school_id, interest_score, next_action, computed_at')
+            .select('school_id, interest_score, next_action, drivers_json, computed_at')
             .eq('athlete_id', athleteId)
             .order('computed_at', { ascending: false })
     );
@@ -190,7 +190,14 @@ export async function buildAthleteProfile(athleteId) {
         eventsNext14Days: eventsNext14Days.length,
         eventsLast90Days: eventsLast90Days.length,
         postsLast30Days: postsLast30Days.length,
-        momentumScore0to100: computeSignalHeat(interactionsLast30Days)
+        momentumScore0to100: computeSignalHeat(interactionsLast30Days),
+        totalEvents: events.length,
+        recentEvents90d: eventsLast90Days.length,
+        totalMeasurables: measurablesHistory.length,
+        totalPosts: posts.length,
+        recentInteractions30d: interactionsLast30Days.length,
+        activeSchools: activeSchoolsCount,
+        momentumCount: interactionsLast30Days.length
     };
 
     const interestMap = new Map();
@@ -217,15 +224,20 @@ export async function buildAthleteProfile(athleteId) {
         const interest = interestMap.get(school.id) || null;
         return {
             schoolId: school.id,
+            id: school.id,
+            school_name: school.school_name,
             name: school.school_name,
             division: school.division || null,
             conference: school.conference || null,
             location: null,
             pipelineStatus: school.status || null,
+            status: school.status || null,
             lastInteractionAt: lastInteraction ? lastInteraction.toISOString() : null,
             signalHeat0to100: computeSignalHeat(schoolInteractions),
             interestScore0to100: interest ? Number(interest.interest_score) : null,
-            nextAction: interest ? interest.next_action : null
+            nextAction: interest ? interest.next_action : null,
+            interactions: schoolInteractions,
+            interest
         };
     });
 
@@ -237,6 +249,11 @@ export async function buildAthleteProfile(athleteId) {
     };
 
     return {
+        id: athlete.id,
+        sport: athlete.sport,
+        first_name: athlete.first_name,
+        grad_year: athlete.grad_year,
+        goals: athlete.goals,
         athlete: {
             id: athlete.id,
             first_name: athlete.first_name,
@@ -266,6 +283,7 @@ export async function buildAthleteProfile(athleteId) {
         measurables,
         executionSignals,
         schools,
+        upcomingEvents: eventsNext14Days,
         phase,
         flags
     };

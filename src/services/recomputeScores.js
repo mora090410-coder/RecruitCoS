@@ -1,225 +1,276 @@
 import {
-    fetchLatestMeasurables,
     fetchBenchmarks,
     saveGapResult,
-    fetchExecutionSignals,
     saveReadinessResult,
     saveInterestResults,
     saveWeeklyPlan
 } from '../lib/recruitingData';
-import { supabase } from '../lib/supabase';
+import { buildAthleteProfile } from './buildAthleteProfile';
 import { computeGapScore } from '../lib/gapEngine';
 import { computeReadinessScore } from '../lib/readinessEngine';
-import { computeSchoolInterest } from '../lib/interestEngine';
+import { computeSchoolInterest as computeSchoolInterestScore } from '../lib/interestEngine';
 import { generateWeeklyPlan } from '../lib/weeklyPlanEngine';
 
+const resolveAthleteId = (profile) => profile?.athlete?.id || profile?.id || null;
+const resolveSport = (profile) => profile?.sport || profile?.athlete?.sport || null;
+const resolveTargetLevel = (profile, fallback) => (
+    profile?.goals?.division_priority
+    || profile?.athlete?.goals?.division_priority
+    || fallback
+    || 'D1'
+);
+const resolvePositionGroup = (profile, fallback) => (
+    profile?.positions?.primary?.group
+    || profile?.measurables?.positionGroup
+    || fallback
+    || null
+);
+
+const buildAthleteMetrics = (profile) => {
+    const latest = profile?.measurables?.latestByMetric || {};
+    return Object.values(latest)
+        .map((row) => ({ metric: row.metric, value: Number(row.value) }))
+        .filter((row) => row.metric && !Number.isNaN(row.value));
+};
+
+const buildExecutionSignals = (profile) => {
+    const signals = profile?.executionSignals || {};
+    return {
+        totalEvents: signals.totalEvents || 0,
+        recentEvents90d: signals.recentEvents90d || signals.eventsLast90Days || 0,
+        totalMeasurables: signals.totalMeasurables || 0,
+        totalPosts: signals.totalPosts || 0,
+        recentInteractions30d: signals.recentInteractions30d || signals.interactionsLast30Days || 0,
+        activeSchools: signals.activeSchools || signals.activeSchoolsCount || 0,
+        momentumCount: signals.momentumCount || signals.recentInteractions30d || signals.interactionsLast30Days || 0
+    };
+};
+
+const buildInterestProfile = (profile) => ({
+    secondary_positions_canonical: profile?.positions?.secondary
+        ? profile.positions.secondary.map((position) => position.canonical).filter(Boolean)
+        : []
+});
+
 /**
- * Recomputes the gap score for an athlete.
- * Also triggers a readiness recomputation.
+ * Computes and persists the gap score using a normalized AthleteProfile DTO.
+ */
+export async function computeGap(profile) {
+    const athleteId = resolveAthleteId(profile);
+    const sport = resolveSport(profile);
+    const positionGroup = resolvePositionGroup(profile);
+    const targetLevel = resolveTargetLevel(profile);
+
+    if (!athleteId || !sport || !positionGroup || !targetLevel) {
+        throw new Error('Missing required arguments for computeGap');
+    }
+
+    console.log(`[computeGap] Starting for athlete ${athleteId}...`);
+
+    const benchmarks = await fetchBenchmarks(sport, positionGroup, targetLevel);
+
+    if (benchmarks.length === 0) {
+        console.warn(`[computeGap] No benchmarks found for ${sport} - ${positionGroup} - ${targetLevel}`);
+    }
+
+    const athleteMetrics = buildAthleteMetrics(profile);
+
+    const scoreOutput = computeGapScore({
+        sport,
+        positionGroup,
+        targetLevel,
+        athleteMetrics,
+        benchmarks
+    });
+
+    const savedResult = await saveGapResult({
+        athlete_id: athleteId,
+        sport,
+        position_group: positionGroup,
+        target_level: targetLevel,
+        gap_score: scoreOutput.gapScore0to100,
+        details_json: scoreOutput
+    });
+
+    console.log(`[computeGap] Success! Score: ${scoreOutput.gapScore0to100}`);
+
+    return { savedResult, gapResult: scoreOutput };
+}
+
+/**
+ * Computes and persists the readiness score using a normalized AthleteProfile DTO.
+ */
+export async function computeReadiness(profile, gapResult) {
+    const athleteId = resolveAthleteId(profile);
+    const sport = resolveSport(profile);
+    const targetLevel = resolveTargetLevel(profile);
+    const phase = profile?.phase || null;
+
+    if (!athleteId || !sport || !targetLevel || !phase) {
+        throw new Error('Missing required arguments for computeReadiness');
+    }
+
+    console.log(`[computeReadiness] Starting for athlete ${athleteId}...`);
+
+    const readinessOutput = computeReadinessScore({
+        athleteProfile: profile?.athlete || profile,
+        gapResult,
+        executionSignals: buildExecutionSignals(profile),
+        phase
+    });
+
+    const savedResult = await saveReadinessResult({
+        athlete_id: athleteId,
+        sport,
+        target_level: targetLevel,
+        readiness_score: readinessOutput.readinessScore0to100,
+        pillars_json: readinessOutput.pillars,
+        narrative_json: {
+            topPositives: readinessOutput.topPositives,
+            topBlockers: readinessOutput.topBlockers,
+            recommendedFocus: readinessOutput.recommendedFocus
+        }
+    });
+
+    console.log(`[computeReadiness] Success! Score: ${readinessOutput.readinessScore0to100}`);
+
+    return { savedResult, readinessResult: readinessOutput };
+}
+
+/**
+ * Computes and persists school interest using a normalized AthleteProfile DTO.
+ */
+export async function computeSchoolInterest(profile, readinessResult) {
+    const athleteId = resolveAthleteId(profile);
+    const schools = profile?.schools || [];
+
+    if (!athleteId) {
+        throw new Error('Missing required arguments for computeSchoolInterest');
+    }
+
+    console.log(`[computeSchoolInterest] Starting for athlete ${athleteId}...`);
+
+    if (schools.length === 0) return [];
+
+    const interestProfile = buildInterestProfile(profile);
+
+    const interestResults = schools.map((school) => {
+        const output = computeSchoolInterestScore({
+            athleteReadiness: readinessResult,
+            athleteProfile: interestProfile,
+            schoolData: school,
+            interactions: school.interactions || []
+        });
+
+        return {
+            athlete_id: athleteId,
+            school_id: school.schoolId || school.id,
+            interest_score: output.interestScore,
+            drivers_json: output.drivers,
+            next_action: output.nextAction,
+            computed_at: new Date().toISOString()
+        };
+    });
+
+    await saveInterestResults(interestResults);
+    console.log(`[computeSchoolInterest] Success for ${interestResults.length} schools.`);
+
+    return interestResults;
+}
+
+/**
+ * Computes and persists the weekly plan using a normalized AthleteProfile DTO.
+ */
+export async function computeWeeklyPlan(profile, gapResult, readinessResult, interestResults = []) {
+    const athleteId = resolveAthleteId(profile);
+    const phase = profile?.phase || null;
+
+    if (!athleteId || !phase) {
+        throw new Error('Missing required arguments for computeWeeklyPlan');
+    }
+
+    console.log(`[computeWeeklyPlan] Starting for athlete ${athleteId}...`);
+
+    const interestMap = new Map((interestResults || []).map((result) => [result.school_id, result]));
+    const savedSchools = (profile?.schools || []).map((school) => {
+        const interest = interestMap.get(school.schoolId || school.id) || school.interest || null;
+        return {
+            ...school,
+            school_name: school.school_name || school.name,
+            interactions: school.interactions || [],
+            interest
+        };
+    });
+
+    const recentPostsCount = savedSchools.reduce((acc, school) => {
+        return acc + (school.interactions?.filter((interaction) => interaction.type === 'Social DM').length || 0);
+    }, 0);
+
+    const plan = generateWeeklyPlan({
+        phase,
+        gapResult,
+        readinessResult,
+        savedSchools,
+        upcomingEvents: profile?.upcomingEvents || [],
+        recentPostsCount
+    });
+
+    await saveWeeklyPlan(athleteId, plan.weekOf, plan);
+    console.log(`[computeWeeklyPlan] Success for week ${plan.weekOf}`);
+
+    return plan;
+}
+
+/**
+ * Backwards-compatible wrappers.
  */
 export async function recomputeGap(athleteId, sport, positionGroup, targetLevel, athleteProfile, phase) {
-    try {
-        if (!athleteId || !sport || !positionGroup || !targetLevel) {
-            throw new Error('Missing required arguments for recomputeGap');
-        }
+    const profile = athleteProfile?.athlete
+        ? athleteProfile
+        : await buildAthleteProfile(athleteId);
+    const { savedResult } = await computeGap({
+        ...profile,
+        sport: resolveSport(profile) || sport,
+        goals: profile.goals || profile?.athlete?.goals || { division_priority: targetLevel },
+        positions: profile.positions || { primary: { group: positionGroup } }
+    });
 
-        console.log(`[recomputeGap] Starting for athlete ${athleteId}...`);
-
-        // 1. Fetch latest metrics
-        const measurables = await fetchLatestMeasurables(athleteId);
-
-        // 2. Fetch benchmarks
-        const benchmarks = await fetchBenchmarks(sport, positionGroup, targetLevel);
-
-        if (benchmarks.length === 0) {
-            console.warn(`[recomputeGap] No benchmarks found for ${sport} - ${positionGroup} - ${targetLevel}`);
-        }
-
-        // 3. Compute score
-        const athleteMetrics = measurables.map(m => ({
-            metric: m.metric,
-            value: Number(m.value)
-        }));
-
-        const scoreOutput = computeGapScore({
-            sport,
-            positionGroup,
-            targetLevel,
-            athleteMetrics,
-            benchmarks
-        });
-
-        // 4. Save result
-        const savedResult = await saveGapResult({
-            athlete_id: athleteId,
-            sport,
-            position_group: positionGroup,
-            target_level: targetLevel,
-            gap_score: scoreOutput.gapScore0to100,
-            details_json: scoreOutput
-        });
-
-        console.log(`[recomputeGap] Success! Score: ${scoreOutput.gapScore0to100}`);
-
-        // 5. Trigger Readiness Recompute (if profile and phase provided)
-        if (athleteProfile && phase) {
-            await recomputeReadiness(athleteId, sport, targetLevel, athleteProfile, phase, savedResult.details_json);
-        }
-
-        return savedResult;
-
-    } catch (error) {
-        console.error('[recomputeGap] Orchestration error:', error);
-        throw error;
+    if (athleteProfile && phase) {
+        await recomputeReadiness(athleteId, sport, targetLevel, profile, phase, savedResult.details_json);
     }
+
+    return savedResult;
 }
 
-/**
- * Recomputes the Readiness score for an athlete.
- */
 export async function recomputeReadiness(athleteId, sport, targetLevel, athleteProfile, phase, gapResult) {
-    try {
-        console.log(`[recomputeReadiness] Starting for athlete ${athleteId}...`);
+    const profile = athleteProfile?.athlete
+        ? athleteProfile
+        : await buildAthleteProfile(athleteId);
 
-        // 1. Fetch Execution Signals
-        const executionSignals = await fetchExecutionSignals(athleteId);
+    const { savedResult, readinessResult } = await computeReadiness({
+        ...profile,
+        sport: resolveSport(profile) || sport,
+        goals: profile.goals || profile?.athlete?.goals || { division_priority: targetLevel },
+        phase: profile.phase || phase
+    }, gapResult);
 
-        // 2. Compute Readiness
-        const readinessOutput = computeReadinessScore({
-            athleteProfile,
-            gapResult,
-            executionSignals,
-            phase
-        });
+    await recomputeInterestForAllSchools(athleteId, readinessResult, profile);
+    await regenerateWeeklyPlan(athleteId, phase || profile.phase, gapResult, readinessResult);
 
-        // 3. Save Result
-        const savedResult = await saveReadinessResult({
-            athlete_id: athleteId,
-            sport,
-            target_level: targetLevel,
-            readiness_score: readinessOutput.readinessScore0to100,
-            pillars_json: readinessOutput.pillars,
-            narrative_json: {
-                topPositives: readinessOutput.topPositives,
-                topBlockers: readinessOutput.topBlockers,
-                recommendedFocus: readinessOutput.recommendedFocus
-            }
-        });
-
-        console.log(`[recomputeReadiness] Success! Score: ${readinessOutput.readinessScore0to100}`);
-
-        // 4. Trigger Interest Recompute for all saved schools
-        await recomputeInterestForAllSchools(athleteId, readinessOutput, athleteProfile);
-
-        // 5. Regenerate Weekly Plan
-        await regenerateWeeklyPlan(athleteId, phase, gapResult, readinessOutput);
-
-        return savedResult;
-
-    } catch (error) {
-        console.error('[recomputeReadiness] Orchestration error:', error);
-        throw error;
-    }
+    return savedResult;
 }
 
-/**
- * Recomputes interest scores for every school on an athlete's list.
- */
 export async function recomputeInterestForAllSchools(athleteId, readinessResult, athleteProfile) {
-    try {
-        console.log(`[recomputeInterest] Starting for athlete ${athleteId}...`);
-
-        // 1. Fetch saved schools with their interactions
-        const { data: schools, error } = await supabase
-            .from('athlete_saved_schools')
-            .select('*, interactions:athlete_interactions(*)')
-            .eq('athlete_id', athleteId);
-
-        if (error) throw error;
-        if (!schools || schools.length === 0) return;
-
-        // 2. Compute interest for each school
-        const interestResults = schools.map(school => {
-            const output = computeSchoolInterest({
-                athleteReadiness: readinessResult,
-                athleteProfile,
-                schoolData: school,
-                interactions: school.interactions || []
-            });
-
-            return {
-                athlete_id: athleteId,
-                school_id: school.id,
-                interest_score: output.interestScore,
-                drivers_json: output.drivers,
-                next_action: output.nextAction,
-                computed_at: new Date().toISOString()
-            };
-        });
-
-        // 3. Save results
-        await saveInterestResults(interestResults);
-        console.log(`[recomputeInterest] Success for ${interestResults.length} schools.`);
-
-    } catch (error) {
-        console.error('[recomputeInterest] Error:', error);
-    }
+    const profile = athleteProfile?.athlete
+        ? athleteProfile
+        : await buildAthleteProfile(athleteId);
+    await computeSchoolInterest(profile, readinessResult);
 }
 
-/**
- * Regenerates the weekly plan for an athlete.
- */
 export async function regenerateWeeklyPlan(athleteId, phase, gapResult, readinessResult) {
-    try {
-        console.log(`[regenerateWeeklyPlan] Starting for athlete ${athleteId}...`);
-
-        // 1. Fetch saved schools with interest data
-        const { data: schools, error } = await supabase
-            .from('athlete_saved_schools')
-            .select('*, interactions:athlete_interactions(*)')
-            .eq('athlete_id', athleteId);
-
-        if (error) throw error;
-
-        // Fetch interest for these schools to include in the plan
-        const { data: interestData } = await supabase
-            .from('athlete_school_interest_results')
-            .select('*')
-            .eq('athlete_id', athleteId);
-
-        const interestMap = new Map((interestData || []).map(i => [i.school_id, i]));
-        const schoolsWithInterest = (schools || []).map(s => ({
-            ...s,
-            interest: interestMap.get(s.id)
-        }));
-
-        // 2. Fetch upcoming events
-        const { data: events } = await supabase
-            .from('athlete_events')
-            .select('*')
-            .eq('athlete_id', athleteId)
-            .gte('start_date', new Date().toISOString())
-            .lte('start_date', new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString());
-
-        // 3. Simple post count check (placeholder - assuming interaction type 'Social Post' or similar if it existed)
-        // For now, we'll just use a baseline or count recent interactions of specific types
-        const recentPostsCount = (schools || []).reduce((acc, s) => acc + (s.interactions?.filter(i => i.type === 'Social DM').length || 0), 0);
-
-        // 4. Generate Plan
-        const plan = generateWeeklyPlan({
-            phase,
-            gapResult,
-            readinessResult,
-            savedSchools: schoolsWithInterest,
-            upcomingEvents: events || [],
-            recentPostsCount
-        });
-
-        // 5. Save Plan
-        await saveWeeklyPlan(athleteId, plan.weekOf, plan);
-        console.log(`[regenerateWeeklyPlan] Success for week ${plan.weekOf}`);
-
-    } catch (error) {
-        console.error('[regenerateWeeklyPlan] Error:', error);
-    }
+    const profile = await buildAthleteProfile(athleteId);
+    await computeWeeklyPlan({
+        ...profile,
+        phase: profile.phase || phase
+    }, gapResult, readinessResult);
 }

@@ -1,4 +1,10 @@
-import { recomputeGap } from './recomputeScores.js';
+import { buildAthleteProfile } from './buildAthleteProfile.js';
+import {
+    computeGap,
+    computeReadiness,
+    computeSchoolInterest,
+    computeWeeklyPlan
+} from './recomputeScores.js';
 import { getAthletePhase } from '../lib/constants.js';
 import { getSportSchema } from '../config/sportSchema.js';
 
@@ -11,11 +17,21 @@ import { getSportSchema } from '../config/sportSchema.js';
 export async function recomputeAll(profile) {
     if (!profile) throw new Error('No profile provided for recomputeAll');
 
-    const sportSchema = getSportSchema(profile.sport);
+    const athleteId = profile?.athlete?.id || profile?.id;
+    if (!athleteId) throw new Error('No athlete id provided for recomputeAll');
+
+    const normalizedProfile = await buildAthleteProfile(athleteId);
+
+    console.log('[recomputeAll] profile.sport', normalizedProfile.sport);
+    console.log('[recomputeAll] profile.positions.primary.group', normalizedProfile.positions?.primary?.group);
+    console.log('[recomputeAll] profile.measurables.positionGroup', normalizedProfile.measurables?.positionGroup);
+    console.log('[recomputeAll] profile.flags', normalizedProfile.flags);
+
+    const sportSchema = getSportSchema(normalizedProfile.sport);
     if (!sportSchema) {
         return {
             success: false,
-            athlete_id: profile.id,
+            athlete_id: normalizedProfile.id,
             timestamp: new Date().toISOString(),
             reason: {
                 code: 'UNSUPPORTED_SPORT',
@@ -24,11 +40,11 @@ export async function recomputeAll(profile) {
         };
     }
 
-    const positionGroup = profile.primary_position_group || profile.position_group || null;
+    const positionGroup = normalizedProfile.positions?.primary?.group || null;
     if (!positionGroup) {
         return {
             success: false,
-            athlete_id: profile.id,
+            athlete_id: normalizedProfile.id,
             timestamp: new Date().toISOString(),
             reason: {
                 code: 'MISSING_POSITION_GROUP',
@@ -37,28 +53,18 @@ export async function recomputeAll(profile) {
         };
     }
 
-    console.log(`[recomputeAll] Executing global analysis for ${profile.first_name}...`);
+    console.log(`[recomputeAll] Executing global analysis for ${normalizedProfile.first_name}...`);
 
-    const phase = profile.phase || getAthletePhase(profile.grad_year);
+    const phase = normalizedProfile.phase || getAthletePhase(normalizedProfile.grad_year);
 
-    // The current recomputeGap orchestration already triggers:
-    // 1. recomputeGap
-    // 2. recomputeReadiness
-    // 3. recomputeInterestForAllSchools
-    // 4. regenerateWeeklyPlan
-
-    const result = await recomputeGap(
-        profile.id,
-        profile.sport,
-        positionGroup,
-        profile.goals?.division_priority || 'D1',
-        profile,
-        phase
-    );
+    const { gapResult } = await computeGap({ ...normalizedProfile, phase });
+    const { readinessResult } = await computeReadiness({ ...normalizedProfile, phase }, gapResult);
+    const interestResults = await computeSchoolInterest(normalizedProfile, readinessResult);
+    await computeWeeklyPlan(normalizedProfile, gapResult, readinessResult, interestResults);
 
     return {
         success: true,
-        athlete_id: profile.id,
+        athlete_id: normalizedProfile.id,
         timestamp: new Date().toISOString(),
         summary: "Full analysis complete: Gaps, Readiness, School Interest, and Weekly Plan updated."
     };
