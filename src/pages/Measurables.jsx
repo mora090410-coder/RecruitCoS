@@ -57,8 +57,15 @@ export default function Measurables() {
 
         setIsRecomputing(true);
         try {
-            await recomputeGap(profile.id, profile.sport, profile.position, profile.goals.division_priority);
-            toast.success("Gap analysis updated!");
+            await recomputeGap(
+                profile.id,
+                profile.sport,
+                profile.position,
+                profile.goals.division_priority,
+                profile,
+                profile.phase
+            );
+            toast.success("Gap analysis and Readiness updated!");
             loadData();
         } catch (error) {
             toast.error("Failed to recompute scores.");

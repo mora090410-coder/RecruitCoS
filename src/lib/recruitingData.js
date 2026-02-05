@@ -65,3 +65,79 @@ export async function saveGapResult(result) {
 
     return data[0];
 }
+
+/**
+ * Fetches signals needed for the Readiness Engine.
+ */
+export async function fetchExecutionSignals(athleteId) {
+    if (!athleteId) return {};
+
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    const [
+        { count: totalEvents },
+        { count: recentEvents },
+        { count: totalMeasurables },
+        { count: totalPosts },
+        { count: recentInteractions },
+        { data: activeSchools }
+    ] = await Promise.all([
+        supabase.from('events').select('*', { count: 'exact', head: true }).eq('athlete_id', athleteId),
+        supabase.from('events').select('*', { count: 'exact', head: true }).eq('athlete_id', athleteId).gt('event_date', ninetyDaysAgo),
+        supabase.from('athlete_measurables').select('*', { count: 'exact', head: true }).eq('athlete_id', athleteId),
+        supabase.from('posts').select('*', { count: 'exact', head: true }).eq('athlete_id', athleteId),
+        supabase.from('athlete_interactions').select('*', { count: 'exact', head: true }).eq('athlete_id', athleteId).gt('interaction_date', thirtyDaysAgo),
+        supabase.from('athlete_saved_schools').select('id, category').eq('athlete_id', athleteId).eq('category', 'active')
+    ]);
+
+    return {
+        totalEvents: totalEvents || 0,
+        recentEvents90d: recentEvents || 0,
+        totalMeasurables: totalMeasurables || 0,
+        totalPosts: totalPosts || 0,
+        recentInteractions30d: recentInteractions || 0,
+        activeSchools: activeSchools?.length || 0,
+        momentumCount: recentInteractions || 0 // Proxying for now
+    };
+}
+
+/**
+ * Fetches the latest readiness result for an athlete.
+ */
+export async function fetchLatestReadiness(athleteId) {
+    if (!athleteId) return null;
+
+    const { data, error } = await supabase
+        .from('athlete_readiness_results')
+        .select('*')
+        .eq('athlete_id', athleteId)
+        .order('computed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (error) {
+        console.error('[recruitingData] Error fetching latest readiness:', error);
+        return null;
+    }
+
+    return data;
+}
+
+/**
+ * Saves a computed readiness result.
+ */
+export async function saveReadinessResult(result) {
+    const { data, error } = await supabase
+        .from('athlete_readiness_results')
+        .insert([result])
+        .select();
+
+    if (error) {
+        console.error('[recruitingData] Error saving readiness result:', error);
+        throw error;
+    }
+
+    return data[0];
+}
+

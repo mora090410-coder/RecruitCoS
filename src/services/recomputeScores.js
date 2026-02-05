@@ -1,15 +1,18 @@
-import { fetchLatestMeasurables, fetchBenchmarks, saveGapResult } from '../lib/recruitingData';
+import {
+    fetchLatestMeasurables,
+    fetchBenchmarks,
+    saveGapResult,
+    fetchExecutionSignals,
+    saveReadinessResult
+} from '../lib/recruitingData';
 import { computeGapScore } from '../lib/gapEngine';
+import { computeReadinessScore } from '../lib/readinessEngine';
 
 /**
  * Recomputes the gap score for an athlete.
- * 
- * @param {string} athleteId 
- * @param {string} sport 
- * @param {string} positionGroup 
- * @param {string} targetLevel 
+ * Also triggers a readiness recomputation.
  */
-export async function recomputeGap(athleteId, sport, positionGroup, targetLevel) {
+export async function recomputeGap(athleteId, sport, positionGroup, targetLevel, athleteProfile, phase) {
     try {
         if (!athleteId || !sport || !positionGroup || !targetLevel) {
             throw new Error('Missing required arguments for recomputeGap');
@@ -25,7 +28,6 @@ export async function recomputeGap(athleteId, sport, positionGroup, targetLevel)
 
         if (benchmarks.length === 0) {
             console.warn(`[recomputeGap] No benchmarks found for ${sport} - ${positionGroup} - ${targetLevel}`);
-            // We can still "compute" but score will be 0 or based on empty set
         }
 
         // 3. Compute score
@@ -53,10 +55,57 @@ export async function recomputeGap(athleteId, sport, positionGroup, targetLevel)
         });
 
         console.log(`[recomputeGap] Success! Score: ${scoreOutput.gapScore0to100}`);
+
+        // 5. Trigger Readiness Recompute (if profile and phase provided)
+        if (athleteProfile && phase) {
+            await recomputeReadiness(athleteId, sport, targetLevel, athleteProfile, phase, savedResult.details_json);
+        }
+
         return savedResult;
 
     } catch (error) {
         console.error('[recomputeGap] Orchestration error:', error);
+        throw error;
+    }
+}
+
+/**
+ * Recomputes the Readiness score for an athlete.
+ */
+export async function recomputeReadiness(athleteId, sport, targetLevel, athleteProfile, phase, gapResult) {
+    try {
+        console.log(`[recomputeReadiness] Starting for athlete ${athleteId}...`);
+
+        // 1. Fetch Execution Signals
+        const executionSignals = await fetchExecutionSignals(athleteId);
+
+        // 2. Compute Readiness
+        const readinessOutput = computeReadinessScore({
+            athleteProfile,
+            gapResult,
+            executionSignals,
+            phase
+        });
+
+        // 3. Save Result
+        const savedResult = await saveReadinessResult({
+            athlete_id: athleteId,
+            sport,
+            target_level: targetLevel,
+            readiness_score: readinessOutput.readinessScore0to100,
+            pillars_json: readinessOutput.pillars,
+            narrative_json: {
+                topPositives: readinessOutput.topPositives,
+                topBlockers: readinessOutput.topBlockers,
+                recommendedFocus: readinessOutput.recommendedFocus
+            }
+        });
+
+        console.log(`[recomputeReadiness] Success! Score: ${readinessOutput.readinessScore0to100}`);
+        return savedResult;
+
+    } catch (error) {
+        console.error('[recomputeReadiness] Orchestration error:', error);
         throw error;
     }
 }

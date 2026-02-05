@@ -129,3 +129,20 @@ Target performance levels for different sports and positions.
 | p90 | NUMERIC | Yes | |
 | unit | TEXT | Yes | |
 | weight | INTEGER | No | Default 5 |
+
+---
+
+### 9. athlete_readiness_results
+Stores computed readiness scores and narrative insights.
+
+| Column Name | Data Type | Nullable | Notes |
+| :--- | :--- | :--- | :--- |
+| id | UUID | No | |
+| **athlete_id** | UUID | No | **FK to athletes.id (ON DELETE CASCADE)** |
+| sport | TEXT | No | |
+| target_level | TEXT | No | |
+| readiness_score | NUMERIC | No | 0-100 scale |
+| pillars_json | JSONB | No | Scores for 5 key pillars |
+| narrative_json | JSONB | No | Positives, Blockers, Focus |
+| computed_at | TIMESTAMPTZ | No | |
+

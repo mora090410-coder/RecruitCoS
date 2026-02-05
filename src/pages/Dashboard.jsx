@@ -24,6 +24,9 @@ import {
     DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu'
 import { toast } from 'sonner'
+import { ReadinessScoreCard } from '../components/ReadinessScoreCard'
+import { fetchLatestReadiness } from '../lib/recruitingData'
+
 
 
 export default function Dashboard() {
@@ -39,6 +42,9 @@ export default function Dashboard() {
     const [suggestedCoaches, setSuggestedCoaches] = useState([])
     const [loadingCoaches, setLoadingCoaches] = useState(false)
     const [page, setPage] = useState(0)
+    const [readinessResult, setReadinessResult] = useState(null)
+    const [loadingReadiness, setLoadingReadiness] = useState(false)
+
 
     useEffect(() => {
         async function fetchData() {
@@ -92,7 +98,15 @@ export default function Dashboard() {
                 .limit(10)
 
             setPosts(recentPosts || [])
+            setPosts(recentPosts || [])
+
+            // 4. Get Readiness
+            setLoadingReadiness(true)
+            const readiness = await fetchLatestReadiness(targetAthleteId)
+            setReadinessResult(readiness)
+            setLoadingReadiness(false)
         }
+
         if (user && (profile || (isImpersonating && activeAthlete))) fetchData()
     }, [user, profile, activeAthlete, isImpersonating, navigate])
 
@@ -364,7 +378,6 @@ export default function Dashboard() {
                     </div>
 
                     <div className="space-y-6">
-                        {/* September 1st Countdown Widget - Comparison Phase Only */}
                         {phase === RECRUITING_PHASES.COMPARISON && (
                             <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg space-y-4">
                                 <div className="flex items-center gap-3">
@@ -392,7 +405,8 @@ export default function Dashboard() {
                             </div>
                         )}
 
-                        {phase === RECRUITING_PHASES.IDENTIFICATION && <ShowcaseReadinessMeter />}
+                        <ReadinessScoreCard result={readinessResult} loading={loadingReadiness} />
+
 
                         <Card className="overflow-hidden border-brand-primary/20 bg-gradient-to-br from-white to-brand-primary/5">
                             <CardHeader className="pb-3">
