@@ -76,7 +76,7 @@ const SOCIAL_POSTS_SCHEMA = {
   required: ["options"]
 };
 
-export async function generateSocialPosts(eventData, coaches = [], voiceProfile = "", phase = "Discovery") {
+export async function generateSocialPosts(eventData, coaches = [], voiceProfile = "", phase = "Discovery", priorityTags = []) {
   const genAI = getGenAI();
   if (!genAI) throw new Error("Gemini AI not initialized");
 
@@ -88,10 +88,13 @@ export async function generateSocialPosts(eventData, coaches = [], voiceProfile 
   const safeVoice = sanitizeInput(voiceProfile);
   const safePhase = sanitizeInput(phase);
 
-  const coachTags = coaches.map(c => {
+  const formatCoach = (c) => {
     const handle = c.twitter_handle || 'no_handle';
     return `${sanitizeInput(c.name)} (${handle.startsWith('@') ? handle : '@' + handle})`;
-  }).join(', ') || "None";
+  };
+
+  const coachTags = coaches.map(formatCoach).join(', ') || "None";
+  const priorityTagStrings = priorityTags.map(formatCoach).join(', ') || "None";
 
   // 2026 Gemini 3 Standards: systemInstruction with JSON schema
   const systemInstruction = `You are a social media expert for high school athletes.
@@ -113,7 +116,10 @@ STYLE GUIDELINES:
 - Hype: Energetic, determined, confident.
 ${safeVoice ? `- My Voice: Match this exact instruction: "${safeVoice}"` : ''}
 
-CRITICAL: Include exact Twitter handles from "Coaches to Tag" in ALL 3 options.`;
+PRIORITY TAGGING:
+If Priority Tags are provided, you MUST include them prominently in the content of ALL 3 post options. These are coaches from the athlete's target schools who are attending this regional event.
+
+CRITICAL: Include exact Twitter handles from "Coaches to Tag" and "Priority Tags" in ALL 3 options.`;
 
   const model = genAI.getGenerativeModel({
     model: "gemini-3-flash-preview",
@@ -132,9 +138,10 @@ CRITICAL: Include exact Twitter handles from "Coaches to Tag" in ALL 3 options.`
 - Details: ${safeDescription}
 - Date: ${safeDate}
 - Coaches to Tag: ${coachTags}
+- Priority Tags (MUST INCLUDE): ${priorityTagStrings}
 
 INSTRUCTION:
-Generate 3 distinct social media post options for this event. Each post should be Twitter/X style (max 280 characters). Include the provided coach handles in each post.`;
+Generate 3 distinct social media post options for this event. Each post should be Twitter/X style (max 280 characters). Include all coach handles in each post.`;
 
   if (import.meta.env.DEV) {
     console.log("Generating social posts for phase:", safePhase);

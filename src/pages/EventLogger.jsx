@@ -8,7 +8,7 @@ import { generateSocialPosts } from '../lib/gemini'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
-import { Mic, Check, Twitter, Calendar } from 'lucide-react'
+import { Mic, Check, Twitter, Calendar, Rocket, Sparkles } from 'lucide-react'
 
 import CoachSelector from '../components/CoachSelector'
 
@@ -58,8 +58,14 @@ export default function EventLogger() {
         title: '',
         description: '',
         date: new Date().toISOString().split('T')[0],
-        event_type: 'game'
+        event_type: 'game',
+        tournament_location: '',
+        tournament_region: 'West Coast'
     })
+
+    const [template, setTemplate] = useState('Game Highlight') // 'Practice Clip' | 'Game Highlight' | 'Upcoming Tournament'
+    const [priorityCoaches, setPriorityCoaches] = useState([])
+    const [searchingPriority, setSearchingPriority] = useState(false)
 
     // Check Voice Profile on Mount
     useEffect(() => {
@@ -89,23 +95,58 @@ export default function EventLogger() {
         checkProfile()
     }, [user])
 
-    const handleVoiceSelection = async (prompt) => {
-        try {
-            const { error } = await supabase
-                .from('athletes')
-                .update({ voice_profile: prompt })
-                .eq('id', athlete.id)
-
-            if (error) throw error
-
-            // Update local state
-            setAthlete(prev => ({ ...prev, voice_profile: prompt }))
-            setShowVoiceModal(false)
-        } catch (err) {
-            console.error("Error updating voice:", err)
-            alert("Failed to save voice preference")
+    // Template Effect
+    useEffect(() => {
+        if (template === 'Practice Clip') {
+            setFormData(prev => ({ ...prev, event_type: 'practice', title: 'Work in Progress 🛠️' }))
+        } else if (template === 'Game Highlight') {
+            setFormData(prev => ({ ...prev, event_type: 'game', title: '' }))
+        } else if (template === 'Upcoming Tournament') {
+            setFormData(prev => ({ ...prev, event_type: 'showcase', title: 'Tournament Bound 🚀' }))
         }
-    }
+    }, [template])
+
+    // Regional Coach Research Effect
+    useEffect(() => {
+        async function researchCoaches() {
+            if (template !== 'Upcoming Tournament' || !user) {
+                setPriorityCoaches([])
+                return
+            }
+
+            setSearchingPriority(true)
+            try {
+                // 1. Get saved schools
+                const { data: savedSchools } = await supabase
+                    .from('athlete_saved_schools')
+                    .select('school_name')
+                    .eq('athlete_id', user.id)
+
+                if (!savedSchools || savedSchools.length === 0) {
+                    setPriorityCoaches([])
+                    return
+                }
+
+                const schoolNames = savedSchools.map(s => s.school_name)
+
+                // 2. Find coaches in the selected region from those schools
+                const { data: regionalCoaches } = await supabase
+                    .from('coaches')
+                    .select('*')
+                    .in('school', schoolNames)
+                    .eq('region', formData.tournament_region)
+                    .limit(5)
+
+                setPriorityCoaches(regionalCoaches || [])
+            } catch (err) {
+                console.error("Regional research error:", err)
+            } finally {
+                setSearchingPriority(false)
+            }
+        }
+
+        researchCoaches()
+    }, [template, formData.tournament_region, user])
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -172,7 +213,13 @@ export default function EventLogger() {
         // 3. Generate Content
         try {
             const currentPhase = getAthletePhase(currentAthlete.grad_year);
-            const aiResponse = await generateSocialPosts(formData, selectedCoaches, currentAthlete.voice_profile || "", currentPhase);
+            const aiResponse = await generateSocialPosts(
+                formData,
+                selectedCoaches,
+                currentAthlete.voice_profile || "",
+                currentPhase,
+                priorityCoaches
+            );
             setGeneratedPosts(aiResponse.options);
         } catch (aiError) {
             console.error("AI Gen Error", aiError);
@@ -267,9 +314,9 @@ export default function EventLogger() {
                     <CardHeader className="bg-white border-b border-gray-100 rounded-t-xl">
                         <CardTitle className="flex items-center gap-2">
                             <span className="bg-brand-primary/10 p-2 rounded-lg text-brand-primary">
-                                <Twitter size={20} />
+                                <Rocket size={20} />
                             </span>
-                            Log New Event
+                            Smart Event Lab
                             {isImpersonating && (
                                 <span className="ml-2 px-2 py-0.5 bg-brand-primary/10 text-brand-primary text-[10px] font-bold uppercase rounded-md">
                                     Manager Mode
@@ -277,9 +324,26 @@ export default function EventLogger() {
                             )}
                         </CardTitle>
                         <p className="text-sm text-gray-500">
-                            Log your stats, tag coaches, and let AI generate your post.
+                            Select a template to auto-calibrate your post generation.
                         </p>
                     </CardHeader>
+                    <div className="px-6 pt-6">
+                        <div className="flex p-1 bg-gray-100 rounded-lg gap-1">
+                            {['Practice Clip', 'Game Highlight', 'Upcoming Tournament'].map((t) => (
+                                <button
+                                    key={t}
+                                    type="button"
+                                    onClick={() => setTemplate(t)}
+                                    className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${template === t
+                                        ? 'bg-white text-brand-primary shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700'
+                                        }`}
+                                >
+                                    {t}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                     <CardContent className="pt-6">
                         <form onSubmit={handleSubmit} className="space-y-5">
 
@@ -315,6 +379,36 @@ export default function EventLogger() {
                                 </div>
                             </div>
 
+                            {template === 'Upcoming Tournament' && (
+                                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Tournament Location</label>
+                                        <Input
+                                            name="tournament_location"
+                                            placeholder="e.g. Plano, TX"
+                                            value={formData.tournament_location}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Region</label>
+                                        <select
+                                            name="tournament_region"
+                                            value={formData.tournament_region}
+                                            onChange={handleChange}
+                                            className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-primary"
+                                        >
+                                            <option value="West Coast">West Coast</option>
+                                            <option value="Southeast">Southeast</option>
+                                            <option value="Southwest">Southwest</option>
+                                            <option value="Midwest">Midwest</option>
+                                            <option value="Northeast">Northeast</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Headline</label>
                                 <Input
@@ -332,12 +426,33 @@ export default function EventLogger() {
                                 <textarea
                                     name="description"
                                     className="flex min-h-[100px] w-full rounded-md border border-input bg-white px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-primary"
-                                    placeholder="Make sure to include specific stats (e.g. 3-4, 2 HRs) and the result (won 8-2)."
+                                    placeholder={template === 'Upcoming Tournament'
+                                        ? "List games, booth numbers, or specific coaches you're excited to see."
+                                        : "Make sure to include specific stats (e.g. 3-4, 2 HRs) and the result (won 8-2)."}
                                     value={formData.description}
                                     onChange={handleChange}
                                     required
                                 />
                             </div>
+
+                            {template === 'Upcoming Tournament' && priorityCoaches.length > 0 && (
+                                <div className="bg-green-50/50 border border-green-100 p-3 rounded-lg animate-in fade-in duration-500">
+                                    <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <Sparkles className="w-3 h-3" />
+                                        Regional Priority Tags Found ({priorityCoaches.length})
+                                    </p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {priorityCoaches.map(c => (
+                                            <span key={c.id} className="text-[10px] bg-white border border-green-200 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                                                {c.name} ({c.school})
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <p className="text-[9px] text-green-600 mt-2 font-medium">
+                                        AI will automatically prioritize these target coaches in your posts.
+                                    </p>
+                                </div>
+                            )}
 
                             <div className="pt-2">
                                 <CoachSelector
