@@ -266,8 +266,9 @@ CATEGORIZATION RULES:
 3. SOLID (10-12 schools): Likely serious interest.
 
 IMPORTANT INSTRUCTION:
-Instead of finding schools similar to one name, find 35 schools that best satisfy the provided athlete goals. 
-If the objective is 'Playing Time', prioritize high-tier D2/D3/NAIA schools where the athlete's GPA and stats would place them in the top 10% of recruits (meaning the school's average requirements are significantly lower than the athlete's profile).`
+Find 35 schools that best satisfy the provided athlete goals. 
+If the primary_objective is close to 'Playing Time' (towards 100), prioritize schools where the athlete's stats and GPA would place them in the top 10% of recruits (meaning the school's average requirements are significantly lower than the athlete's profile). 
+If it is close to 'Prestige' (towards 0), prioritize elite academic and athletic brands.`
 
             const genAI = getGenAI()
             if (!genAI) throw new Error("Gemini API Key missing")
@@ -291,15 +292,12 @@ Athlete Profile:
 - Home Location: ${sanitizeInput(athleteProfile?.location) || 'Unknown'}
 
 ATHLETE GOALS:
-${JSON.stringify({
-                north_star: athleteProfile?.goals?.north_star || searchSchool,
-                division_priority: athleteProfile?.goals?.division_priority || 'any',
-                academic_interest: athleteProfile?.goals?.academic_interest || 'General',
-                primary_objective: athleteProfile?.goals?.primary_objective || 'prestige'
-            }, null, 2)}
+${JSON.stringify(athleteProfile?.goals || {}, null, 2)}
 
 INSTRUCTION:
-Find 35 schools that best satisfy these athlete goals. Focus on the 'primary_objective' to weigh the results.`
+Find 35 schools that best satisfy these athlete goals: ${JSON.stringify(athleteProfile?.goals || {})}. 
+Focus on the 'primary_objective' slider (0-100) to weigh the results. 
+If the objective is close to 'Playing Time' (100), prioritize schools where the athlete's stats and GPA put them in the top 10% of recruits.`
 
             // Clear retry status before starting
             setRetryStatus(null)

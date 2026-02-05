@@ -1,5 +1,6 @@
-import { Search, Sparkles, User } from 'lucide-react'
+import { Search, Sparkles, User, Target } from 'lucide-react'
 import { Button } from '../ui/button'
+import { useNavigate } from 'react-router-dom'
 
 const POPULAR_SCHOOLS = ['Stanford', 'Ohio State', 'UCLA', 'Florida', 'Alabama', 'Duke']
 
@@ -15,6 +16,7 @@ export default function CompassSearch({
     error,
     savedSchools = { reach: [], target: [], solid: [] }
 }) {
+    const navigate = useNavigate()
     const handleQuickPick = (school) => {
         setDreamSchool(school)
     }
@@ -64,7 +66,7 @@ export default function CompassSearch({
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => window.location.href = '/profile-setup'}
+                            onClick={() => navigate('/strategy')}
                             className="text-[10px] uppercase font-bold text-brand-primary h-6"
                         >
                             Adjust Goals
@@ -87,7 +89,7 @@ export default function CompassSearch({
                         <div className="space-y-1">
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Primary Objective</p>
                             <p className="text-sm font-bold text-gray-700 capitalize">
-                                {athleteProfile.goals.primary_objective === 'playing_time' ? 'Early Impact' : 'Program Prestige'}
+                                {(athleteProfile.goals.primary_objective || 50) <= 40 ? 'Program Prestige' : (athleteProfile.goals.primary_objective || 50) >= 60 ? 'Early Impact' : 'Balanced Fit'}
                             </p>
                         </div>
                         <div className="space-y-1">

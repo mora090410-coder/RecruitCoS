@@ -14,6 +14,7 @@ import ProfileSetup from './pages/ProfileSetup'
 import RecruitingCompass from './pages/RecruitingCompass'
 import EditPost from './pages/EditPost'
 import Vibes from './pages/Vibes'
+import StrategyEdit from './pages/StrategyEdit'
 
 // --- TRAFFIC CONTROLLER ---
 function MainNavigator() {
@@ -93,6 +94,7 @@ function MainNavigator() {
       <Route path="/edit-post/:id" element={<EditPost />} />
       <Route path="/vibes" element={<Vibes />} />
       <Route path="/log-event" element={<EventLogger />} />
+      <Route path="/strategy" element={<StrategyEdit />} />
 
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
