@@ -3,6 +3,7 @@
  * Computes an explainable, stage-aware readiness score (0-100).
  */
 import { RECRUITING_PHASES } from './constants.js';
+import { PILLAR_WEIGHTS } from './sportConfig.js';
 
 export function computeReadinessScore({
     athleteProfile,
@@ -55,31 +56,7 @@ export function computeReadinessScore({
     execution = Math.min(100, Math.max(0, execution));
 
     // 2. Stage/Phase Modifiers
-    let weights = {
-        measurables: 0.20,
-        progression: 0.20,
-        exposure: 0.20,
-        academics: 0.20,
-        execution: 0.20
-    };
-
-    if (phase === RECRUITING_PHASES.FOUNDATION || phase === RECRUITING_PHASES.EVALUATION) {
-        weights = {
-            measurables: 0.35,
-            progression: 0.30,
-            exposure: 0.10,
-            academics: 0.20,
-            execution: 0.05
-        };
-    } else if (phase === RECRUITING_PHASES.COMPARISON || phase === RECRUITING_PHASES.COMMITMENT) {
-        weights = {
-            measurables: 0.15,
-            progression: 0.10,
-            exposure: 0.30,
-            academics: 0.15,
-            execution: 0.30
-        };
-    }
+    const weights = PILLAR_WEIGHTS[phase] || PILLAR_WEIGHTS[RECRUITING_PHASES.IDENTIFICATION];
 
     const readinessScore0to100 = Math.round(
         (measurables * weights.measurables) +

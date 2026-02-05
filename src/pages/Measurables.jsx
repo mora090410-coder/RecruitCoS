@@ -4,6 +4,7 @@ import { useProfile } from '../hooks/useProfile';
 import { supabase } from '../lib/supabase';
 import { fetchLatestMeasurables } from '../lib/recruitingData';
 import { recomputeGap } from '../services/recomputeScores';
+import { recomputeAll } from '../services/recomputeAll';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
@@ -57,15 +58,8 @@ export default function Measurables() {
 
         setIsRecomputing(true);
         try {
-            await recomputeGap(
-                profile.id,
-                profile.sport,
-                profile.position,
-                profile.goals.division_priority,
-                profile,
-                profile.phase
-            );
-            toast.success("Gap analysis and Readiness updated!");
+            const result = await recomputeAll(profile);
+            toast.success(result.summary);
             loadData();
         } catch (error) {
             toast.error("Failed to recompute scores.");

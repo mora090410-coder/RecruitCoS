@@ -15,7 +15,8 @@ import { useNavigate } from 'react-router-dom'
 import { getAthletePhase, PHASE_CONFIG, RECRUITING_PHASES } from '../lib/constants'
 import WeeklyBriefing from '../components/WeeklyBriefing'
 import { recomputeGap } from '../services/recomputeScores';
-import { toast } from 'sonner' // Keep sonner toast, as it's already used. The diff had react-hot-toast, but sonner is consistent.
+import { recomputeAll } from '../services/recomputeAll';
+import { toast } from 'sonner'
 import { getGenAI, getRecruitingInsight } from '../lib/gemini'
 import { getSchoolHeat } from '../lib/signalEngine'
 import {
@@ -202,17 +203,9 @@ export default function Dashboard() {
                 toast.error("No active athlete profile found.");
                 return;
             }
-            const athletePhase = currentAthleteProfile.phase || getAthletePhase(currentAthleteProfile.grad_year);
 
-            await recomputeGap(
-                currentAthleteProfile.id,
-                currentAthleteProfile.sport,
-                currentAthleteProfile.position,
-                currentAthleteProfile.goals?.division_priority || 'D1',
-                currentAthleteProfile,
-                athletePhase
-            );
-            toast.success("Recruiting analysis updated!");
+            const result = await recomputeAll(currentAthleteProfile);
+            toast.success(result.summary);
             // Reload the page to refresh all data components
             window.location.reload();
         } catch (error) {

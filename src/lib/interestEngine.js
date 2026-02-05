@@ -3,6 +3,7 @@
  * Combines engagement signals and level fit into a composite interest score.
  */
 import { calculateSchoolSignal } from './signalEngine.js';
+import { LEVEL_THRESHOLDS, INTEREST_WEIGHTS } from './sportConfig.js';
 
 export function computeSchoolInterest({
     athleteReadiness,
@@ -15,8 +16,6 @@ export function computeSchoolInterest({
     const engagementSignal = Math.min(100, Math.round((signalScore / 40) * 100));
 
     // 2. Level Fit (0-100)
-    // Compare athlete readiness against school division
-    // D1: needs 80+, D2: needs 60+, D3: needs 40+
     const readiness = athleteReadiness?.readinessScore0to100 || 0;
     const division = schoolData.division || 'D1';
 
@@ -26,12 +25,14 @@ export function computeSchoolInterest({
     const isD3 = division.includes('D3') || division.includes('Division 3');
     const isNAIA = division.includes('NAIA');
 
-    if (isD1) {
-        levelFit = readiness >= 85 ? 100 : readiness >= 75 ? 80 : readiness >= 60 ? 50 : 30;
-    } else if (isD2) {
-        levelFit = readiness >= 65 ? 100 : readiness >= 50 ? 80 : readiness >= 40 ? 60 : 40;
-    } else if (isD3 || isNAIA) {
-        levelFit = readiness >= 45 ? 100 : readiness >= 30 ? 80 : 60;
+    const divKey = isD1 ? 'D1' : isD2 ? 'D2' : (isD3 || isNAIA) ? 'D3' : null;
+    const thresholds = LEVEL_THRESHOLDS[divKey];
+
+    if (thresholds) {
+        levelFit = readiness >= thresholds.excellent ? 100
+            : readiness >= thresholds.strong ? 80
+                : readiness >= thresholds.good ? 50
+                    : 30;
     }
 
     // 3. Position Fit (Baseline 50)
@@ -39,9 +40,9 @@ export function computeSchoolInterest({
 
     // 4. Composite Interest Score
     const interestScore = Math.round(
-        (0.55 * engagementSignal) +
-        (0.30 * levelFit) +
-        (0.15 * positionFit)
+        (INTEREST_WEIGHTS.engagement * engagementSignal) +
+        (INTEREST_WEIGHTS.levelFit * levelFit) +
+        (INTEREST_WEIGHTS.positionFit * positionFit)
     );
 
     // 5. Drivers and Next Action
