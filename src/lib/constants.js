@@ -47,53 +47,65 @@ export const INTERACTION_TYPES = [
 ];
 
 export const RECRUITING_PHASES = {
-    DISCOVERY: 'Discovery',
-    FOUNDATION: 'Foundation',
-    EXPOSURE: 'Exposure',
-    COMMITMENT: 'Commitment'
+    FOUNDATION: 'Foundation (12U)',
+    EVALUATION: 'Evaluation (8th-9th)',
+    IDENTIFICATION: 'Identification (10th)',
+    COMPARISON: 'Comparison (11th)',
+    COMMITMENT: 'Commitment (12th)'
 }
 
 export const PHASE_CONFIG = {
-    [RECRUITING_PHASES.DISCOVERY]: {
-        title: 'Discovery',
-        focus: 'Athletic Development & Exploration',
+    [RECRUITING_PHASES.FOUNDATION]: {
+        title: 'Foundation',
+        focus: 'Visibility and Safety',
         tasks: [
-            'Audit your current skill set vs. target schools',
-            'Start a "Dream List" of 20+ schools in Recruiting Compass',
-            'Record 2-3 training clips for your highlight vault'
+            'Audit highlight vault for basic mechanics',
+            'Create safety-first social profile',
+            'Establish training routine focus'
         ],
         color: 'slate',
         badgeClass: 'bg-slate-100 text-slate-700'
     },
-    [RECRUITING_PHASES.FOUNDATION]: {
-        title: 'Foundation',
-        focus: 'Academic & Highlight Preparation',
+    [RECRUITING_PHASES.EVALUATION]: {
+        title: 'Evaluation',
+        focus: 'Resume Building',
         tasks: [
-            'Request unofficial transcript for GPA verification',
-            'Create a 60-second "Best of" highlight reel',
-            'Research NCAA Eligibility Center requirements'
+            'Build digital resume/profile',
+            'Start tracking target schools',
+            'Record full-game footage for analysis'
         ],
         color: 'blue',
         badgeClass: 'bg-blue-100 text-blue-700'
     },
-    [RECRUITING_PHASES.EXPOSURE]: {
-        title: 'Exposure',
-        focus: 'Coach Outreach & Traction',
+    [RECRUITING_PHASES.IDENTIFICATION]: {
+        title: 'Identification',
+        focus: 'High-Discipline Clips',
         tasks: [
-            'Send personalized emails to top 10 target coaches',
-            'Update your Twitter/X profile with latest stats',
-            'Schedule 2-3 unofficial campus visits'
+            'Create 30-second highlight bursts',
+            'Add uncommitted status to all profiles',
+            'Identify top 20 target programs'
         ],
         color: 'green',
         badgeClass: 'bg-green-100 text-green-700'
     },
+    [RECRUITING_PHASES.COMPARISON]: {
+        title: 'Comparison',
+        focus: 'September 1st Protocol',
+        tasks: [
+            'Prepare direct coach outreach templates',
+            'Finalize official/unofficial visit list',
+            'Compare roster depth at target schools'
+        ],
+        color: 'indigo',
+        badgeClass: 'bg-indigo-100 text-indigo-700'
+    },
     [RECRUITING_PHASES.COMMITMENT]: {
         title: 'Commitment',
-        focus: 'Final Selection & Signing',
+        focus: 'Fit and Signing',
         tasks: [
-            'Finalize your official visit schedule',
-            'Complete all college applications for priority schools',
-            'Prepare and schedule your Commitment Post'
+            'Schedule final official visits',
+            'Review scholarship/financial offers',
+            'Prepare and execute Commitment Post'
         ],
         color: 'gold',
         badgeClass: 'bg-amber-100 text-amber-700'
@@ -101,7 +113,7 @@ export const PHASE_CONFIG = {
 }
 
 export function getAthletePhase(gradYear) {
-    if (!gradYear) return RECRUITING_PHASES.DISCOVERY;
+    if (!gradYear) return RECRUITING_PHASES.FOUNDATION;
 
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth(); // 0-indexed
@@ -111,9 +123,9 @@ export function getAthletePhase(gradYear) {
     const academicYearAdjust = currentMonth > 5 ? 1 : 0;
     const yearsToGrad = gradYear - (currentYear + academicYearAdjust);
 
-    if (yearsToGrad >= 4) return RECRUITING_PHASES.DISCOVERY; // 8th Grade or younger
-    if (yearsToGrad === 3) return RECRUITING_PHASES.FOUNDATION; // Freshman
-    if (yearsToGrad === 2) return RECRUITING_PHASES.FOUNDATION; // Sophomore
-    if (yearsToGrad === 1) return RECRUITING_PHASES.EXPOSURE; // Junior
-    return RECRUITING_PHASES.COMMITMENT; // Senior
+    if (yearsToGrad > 4) return RECRUITING_PHASES.FOUNDATION;
+    if (yearsToGrad === 4) return RECRUITING_PHASES.EVALUATION;
+    if (yearsToGrad === 3) return RECRUITING_PHASES.IDENTIFICATION;
+    if (yearsToGrad === 2) return RECRUITING_PHASES.COMPARISON;
+    return RECRUITING_PHASES.COMMITMENT;
 }

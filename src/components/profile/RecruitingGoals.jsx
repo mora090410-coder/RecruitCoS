@@ -1,165 +1,170 @@
-import React from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { useState, useEffect } from 'react'
+import { Card, CardHeader, CardTitle, CardContent } from '../ui/card'
+import { Button } from '../ui/button'
 import { Slider } from '../ui/slider'
-import { Target, Trophy, MapPin, Sparkles } from 'lucide-react'
+import { Badge } from '../ui/badge'
+import { supabase } from '../../lib/supabase'
+import { useProfile } from '../../hooks/useProfile'
+import { toast } from 'sonner'
+import { MapPin, Trophy, Users, GraduationCap, Save } from 'lucide-react'
 
-const DIVISIONS = ['D1', 'D2', 'D3', 'NAIA']
-const GEOGRAPHIES = [
-    { id: 'homegrown', label: 'Homegrown', sub: 'Within 150 miles' },
-    { id: 'regional', label: 'Regional', sub: 'Within 500 miles' },
-    { id: 'national', label: 'National', sub: 'Coast to Coast' }
-]
+export default function RecruitingGoals() {
+    const { profile, refreshProfile } = useProfile()
+    const [loading, setLoading] = useState(false)
+    const [goals, setGoals] = useState({
+        division_priority: 'any',
+        geographic_preference: 'national',
+        academic_interest: '',
+        primary_objective: 'prestige'
+    })
 
-export default function RecruitingGoals({ goals, onChange, athleteLocation }) {
-    // Local derived state for UI simplicity if needed, but we reflect directly to parent
+    useEffect(() => {
+        if (profile?.goals) {
+            setGoals(profile.goals)
+        }
+    }, [profile])
 
-    const handleDivisionToggle = (div) => {
-        onChange({ ...goals, division_priority: div.toLowerCase() })
+    const handleUpdateGoals = async () => {
+        if (!profile?.id) return
+        setLoading(true)
+        try {
+            const { error } = await supabase
+                .from('athletes')
+                .update({ goals })
+                .eq('id', profile.id)
+
+            if (error) throw error
+            toast.success("Strategic goals updated!")
+            refreshProfile()
+        } catch (err) {
+            console.error("Update goals error:", err)
+            toast.error("Failed to save goals")
+        } finally {
+            setLoading(false)
+        }
     }
 
-    const getStrategyPreview = () => {
-        const objective = goals.primary_objective <= 30 ? 'Prestige-focused' :
-            goals.primary_objective >= 70 ? 'Playing Time-focused' : 'Balanced'
-
-        const geoLabel = GEOGRAPHIES.find(g => g.id === goals.geographic_preference)?.label || 'Regional'
-        const region = athleteLocation?.state || 'the country'
-
-        return `You are looking for a ${objective} experience in ${geoLabel === 'Homegrown' ? 'your backyard' : geoLabel === 'Regional' ? 'the ' + region : 'the ' + geoLabel}.`
-    }
+    const zones = [
+        { id: 'national', label: 'National', description: 'Anywhere in the US' },
+        { id: 'regional', label: 'Regional', description: 'Within 500 miles' },
+        { id: 'local', label: 'Local', description: 'Home state only' }
+    ]
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Division Priority - Toggle Group Style */}
-            <Card className="bg-zinc-900 border-zinc-800">
-                <CardHeader className="pb-3 border-b border-zinc-800/50">
-                    <CardTitle className="text-xs font-bold text-zinc-400 flex items-center gap-2 tracking-widest uppercase">
-                        <Trophy className="w-3.5 h-3.5 text-green-400" />
-                        Card 1: Division Focus
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
-                    <div className="grid grid-cols-4 gap-2">
-                        {DIVISIONS.map(div => (
-                            <button
-                                key={div}
-                                type="button"
-                                onClick={() => handleDivisionToggle(div)}
-                                className={`py-3 rounded-xl text-sm font-black transition-all border-2 ${goals.division_priority === div.toLowerCase()
-                                    ? 'bg-green-400/10 border-green-400 text-green-400 shadow-[0_0_20px_rgba(74,222,128,0.1)]'
-                                    : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-700'
-                                    }`}
-                            >
-                                {div}
-                            </button>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Objective Slider */}
-            <Card className="bg-zinc-900 border-zinc-800">
-                <CardHeader className="pb-3 border-b border-zinc-800/50">
-                    <CardTitle className="text-xs font-bold text-zinc-400 flex items-center gap-2 tracking-widest uppercase">
-                        <Target className="w-3.5 h-3.5 text-green-400" />
-                        Card 2: Primary Objective
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6 pb-4">
-                    <div className="px-2">
-                        <Slider
-                            min={0}
-                            max={100}
-                            step={1}
-                            value={goals.primary_objective ?? 50}
-                            onChange={(e) => onChange({ ...goals, primary_objective: parseInt(e.target.value) })}
-                        />
-                        <div className="flex justify-between mt-4">
-                            <div className="text-center">
-                                <span className={`text-[9px] font-black uppercase tracking-tighter ${goals.primary_objective <= 40 ? 'text-green-400' : 'text-zinc-600'}`}>Prestige</span>
-                            </div>
-                            <div className="text-center">
-                                <span className={`text-[9px] font-black uppercase tracking-tighter ${goals.primary_objective >= 60 ? 'text-green-400' : 'text-zinc-600'}`}>Playing Time</span>
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Geography Selectable Cards */}
-            <Card className="bg-zinc-900 border-zinc-800">
-                <CardHeader className="pb-3 border-b border-zinc-800/50">
-                    <CardTitle className="text-xs font-bold text-zinc-400 flex items-center gap-2 tracking-widest uppercase">
-                        <MapPin className="w-3.5 h-3.5 text-green-400" />
-                        Card 3: Geographic Reach
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
-                    <div className="grid grid-cols-3 gap-2">
-                        {GEOGRAPHIES.map(geo => (
-                            <button
-                                key={geo.id}
-                                type="button"
-                                onClick={() => onChange({ ...goals, geographic_preference: geo.id })}
-                                className={`p-3 rounded-xl text-left transition-all border-2 ${goals.geographic_preference === geo.id
-                                    ? 'bg-green-400/10 border-green-400 text-green-400'
-                                    : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-700'
-                                    }`}
-                            >
-                                <div className={`text-[10px] font-black uppercase mb-1 ${goals.geographic_preference === geo.id ? 'text-green-400' : 'text-white'}`}>
-                                    {geo.label}
-                                </div>
-                                <div className="text-[8px] opacity-70 leading-tight">
-                                    {geo.sub}
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Supplemental Parameters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="bg-zinc-900 border-zinc-800">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Academic Major</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <input
-                            type="text"
-                            placeholder="e.g. Business, Pre-Med"
-                            value={goals.academic_interest || ''}
-                            onChange={(e) => onChange({ ...goals, academic_interest: e.target.value })}
-                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-sm text-white focus:ring-1 focus:ring-green-400 outline-none transition-all"
-                        />
-                    </CardContent>
-                </Card>
-                <Card className="bg-zinc-900 border-zinc-800">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">The "North Star"</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <input
-                            type="text"
-                            placeholder="e.g. Stanford University"
-                            value={goals.north_star || ''}
-                            onChange={(e) => onChange({ ...goals, north_star: e.target.value })}
-                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-sm text-white focus:ring-1 focus:ring-green-400 outline-none transition-all"
-                        />
-                    </CardContent>
-                </Card>
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <div>
+                    <h2 className="text-2xl font-serif font-medium text-gray-900">Strategic Recruiting Goals</h2>
+                    <p className="text-gray-500 text-sm">Fine-tune your Chief of Staff's weighting algorithm.</p>
+                </div>
+                <Button
+                    onClick={handleUpdateGoals}
+                    disabled={loading}
+                    className="bg-brand-primary text-white"
+                >
+                    <Save className="w-4 h-4 mr-2" />
+                    {loading ? 'Saving...' : 'Save Goals'}
+                </Button>
             </div>
 
-            {/* Dynamic Strategy Preview */}
-            <div className="relative group">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-green-400/20 to-brand-primary/20 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-                <div className="relative p-4 bg-zinc-900 border border-white/5 rounded-2xl flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-green-400/10 flex items-center justify-center shrink-0">
-                        <Sparkles className="w-5 h-5 text-green-400 animate-pulse" />
-                    </div>
-                    <p className="text-sm text-zinc-300 font-medium italic">
-                        "{getStrategyPreview()}"
-                    </p>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="border-brand-primary/10">
+                    <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                            <Trophy className="w-4 h-4 text-brand-primary" />
+                            Recruiting Priority
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                            <span className={goals.primary_objective === 'playing_time' ? 'text-brand-primary' : ''}>Maximum Playing Time</span>
+                            <span className={goals.primary_objective === 'prestige' ? 'text-brand-primary' : ''}>Maximum Prestige (D1)</span>
+                        </div>
+                        <Slider
+                            value={[goals.primary_objective === 'prestige' ? 100 : 0]}
+                            max={100}
+                            step={100}
+                            onValueChange={(val) => setGoals(prev => ({
+                                ...prev,
+                                primary_objective: val[0] === 100 ? 'prestige' : 'playing_time'
+                            }))}
+                        />
+                        <p className="text-xs text-gray-500 italic">
+                            {goals.primary_objective === 'prestige'
+                                ? "Priority: Targeting the biggest brands and top-tier D1 exposure."
+                                : "Priority: Targeting programs where you can make an immediate impact on the field."}
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-brand-primary/10">
+                    <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                            <Users className="w-4 h-4 text-brand-primary" />
+                            Division Filter
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex flex-wrap gap-2">
+                            {['D1', 'D2', 'D3', 'NAIA', 'any'].map((div) => (
+                                <Badge
+                                    key={div}
+                                    variant={goals.division_priority === div ? 'default' : 'outline'}
+                                    className={`cursor-pointer px-4 py-1 ${goals.division_priority === div ? 'bg-brand-primary' : ''}`}
+                                    onClick={() => setGoals(prev => ({ ...prev, division_priority: div }))}
+                                >
+                                    {div.toUpperCase()}
+                                </Badge>
+                            ))}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                            Only recommend schools in your preferred division. Set to 'ANY' for widest discovery.
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card className="md:col-span-2 border-brand-primary/10">
+                    <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-brand-primary" />
+                            Geographic Preferences
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {zones.map((zone) => (
+                                <div
+                                    key={zone.id}
+                                    onClick={() => setGoals(prev => ({ ...prev, geographic_preference: zone.id }))}
+                                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${goals.geographic_preference === zone.id
+                                            ? 'border-brand-primary bg-brand-primary/5 shadow-sm'
+                                            : 'border-transparent bg-gray-50 hover:bg-gray-100'
+                                        }`}
+                                >
+                                    <p className="font-bold text-gray-900">{zone.label}</p>
+                                    <p className="text-xs text-gray-500">{zone.description}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="md:col-span-2 border-brand-primary/10">
+                    <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                            <GraduationCap className="w-4 h-4 text-brand-primary" />
+                            Academic & Major Interests
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <textarea
+                            value={goals.academic_interest}
+                            onChange={(e) => setGoals(prev => ({ ...prev, academic_interest: e.target.value }))}
+                            placeholder="e.g. Sports Management, Civil Engineering, Business..."
+                            className="w-full h-24 p-3 text-sm border-gray-200 rounded-lg focus:ring-brand-primary focus:border-brand-primary transition-all resize-none"
+                        />
+                    </CardContent>
+                </Card>
             </div>
         </div>
     )
