@@ -3,10 +3,13 @@ import {
     fetchBenchmarks,
     saveGapResult,
     fetchExecutionSignals,
-    saveReadinessResult
+    saveReadinessResult,
+    saveInterestResults
 } from '../lib/recruitingData';
+import { supabase } from '../lib/supabase';
 import { computeGapScore } from '../lib/gapEngine';
 import { computeReadinessScore } from '../lib/readinessEngine';
+import { computeSchoolInterest } from '../lib/interestEngine';
 
 /**
  * Recomputes the gap score for an athlete.
@@ -102,10 +105,57 @@ export async function recomputeReadiness(athleteId, sport, targetLevel, athleteP
         });
 
         console.log(`[recomputeReadiness] Success! Score: ${readinessOutput.readinessScore0to100}`);
+
+        // 4. Trigger Interest Recompute for all saved schools
+        await recomputeInterestForAllSchools(athleteId, readinessOutput);
+
         return savedResult;
 
     } catch (error) {
         console.error('[recomputeReadiness] Orchestration error:', error);
         throw error;
+    }
+}
+
+/**
+ * Recomputes interest scores for every school on an athlete's list.
+ */
+export async function recomputeInterestForAllSchools(athleteId, readinessResult) {
+    try {
+        console.log(`[recomputeInterest] Starting for athlete ${athleteId}...`);
+
+        // 1. Fetch saved schools with their interactions
+        const { data: schools, error } = await supabase
+            .from('athlete_saved_schools')
+            .select('*, interactions:athlete_interactions(*)')
+            .eq('athlete_id', athleteId);
+
+        if (error) throw error;
+        if (!schools || schools.length === 0) return;
+
+        // 2. Compute interest for each school
+        const interestResults = schools.map(school => {
+            const output = computeSchoolInterest({
+                athleteReadiness: readinessResult,
+                schoolData: school,
+                interactions: school.interactions || []
+            });
+
+            return {
+                athlete_id: athleteId,
+                school_id: school.id,
+                interest_score: output.interestScore,
+                drivers_json: output.drivers,
+                next_action: output.nextAction,
+                computed_at: new Date().toISOString()
+            };
+        });
+
+        // 3. Save results
+        await saveInterestResults(interestResults);
+        console.log(`[recomputeInterest] Success for ${interestResults.length} schools.`);
+
+    } catch (error) {
+        console.error('[recomputeInterest] Error:', error);
     }
 }

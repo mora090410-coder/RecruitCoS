@@ -1,4 +1,4 @@
-import { Eye, Trash2, Check, X, User } from 'lucide-react'
+import { Eye, Trash2, Check, X, User, BarChart3, Info } from 'lucide-react'
 import { Button } from '../ui/button'
 import StatusDropdown from './StatusDropdown'
 import { formatDistanceToNow } from 'date-fns'
@@ -36,6 +36,36 @@ export default function MyListSchoolCard({
                     <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-bold text-lg text-gray-900">{school.school_name}</h3>
                         <SignalMeter heat={school.heat} />
+
+                        {school.interest && (
+                            <div className="flex items-center gap-1.5 group/interest relative cursor-help">
+                                <div className="flex items-center gap-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase px-2 py-0.5 rounded-md border border-indigo-100">
+                                    <BarChart3 className="w-3 h-3" />
+                                    Interest: {school.interest.interest_score}
+                                </div>
+
+                                {/* Tooltip for Interest Drivers & Next Action */}
+                                <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover/interest:opacity-100 transition-opacity pointer-events-none z-20 w-64">
+                                    <div className="bg-zinc-900 border border-zinc-800 text-white text-[10px] p-3 rounded-lg shadow-xl space-y-2">
+                                        <div>
+                                            <div className="text-zinc-400 uppercase tracking-widest font-bold mb-1">Interest Drivers</div>
+                                            <ul className="space-y-1 list-disc pl-3">
+                                                {school.interest.drivers_json?.map((driver, idx) => (
+                                                    <li key={idx} className="leading-tight">{driver}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                        <div className="pt-2 border-t border-zinc-800">
+                                            <div className="text-brand-primary uppercase tracking-widest font-bold mb-1 flex items-center gap-1">
+                                                <Info className="w-3 h-3" />
+                                                Next Action
+                                            </div>
+                                            <div className="font-medium text-emerald-400">{school.interest.next_action || 'Record more interactions to see next steps.'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {school.approval_status === 'pending' && (
                             <span className="flex items-center gap-1 bg-brand-primary/10 text-brand-primary text-[10px] font-bold uppercase px-2 py-0.5 rounded-md">

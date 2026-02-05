@@ -141,3 +141,37 @@ export async function saveReadinessResult(result) {
     return data[0];
 }
 
+/**
+ * Fetches all interest results for an athlete's schools.
+ */
+export async function fetchLatestSchoolInterest(athleteId) {
+    if (!athleteId) return [];
+
+    const { data, error } = await supabase
+        .from('athlete_school_interest_results')
+        .select('*')
+        .eq('athlete_id', athleteId);
+
+    if (error) {
+        console.error('[recruitingData] Error fetching interest results:', error);
+        return [];
+    }
+    return data || [];
+}
+
+/**
+ * Saves multiple school interest results (upsert).
+ */
+export async function saveInterestResults(results) {
+    if (!results || results.length === 0) return;
+
+    const { error } = await supabase
+        .from('athlete_school_interest_results')
+        .upsert(results, { onConflict: 'athlete_id,school_id' });
+
+    if (error) {
+        console.error('[recruitingData] Error saving interest results:', error);
+        throw error;
+    }
+}
+

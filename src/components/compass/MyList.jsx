@@ -9,6 +9,7 @@ import MyListFilterTabs from './MyListFilterTabs'
 import MyListSchoolCard from './MyListSchoolCard'
 import { CATEGORIES } from './CategoryBadge'
 import { getSchoolHeat } from '../../lib/signalEngine'
+import { fetchLatestSchoolInterest } from '../../lib/recruitingData'
 import { Progress } from '../ui/progress'
 import { Card, CardContent } from '../ui/card'
 
@@ -23,6 +24,7 @@ export default function MyList({
     const [schools, setSchools] = useState([])
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState('all')
+    const [sortBy, setSortBy] = useState('heat') // 'heat' or 'interest'
     const { isImpersonating, activeAthlete } = useProfile()
 
     useEffect(() => {
@@ -37,18 +39,25 @@ export default function MyList({
             const targetId = isImpersonating ? activeAthlete?.id : user.id
             if (!targetId) return
 
-            const { data, error } = await supabase
-                .from('athlete_saved_schools')
-                .select('*, interactions:athlete_interactions(*)')
-                .eq('athlete_id', targetId)
-                .neq('approval_status', 'dismissed')
-                .order('created_at', { ascending: false })
+
+            const [interestData, { data, error }] = await Promise.all([
+                fetchLatestSchoolInterest(targetId),
+                supabase
+                    .from('athlete_saved_schools')
+                    .select('*, interactions:athlete_interactions(*)')
+                    .eq('athlete_id', targetId)
+                    .neq('approval_status', 'dismissed')
+                    .order('created_at', { ascending: false })
+            ]);
 
             if (error) throw error
 
+            const interestMap = new Map((interestData || []).map(i => [i.school_id, i]));
+
             const schoolsWithHeat = (data || []).map(school => ({
                 ...school,
-                heat: getSchoolHeat(school.interactions || [])
+                heat: getSchoolHeat(school.interactions || []),
+                interest: interestMap.get(school.id)
             }))
 
             setSchools(schoolsWithHeat)
@@ -132,12 +141,18 @@ export default function MyList({
     }, [schools])
 
     const filteredSchools = useMemo(() => {
-        if (activeTab === 'all') return schools
-        if (activeTab === 'active') return schools.filter(s => s.status === SCHOOL_STATUSES.ACTIVE)
-        if (activeTab === 'contacted') return schools.filter(s => s.status === SCHOOL_STATUSES.CONTACTED)
-        if (activeTab === 'archived') return schools.filter(s => s.status === SCHOOL_STATUSES.ARCHIVED)
-        return schools
-    }, [schools, activeTab])
+        let base = schools;
+        if (activeTab === 'active') base = schools.filter(s => s.status === SCHOOL_STATUSES.ACTIVE)
+        else if (activeTab === 'contacted') base = schools.filter(s => s.status === SCHOOL_STATUSES.CONTACTED)
+        else if (activeTab === 'archived') base = schools.filter(s => s.status === SCHOOL_STATUSES.ARCHIVED)
+
+        return [...base].sort((a, b) => {
+            if (sortBy === 'interest') {
+                return (b.interest?.interest_score || 0) - (a.interest?.interest_score || 0);
+            }
+            return (b.heat?.score || 0) - (a.heat?.score || 0);
+        });
+    }, [schools, activeTab, sortBy])
 
     const groupedSchools = useMemo(() => {
         const highMatch = filteredSchools.filter(s => s.heat && s.heat.bars >= 4)
@@ -239,8 +254,8 @@ export default function MyList({
                                     <div
                                         key={bar}
                                         className={`flex-1 rounded-sm transition-all duration-500 ${bar <= Math.round(avgBars)
-                                                ? (avgBars >= 4 ? 'bg-green-500 h-full' : avgBars >= 2 ? 'bg-orange-400 h-3/4' : 'bg-gray-300 h-1/2')
-                                                : 'bg-gray-100 h-1/3'
+                                            ? (avgBars >= 4 ? 'bg-green-500 h-full' : avgBars >= 2 ? 'bg-orange-400 h-3/4' : 'bg-gray-300 h-1/2')
+                                            : 'bg-gray-100 h-1/3'
                                             }`}
                                     />
                                 ))}
@@ -250,11 +265,34 @@ export default function MyList({
                     </Card>
                 </div>
 
-                <MyListFilterTabs
-                    activeTab={activeTab}
-                    onTabChange={setActiveTab}
-                    counts={counts}
-                />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                    <MyListFilterTabs
+                        activeTab={activeTab}
+                        onTabChange={setActiveTab}
+                        counts={counts}
+                    />
+
+                    <div className="flex items-center gap-1 bg-gray-100/50 p-1 rounded-lg self-end sm:self-auto">
+                        <button
+                            onClick={() => setSortBy('heat')}
+                            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${sortBy === 'heat'
+                                    ? 'bg-white text-brand-primary shadow-sm'
+                                    : 'text-gray-400 hover:text-gray-600'
+                                }`}
+                        >
+                            Signal Heat
+                        </button>
+                        <button
+                            onClick={() => setSortBy('interest')}
+                            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${sortBy === 'interest'
+                                    ? 'bg-white text-brand-primary shadow-sm'
+                                    : 'text-gray-400 hover:text-gray-600'
+                                }`}
+                        >
+                            Interest Score
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {loading ? (
