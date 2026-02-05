@@ -183,7 +183,7 @@ export async function buildAthleteProfile(athleteId) {
     const { data: benchmarksRaw, error: benchmarksError } = sportSupported && positions.primary.group
         ? await safeSelect('measurable_benchmarks', (table) =>
             table
-                .select('metric, p50, direction')
+                .select('metric, p50, p75, p90, direction, unit, weight')
                 .eq('sport', sportKey)
                 .eq('position_group', positions.primary.group)
                 .eq('target_level', targetLevel)

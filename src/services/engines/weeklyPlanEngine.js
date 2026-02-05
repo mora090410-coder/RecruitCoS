@@ -166,14 +166,33 @@ const METRIC_ACTION_TEMPLATES = {
     ]
 };
 
+const BAND_LABELS = {
+    below_p50: 'developing',
+    competitive: 'competitive',
+    strong: 'strong',
+    elite: 'elite'
+};
+
+const formatMetricValue = (value, unit) => {
+    if (value === null || value === undefined) return null;
+    const numeric = Number(value);
+    if (Number.isNaN(numeric)) return null;
+    return `${numeric}${unit ? ` ${unit}` : ''}`;
+};
+
+const bandToPhrase = (band) => BAND_LABELS[band] || 'developing';
+
 const buildGapPriority = (sport, primaryGap, phaseKey) => {
     if (primaryGap?.metricKey) {
         const label = getMetricLabel(sport, primaryGap.metricKey);
-        const unit = getMetricUnit(sport, primaryGap.metricKey);
-        const athleteValue = primaryGap.athleteValue;
-        const benchmarkValue = primaryGap.benchmarkValue;
-        const valueText = athleteValue !== null && benchmarkValue !== null
-            ? `${athleteValue}${unit ? ` ${unit}` : ''} vs ${benchmarkValue}${unit ? ` ${unit}` : ''}`
+        const unit = primaryGap.unit || getMetricUnit(sport, primaryGap.metricKey);
+        const athleteValue = primaryGap.athleteValue ?? null;
+        const benchmarkValue = primaryGap.p50 ?? primaryGap.benchmarkValue ?? null;
+        const athleteText = formatMetricValue(athleteValue, unit);
+        const benchmarkText = formatMetricValue(benchmarkValue, unit);
+        const bandText = bandToPhrase(primaryGap.band);
+        const valueText = athleteText && benchmarkText
+            ? `${athleteText} vs ${benchmarkText} (p50)`
             : 'your current value vs benchmark';
         const actions = METRIC_ACTION_TEMPLATES[primaryGap.metricKey] || [
             `Add two focused ${label.toLowerCase()} sessions this week.`,
@@ -181,7 +200,7 @@ const buildGapPriority = (sport, primaryGap, phaseKey) => {
         ];
         return {
             title: `Close your ${label} gap`,
-            why: `Current: ${valueText}.`,
+            why: `Current: ${valueText}. You are ${bandText} here; closing this gap helps you stay competitive at your target level.`,
             actions
         };
     }
@@ -193,6 +212,76 @@ const buildGapPriority = (sport, primaryGap, phaseKey) => {
         actions: [
             'Choose one core skill to sharpen this week.',
             'Log one new measurable or training clip.'
+        ]
+    };
+};
+
+const buildStrengthPriority = (sport, perMetric = [], strengths = []) => {
+    const topStrength = strengths?.[0] || null;
+    const hasCompetitiveOrBetter = perMetric.some((metric) => (
+        metric.strengthTier === 'competitive'
+        || metric.strengthTier === 'strong'
+        || metric.strengthTier === 'elite'
+    ));
+    if (!topStrength?.metricKey && !hasCompetitiveOrBetter) {
+        const trainable = perMetric
+            .filter((metric) => typeof metric.meaningfulDelta === 'number' && metric.meaningfulDelta > 0)
+            .sort((a, b) => {
+                const trainabilityA = 1 / a.meaningfulDelta;
+                const trainabilityB = 1 / b.meaningfulDelta;
+                if (trainabilityB !== trainabilityA) return trainabilityB - trainabilityA;
+                return (b.normalizedGapScore ?? 0) - (a.normalizedGapScore ?? 0);
+            })[0];
+
+        const label = trainable ? getMetricLabel(sport, trainable.metricKey) : 'measurable';
+        const directionVerb = trainable?.direction === 'lower_better' ? 'reduce' : 'increase';
+
+        return {
+            title: 'Build a measurable strength',
+            why: 'Creating one standout metric improves coach interest and makes your profile easier to place.',
+            actions: [
+                `Pick ${label.toLowerCase()} as your focus and train to ${directionVerb} it this week.`,
+                'Log a new measurable or clip that shows visible progress.'
+            ]
+        };
+    }
+    if (!topStrength?.metricKey) {
+        return {
+            title: 'Showcase a measurable strength',
+            why: 'Highlighting a clear strength helps coaches quickly place you.',
+            actions: [
+                'Choose your best current measurable and feature it in your profile.',
+                'Add a short clip or stat callout that reinforces it.'
+            ]
+        };
+    }
+
+    const label = getMetricLabel(sport, topStrength.metricKey);
+    const unit = topStrength.unit || getMetricUnit(sport, topStrength.metricKey);
+    const athleteText = formatMetricValue(topStrength.athleteValue, unit);
+    const tierText = bandToPhrase(topStrength.strengthTier);
+    const benchmarkTierValue = topStrength.strengthTier === 'elite'
+        ? topStrength.p90
+        : topStrength.strengthTier === 'strong'
+            ? topStrength.p75
+            : topStrength.p50;
+    const benchmarkTierLabel = topStrength.strengthTier === 'elite'
+        ? 'p90'
+        : topStrength.strengthTier === 'strong'
+            ? 'p75'
+            : 'p50';
+    const benchmarkText = formatMetricValue(benchmarkTierValue ?? null, unit);
+
+    const whyText = athleteText
+        ? `You're ${tierText} in ${label} (${athleteText}${benchmarkText ? ` vs ${benchmarkText} ${benchmarkTierLabel}` : ''}).`
+        : `You're ${tierText} in ${label}.`;
+
+    return {
+        title: `Showcase your ${label} (${tierText})`,
+        why: `${whyText} Use it to stand out in outreach and highlights.`,
+        actions: [
+            `Feature your ${label.toLowerCase()} in a highlight clip or stat callout.`,
+            'Reference this strength in your next coach outreach.'
         ]
     };
 };
@@ -263,8 +352,8 @@ export function generateWeeklyPlan(profile, gapResult) {
 
     const priorities = [
         buildGapPriority(sport, gapResult?.primaryGap, phaseKey),
-        PHASE_ACTION_MAP[phaseKey] || PHASE_ACTION_MAP.foundation,
-        buildExecutionPriority(profile?.executionSignals)
+        buildStrengthPriority(sport, gapResult?.perMetric || [], gapResult?.strengths || []),
+        PHASE_ACTION_MAP[phaseKey] || PHASE_ACTION_MAP.foundation
     ];
 
     return {
