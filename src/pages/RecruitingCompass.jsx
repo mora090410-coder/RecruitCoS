@@ -459,7 +459,9 @@ If the objective is close to 'Playing Time' (100), prioritize schools where the 
             setToastConfig({
                 message: `${school.school_name} added to your ${school.category} list!`,
                 actionLabel: 'View My List',
-                onAction: () => setView('mylist')
+                onAction: () => setView('mylist'),
+                secondaryActionLabel: 'Back to Categories',
+                onSecondaryAction: () => setView('overview')
             })
             setShowToast(true)
 
@@ -627,6 +629,8 @@ If the objective is close to 'Playing Time' (100), prioritize schools where the 
                         message={toastConfig.message}
                         actionLabel={toastConfig.actionLabel}
                         onAction={toastConfig.onAction}
+                        secondaryActionLabel={toastConfig.secondaryActionLabel}
+                        onSecondaryAction={toastConfig.onSecondaryAction}
                         onClose={() => setShowToast(false)}
                     />
                 )}
