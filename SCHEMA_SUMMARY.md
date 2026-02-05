@@ -94,3 +94,38 @@ Athletic performances recorded by athletes.
 | event_name | TEXT | No | |
 | performance | TEXT | Yes | |
 | event_date | DATE | No | |
+
+---
+
+### 7. athlete_measurables
+Athletic performance metrics for athletes.
+
+| Column Name | Data Type | Nullable | Notes |
+| :--- | :--- | :--- | :--- |
+| id | UUID | No | |
+| **athlete_id** | UUID | No | **FK to athletes.id (ON DELETE CASCADE)** |
+| sport | TEXT | No | |
+| metric | TEXT | No | |
+| value | NUMERIC | No | |
+| unit | TEXT | Yes | |
+| verified | BOOLEAN | No | |
+| measured_at | DATE | No | |
+
+---
+
+### 8. measurable_benchmarks
+Target performance levels for different sports and positions.
+
+| Column Name | Data Type | Nullable | Notes |
+| :--- | :--- | :--- | :--- |
+| id | UUID | No | |
+| sport | TEXT | No | |
+| position_group | TEXT | No | |
+| target_level | TEXT | No | |
+| metric | TEXT | No | |
+| direction | TEXT | No | higher_better | lower_better |
+| p50 | NUMERIC | Yes | |
+| p75 | NUMERIC | Yes | |
+| p90 | NUMERIC | Yes | |
+| unit | TEXT | Yes | |
+| weight | INTEGER | No | Default 5 |

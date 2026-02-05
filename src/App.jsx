@@ -15,6 +15,7 @@ import RecruitingCompass from './pages/RecruitingCompass'
 import EditPost from './pages/EditPost'
 import Vibes from './pages/Vibes'
 import StrategyEdit from './pages/StrategyEdit'
+import Measurables from './pages/Measurables'
 
 // --- TRAFFIC CONTROLLER ---
 function MainNavigator() {
@@ -42,10 +43,7 @@ function MainNavigator() {
     )
   }
 
-
-
   // 1. GLOBAL LOADING SHIELD
-  // Wait for auth to settle. If user exists, also wait for profile to settle.
   if (authLoading || isProfileLoading || !isInitialized) {
     return (
       <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center z-50">
@@ -55,7 +53,6 @@ function MainNavigator() {
   }
 
   // 2. STATE A: NOT LOGGED IN
-  // User can only see public pages. Any other route redirects to Landing.
   if (!user) {
     return (
       <Routes>
@@ -68,7 +65,6 @@ function MainNavigator() {
   }
 
   // 3. STATE B: LOGGED IN, NO PROFILE
-  // User MUST complete setup. No other access allowed.
   if (!hasProfile) {
     return (
       <Routes>
@@ -79,7 +75,6 @@ function MainNavigator() {
   }
 
   // 4. STATE C: LOGGED IN + HAS PROFILE
-  // User has full access. Public routes redirect to Dashboard.
   return (
     <Routes>
       {/* Redirect Public & Setup Routes to Dashboard */}
@@ -91,6 +86,7 @@ function MainNavigator() {
       {/* Protected App Routes */}
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/compass" element={<RecruitingCompass />} />
+      <Route path="/measurables" element={<Measurables />} />
       <Route path="/edit-post/:id" element={<EditPost />} />
       <Route path="/vibes" element={<Vibes />} />
       <Route path="/log-event" element={<EventLogger />} />
@@ -101,7 +97,6 @@ function MainNavigator() {
     </Routes>
   )
 }
-
 
 function App() {
   return (
