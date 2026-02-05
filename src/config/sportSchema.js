@@ -81,6 +81,16 @@ const defaultInputs = {
     lengthIn: { min: 0, max: 120, step: 0.1 }
 };
 
+const meaningfulDeltas = {
+    time: 0.2,
+    velocity: 5,
+    jumpIn: 2,
+    jumpCm: 5,
+    reps: 5,
+    level: 1,
+    lengthIn: 2
+};
+
 export const SPORT_SCHEMA = {
     softball: {
         positionAliases: baseballSoftballAliases,
@@ -100,11 +110,11 @@ export const SPORT_SCHEMA = {
         positionToGroup: baseballSoftballPositionToGroup,
         positionGroups: ['P', 'C', 'IF', 'OF'],
         metrics: [
-            { key: 'home_to_first', label: 'Home to First', unit: 'sec', direction: 'lower_better', appliesToGroups: ['IF', 'OF'], weightDefault: 5, input: defaultInputs.time },
-            { key: 'pop_time', label: 'Pop Time', unit: 'sec', direction: 'lower_better', appliesToGroups: ['C'], weightDefault: 5, input: defaultInputs.time },
-            { key: 'overhand_velocity', label: 'Overhand Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['C', 'IF', 'OF'], weightDefault: 5, input: defaultInputs.velocity },
-            { key: 'exit_velo', label: 'Exit Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['IF', 'OF'], weightDefault: 5, input: defaultInputs.velocity },
-            { key: 'pitch_velocity', label: 'Pitch Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['P'], weightDefault: 5, input: defaultInputs.velocity }
+            { key: 'home_to_first', label: 'Home to First', unit: 'sec', direction: 'lower_better', appliesToGroups: ['IF', 'OF'], weightDefault: 5, input: defaultInputs.time, meaningfulDelta: meaningfulDeltas.time },
+            { key: 'pop_time', label: 'Pop Time', unit: 'sec', direction: 'lower_better', appliesToGroups: ['C'], weightDefault: 5, input: defaultInputs.time, meaningfulDelta: meaningfulDeltas.time },
+            { key: 'overhand_velocity', label: 'Overhand Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['C', 'IF', 'OF'], weightDefault: 5, input: defaultInputs.velocity, meaningfulDelta: meaningfulDeltas.velocity },
+            { key: 'exit_velo', label: 'Exit Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['IF', 'OF'], weightDefault: 5, input: defaultInputs.velocity, meaningfulDelta: meaningfulDeltas.velocity },
+            { key: 'pitch_velocity', label: 'Pitch Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['P'], weightDefault: 5, input: defaultInputs.velocity, meaningfulDelta: meaningfulDeltas.velocity }
         ],
         metricAliases: buildMetricAliases({
             home_to_first: ['home to first', 'home to 1st', 'home_to_1st'],
@@ -141,13 +151,13 @@ export const SPORT_SCHEMA = {
         positionToGroup: baseballSoftballPositionToGroup,
         positionGroups: ['P', 'C', 'IF', 'OF'],
         metrics: [
-            { key: 'sixty_time', label: '60 Time', unit: 'sec', direction: 'lower_better', appliesToGroups: ['IF', 'OF'], weightDefault: 5, input: defaultInputs.time },
-            { key: 'pop_time', label: 'Pop Time', unit: 'sec', direction: 'lower_better', appliesToGroups: ['C'], weightDefault: 5, input: defaultInputs.time },
-            { key: 'catcher_throw_velocity', label: 'Catcher Throw Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['C'], weightDefault: 5, input: defaultInputs.velocity },
-            { key: 'exit_velocity', label: 'Exit Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['IF', 'OF'], weightDefault: 5, input: defaultInputs.velocity },
-            { key: 'infield_velocity', label: 'Infield Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['IF'], weightDefault: 5, input: defaultInputs.velocity },
-            { key: 'outfield_velocity', label: 'Outfield Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['OF'], weightDefault: 5, input: defaultInputs.velocity },
-            { key: 'pitch_velocity', label: 'Pitch Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['P'], weightDefault: 5, input: defaultInputs.velocity }
+            { key: 'sixty_time', label: '60 Time', unit: 'sec', direction: 'lower_better', appliesToGroups: ['IF', 'OF'], weightDefault: 5, input: defaultInputs.time, meaningfulDelta: meaningfulDeltas.time },
+            { key: 'pop_time', label: 'Pop Time', unit: 'sec', direction: 'lower_better', appliesToGroups: ['C'], weightDefault: 5, input: defaultInputs.time, meaningfulDelta: meaningfulDeltas.time },
+            { key: 'catcher_throw_velocity', label: 'Catcher Throw Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['C'], weightDefault: 5, input: defaultInputs.velocity, meaningfulDelta: meaningfulDeltas.velocity },
+            { key: 'exit_velocity', label: 'Exit Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['IF', 'OF'], weightDefault: 5, input: defaultInputs.velocity, meaningfulDelta: meaningfulDeltas.velocity },
+            { key: 'infield_velocity', label: 'Infield Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['IF'], weightDefault: 5, input: defaultInputs.velocity, meaningfulDelta: meaningfulDeltas.velocity },
+            { key: 'outfield_velocity', label: 'Outfield Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['OF'], weightDefault: 5, input: defaultInputs.velocity, meaningfulDelta: meaningfulDeltas.velocity },
+            { key: 'pitch_velocity', label: 'Pitch Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['P'], weightDefault: 5, input: defaultInputs.velocity, meaningfulDelta: meaningfulDeltas.velocity }
         ],
         metricAliases: buildMetricAliases({
             sixty_time: ['60', '60 time', 'sixty', 'sixty time'],
@@ -202,12 +212,12 @@ export const SPORT_SCHEMA = {
         },
         positionGroups: ['QB', 'SKILL', 'BIG', 'DB', 'LB', 'OL_DL', 'ST'],
         metrics: [
-            { key: 'forty_time', label: '40 Time', unit: 'sec', direction: 'lower_better', appliesToGroups: ['SKILL', 'DB', 'LB'], weightDefault: 5, input: defaultInputs.time },
-            { key: 'shuttle', label: 'Shuttle', unit: 'sec', direction: 'lower_better', appliesToGroups: ['SKILL', 'DB', 'LB'], weightDefault: 5, input: defaultInputs.time },
-            { key: 'three_cone', label: 'Three Cone', unit: 'sec', direction: 'lower_better', appliesToGroups: ['SKILL', 'DB'], weightDefault: 5, input: defaultInputs.time },
-            { key: 'vertical', label: 'Vertical', unit: 'in', direction: 'higher_better', appliesToGroups: ['SKILL', 'DB', 'LB'], weightDefault: 5, input: defaultInputs.jumpIn },
-            { key: 'bench_reps', label: 'Bench Reps', unit: 'reps', direction: 'higher_better', appliesToGroups: ['BIG', 'LB'], weightDefault: 5, input: defaultInputs.reps },
-            { key: 'throwing_velocity', label: 'Throwing Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['QB'], weightDefault: 5, input: defaultInputs.velocity }
+            { key: 'forty_time', label: '40 Time', unit: 'sec', direction: 'lower_better', appliesToGroups: ['SKILL', 'DB', 'LB'], weightDefault: 5, input: defaultInputs.time, meaningfulDelta: meaningfulDeltas.time },
+            { key: 'shuttle', label: 'Shuttle', unit: 'sec', direction: 'lower_better', appliesToGroups: ['SKILL', 'DB', 'LB'], weightDefault: 5, input: defaultInputs.time, meaningfulDelta: meaningfulDeltas.time },
+            { key: 'three_cone', label: 'Three Cone', unit: 'sec', direction: 'lower_better', appliesToGroups: ['SKILL', 'DB'], weightDefault: 5, input: defaultInputs.time, meaningfulDelta: meaningfulDeltas.time },
+            { key: 'vertical', label: 'Vertical', unit: 'in', direction: 'higher_better', appliesToGroups: ['SKILL', 'DB', 'LB'], weightDefault: 5, input: defaultInputs.jumpIn, meaningfulDelta: meaningfulDeltas.jumpIn },
+            { key: 'bench_reps', label: 'Bench Reps', unit: 'reps', direction: 'higher_better', appliesToGroups: ['BIG', 'LB'], weightDefault: 5, input: defaultInputs.reps, meaningfulDelta: meaningfulDeltas.reps },
+            { key: 'throwing_velocity', label: 'Throwing Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['QB'], weightDefault: 5, input: defaultInputs.velocity, meaningfulDelta: meaningfulDeltas.velocity }
         ],
         metricAliases: buildMetricAliases({
             forty_time: ['40', '40 yd', '40 yard', '40-yard', 'forty', '40 time', '40 yd dash', 'forty_yard_dash', 'forty time'],
@@ -252,10 +262,10 @@ export const SPORT_SCHEMA = {
         },
         positionGroups: ['GK', 'FIELD'],
         metrics: [
-            { key: 'sprint_30m', label: '30m Sprint', unit: 'sec', direction: 'lower_better', appliesToGroups: ['FIELD', 'GK'], weightDefault: 5, input: defaultInputs.time },
-            { key: 'yo_yo', label: 'Yo-Yo Test', unit: 'level', direction: 'higher_better', appliesToGroups: ['FIELD'], weightDefault: 5, input: defaultInputs.level },
-            { key: 'vertical_jump', label: 'Vertical Jump', unit: 'cm', direction: 'higher_better', appliesToGroups: ['FIELD', 'GK'], weightDefault: 5, input: defaultInputs.jumpCm },
-            { key: 'agility_505', label: '505 Agility', unit: 'sec', direction: 'lower_better', appliesToGroups: ['FIELD'], weightDefault: 5, input: defaultInputs.time }
+            { key: 'sprint_30m', label: '30m Sprint', unit: 'sec', direction: 'lower_better', appliesToGroups: ['FIELD', 'GK'], weightDefault: 5, input: defaultInputs.time, meaningfulDelta: meaningfulDeltas.time },
+            { key: 'yo_yo', label: 'Yo-Yo Test', unit: 'level', direction: 'higher_better', appliesToGroups: ['FIELD'], weightDefault: 5, input: defaultInputs.level, meaningfulDelta: meaningfulDeltas.level },
+            { key: 'vertical_jump', label: 'Vertical Jump', unit: 'cm', direction: 'higher_better', appliesToGroups: ['FIELD', 'GK'], weightDefault: 5, input: defaultInputs.jumpCm, meaningfulDelta: meaningfulDeltas.jumpCm },
+            { key: 'agility_505', label: '505 Agility', unit: 'sec', direction: 'lower_better', appliesToGroups: ['FIELD'], weightDefault: 5, input: defaultInputs.time, meaningfulDelta: meaningfulDeltas.time }
         ],
         metricAliases: buildMetricAliases({
             sprint_30m: ['30m', '30 m', '30m sprint', '30 meter', '30m dash'],
@@ -289,11 +299,11 @@ export const SPORT_SCHEMA = {
         },
         positionGroups: ['GUARD', 'WING', 'BIG'],
         metrics: [
-            { key: 'three_quarter_sprint', label: '3/4 Court Sprint', unit: 'sec', direction: 'lower_better', appliesToGroups: ['GUARD', 'WING', 'BIG'], weightDefault: 5, input: defaultInputs.time },
-            { key: 'lane_agility', label: 'Lane Agility', unit: 'sec', direction: 'lower_better', appliesToGroups: ['GUARD', 'WING', 'BIG'], weightDefault: 5, input: defaultInputs.time },
-            { key: 'vertical_jump', label: 'Vertical Jump', unit: 'in', direction: 'higher_better', appliesToGroups: ['GUARD', 'WING', 'BIG'], weightDefault: 5, input: defaultInputs.jumpIn },
-            { key: 'wingspan', label: 'Wingspan', unit: 'in', direction: 'higher_better', appliesToGroups: ['WING', 'BIG'], weightDefault: 5, input: defaultInputs.lengthIn },
-            { key: 'height', label: 'Height', unit: 'in', direction: 'higher_better', appliesToGroups: ['GUARD', 'WING', 'BIG'], weightDefault: 5, input: defaultInputs.lengthIn }
+            { key: 'three_quarter_sprint', label: '3/4 Court Sprint', unit: 'sec', direction: 'lower_better', appliesToGroups: ['GUARD', 'WING', 'BIG'], weightDefault: 5, input: defaultInputs.time, meaningfulDelta: meaningfulDeltas.time },
+            { key: 'lane_agility', label: 'Lane Agility', unit: 'sec', direction: 'lower_better', appliesToGroups: ['GUARD', 'WING', 'BIG'], weightDefault: 5, input: defaultInputs.time, meaningfulDelta: meaningfulDeltas.time },
+            { key: 'vertical_jump', label: 'Vertical Jump', unit: 'in', direction: 'higher_better', appliesToGroups: ['GUARD', 'WING', 'BIG'], weightDefault: 5, input: defaultInputs.jumpIn, meaningfulDelta: meaningfulDeltas.jumpIn },
+            { key: 'wingspan', label: 'Wingspan', unit: 'in', direction: 'higher_better', appliesToGroups: ['WING', 'BIG'], weightDefault: 5, input: defaultInputs.lengthIn, meaningfulDelta: meaningfulDeltas.lengthIn },
+            { key: 'height', label: 'Height', unit: 'in', direction: 'higher_better', appliesToGroups: ['GUARD', 'WING', 'BIG'], weightDefault: 5, input: defaultInputs.lengthIn, meaningfulDelta: meaningfulDeltas.lengthIn }
         ],
         metricAliases: buildMetricAliases({
             three_quarter_sprint: ['3/4 court', '3 4 court', '3/4 sprint', 'three quarter sprint'],
@@ -367,6 +377,16 @@ export const canonicalizeMetricKey = (sport, metricInput) => {
     if (aliasMatch) return aliasMatch;
 
     return normalizedSnake;
+};
+
+export const canonicalizeMetricKeyForGroup = (sport, metricInput, positionGroup) => {
+    const canonical = canonicalizeMetricKey(sport, metricInput);
+    if (normalizeSportKey(sport) !== 'softball') return canonical;
+    if (!positionGroup) return canonical;
+    if (positionGroup === 'P' && canonical === 'overhand_velocity') {
+        return 'pitch_velocity';
+    }
+    return canonical;
 };
 
 export const canonicalizeMeasurableRow = (sport, row) => {

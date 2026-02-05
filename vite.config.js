@@ -11,6 +11,38 @@ export default defineConfig({
       name: 'internal-test-route',
       configureServer(server) {
         server.middlewares.use(async (req, res, next) => {
+          if (req.method === 'GET' && req.url.startsWith('/api/internal/test-weekly-plan/')) {
+            const urlParts = req.url.split('/');
+            const athleteId = urlParts[urlParts.length - 1].split('?')[0];
+            console.log(`\n[INTERNAL_TEST_ROUTE] Weekly plan preview for athlete: "${athleteId}"`);
+
+            try {
+              const { buildAthleteProfile } = await server.ssrLoadModule('/src/services/buildAthleteProfile.js');
+              const { computeGap } = await server.ssrLoadModule('/src/services/engines/gapEngine.js');
+              const { generateWeeklyPlan } = await server.ssrLoadModule('/src/services/engines/weeklyPlanEngine.js');
+
+              const profile = await buildAthleteProfile(athleteId);
+              const gapResult = computeGap(profile);
+              const weeklyPlan = generateWeeklyPlan(profile, gapResult);
+
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({
+                phase: weeklyPlan.phase,
+                primaryGap: gapResult?.primaryGap || null,
+                priorities: weeklyPlan.priorities || []
+              }));
+            } catch (err) {
+              console.error('[INTERNAL_TEST_ROUTE] Weekly plan preview failure:', err);
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({
+                status: 'INTERNAL_TEST_ERROR',
+                message: err.message,
+                stack: err.stack
+              }));
+            }
+            return;
+          }
           if (req.method === 'POST' && req.url.startsWith('/api/internal/test-recompute/')) {
             const urlParts = req.url.split('/');
             const athleteId = urlParts[urlParts.length - 1].split('?')[0];

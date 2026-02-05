@@ -1,14 +1,12 @@
-import { canonicalizeMetricKey, getMetricLabel, getMetricUnit, getSportSchema } from '../../config/sportSchema.js';
+import { canonicalizeMetricKey, getSportSchema } from '../../config/sportSchema.js';
 
 const DEFAULT_TARGET_LEVEL = 'D2';
-const DEFAULT_WEIGHT = 5;
 const MAX_GAP_SCORE = 100;
 
 const resolveSport = (profile) => profile?.sport || profile?.athlete?.sport || null;
 
-const resolveTargetLevel = (profile, override) => (
-    override
-    || profile?.goals?.targetLevels?.[0]
+const resolveTargetLevel = (profile) => (
+    profile?.goals?.targetLevels?.[0]
     || DEFAULT_TARGET_LEVEL
 );
 
@@ -32,8 +30,14 @@ const buildAthleteMetricMap = (sport, latestByMetric = {}) => {
     }, new Map());
 };
 
-const buildBenchmarkMap = (sport, benchmarks = []) => {
-    return benchmarks.reduce((acc, row) => {
+const buildBenchmarkMap = (sport, benchmarks = [], positionGroup, targetLevel) => {
+    const filtered = benchmarks.filter((row) => {
+        if (row?.metric === undefined || row?.metric === null) return false;
+        if (row?.position_group && positionGroup && row.position_group !== positionGroup) return false;
+        if (row?.target_level && targetLevel && row.target_level !== targetLevel) return false;
+        return true;
+    });
+    return filtered.reduce((acc, row) => {
         const canonical = canonicalizeMetricKey(sport, row?.metric);
         if (!canonical) return acc;
         acc.set(canonical, row);
@@ -41,12 +45,12 @@ const buildBenchmarkMap = (sport, benchmarks = []) => {
     }, new Map());
 };
 
-const computeNormalizedDeficit = ({ value, p50, direction, range }) => {
-    if (value === null || p50 === null || range <= 0) return 0;
+const computeNormalizedDeficit = ({ value, p50, direction, meaningfulDelta }) => {
+    if (value === null || p50 === null || meaningfulDelta <= 0) return null;
     const delta = direction === 'higher_better'
         ? Math.max(0, p50 - value)
         : Math.max(0, value - p50);
-    return Math.min(1, delta / range);
+    return delta / meaningfulDelta;
 };
 
 /**
@@ -54,7 +58,7 @@ const computeNormalizedDeficit = ({ value, p50, direction, range }) => {
  * Edge cases: returns a null score with a reason when sport is unsupported
  * or the primary position group is missing.
  */
-export function computeGap(profile, { targetLevel, benchmarks = [] } = {}) {
+export function computeGap(profile, _options = {}) {
     const sport = resolveSport(profile);
     const schema = getSportSchema(sport);
     const sportSupported = profile?.sportSupported !== false && !!schema;
@@ -88,71 +92,65 @@ export function computeGap(profile, { targetLevel, benchmarks = [] } = {}) {
         };
     }
 
-    const benchmarkLevelUsed = resolveTargetLevel(profile, targetLevel);
+    const benchmarkLevelUsed = resolveTargetLevel(profile);
     const athleteMetricMap = buildAthleteMetricMap(sport, profile?.measurables?.latestByMetric || {});
-    const benchmarkMap = buildBenchmarkMap(sport, benchmarks || []);
+    const benchmarkRows = Array.isArray(profile?.benchmarks)
+        ? profile.benchmarks
+        : [];
+    const benchmarkMap = buildBenchmarkMap(sport, benchmarkRows, positionGroup, benchmarkLevelUsed);
 
     const missingMetrics = [];
-    const missingBenchmarks = [];
     const gapsByMetric = [];
 
-    let totalWeightedDeficit = 0;
-    let totalWeight = 0;
+    let totalDeficit = 0;
+    let totalMeasured = 0;
 
     const applicableMetrics = (schema?.metrics || [])
-        .filter((metric) => metric.appliesToGroups?.includes(positionGroup));
+        .filter((metric) => metric.appliesToGroups?.includes(positionGroup))
+        .filter((metric) => {
+            if (sport !== 'softball') return true;
+            if (positionGroup === 'P') return metric.key !== 'overhand_velocity';
+            return metric.key !== 'pitch_velocity';
+        });
 
     applicableMetrics.forEach((metric) => {
         const benchmark = benchmarkMap.get(metric.key);
         const benchmarkP50 = toNumber(benchmark?.p50);
-        if (benchmarkP50 === null) {
-            missingBenchmarks.push(metric.key);
-            return;
-        }
-
         const athleteValue = athleteMetricMap.get(metric.key) ?? null;
         if (athleteValue === null) {
             missingMetrics.push(metric.key);
         }
 
-        const range = Math.max(
-            1,
-            (metric?.input?.max ?? 0) - (metric?.input?.min ?? 0)
-        );
         const normalizedDeficit = athleteValue === null
-            ? 0
+            ? null
             : computeNormalizedDeficit({
                 value: athleteValue,
                 p50: benchmarkP50,
                 direction: metric.direction,
-                range
+                meaningfulDelta: metric.meaningfulDelta || 1
             });
 
-        const weight = metric.weightDefault || DEFAULT_WEIGHT;
-        if (athleteValue !== null) {
-            totalWeightedDeficit += normalizedDeficit * weight;
-            totalWeight += weight;
+        if (typeof normalizedDeficit === 'number') {
+            totalDeficit += normalizedDeficit;
+            totalMeasured += 1;
         }
 
         gapsByMetric.push({
             metricKey: metric.key,
-            label: getMetricLabel(sport, metric.key),
-            unit: getMetricUnit(sport, metric.key),
-            direction: metric.direction,
-            appliesToGroups: metric.appliesToGroups,
             athleteValue,
-            benchmarkP50,
-            normalizedDeficit
+            benchmarkValue: benchmarkP50,
+            normalizedDeficit,
+            direction: metric.direction
         });
     });
 
-    const deficitRatio = totalWeight > 0 ? totalWeightedDeficit / totalWeight : 1;
-    const gapScore0to100 = totalWeight > 0
-        ? Math.max(0, Math.round(MAX_GAP_SCORE - (deficitRatio * MAX_GAP_SCORE)))
-        : 0;
+    const deficitRatio = totalMeasured > 0 ? totalDeficit / totalMeasured : null;
+    const gapScore0to100 = deficitRatio === null
+        ? null
+        : Math.max(0, Math.min(100, Math.round(MAX_GAP_SCORE - (deficitRatio * MAX_GAP_SCORE))));
 
     const primaryGap = gapsByMetric
-        .filter((gap) => (gap.normalizedDeficit || 0) > 0)
+        .filter((gap) => typeof gap.normalizedDeficit === 'number' && gap.normalizedDeficit > 0)
         .sort((a, b) => b.normalizedDeficit - a.normalizedDeficit)[0] || null;
 
     return {
@@ -160,10 +158,6 @@ export function computeGap(profile, { targetLevel, benchmarks = [] } = {}) {
         primaryGap,
         gapsByMetric,
         benchmarkLevelUsed,
-        missingMetrics,
-        notes: {
-            missingBenchmarks,
-            missingMetrics
-        }
+        missingMetrics
     };
 }

@@ -1,7 +1,8 @@
 import { supabase } from '../lib/supabase';
-import { canonicalizeMetricKey, getMetricKeysForSport, getSportSchema } from '../config/sportSchema';
+import { canonicalizeMetricKeyForGroup, getMetricKeysForSport, getSportSchema } from '../config/sportSchema';
 import { getAthletePhase } from '../lib/constants';
 import { calculateSchoolSignal } from '../lib/signalEngine';
+import { fetchBenchmarks } from '../lib/recruitingData';
 import {
     mapCanonicalToGroup,
     mapPositionToCanonical,
@@ -114,7 +115,8 @@ export async function buildAthleteProfile(athleteId) {
 
     const allowedMetrics = new Set(getMetricKeysForSport(athlete.sport));
     const measurablesHistory = (measurablesRaw || []).map((row) => {
-        const canonicalMetric = row.metric_canonical || canonicalizeMetricKey(athlete.sport, row.metric);
+        const canonicalMetric = row.metric_canonical
+            || canonicalizeMetricKeyForGroup(athlete.sport, row.metric, positions.primary.group);
         return {
             ...row,
             metric: canonicalMetric,
@@ -132,6 +134,11 @@ export async function buildAthleteProfile(athleteId) {
         history: measurablesHistory.slice(0, 25),
         unknownMetrics: Array.from(new Set(unknownMetrics))
     };
+
+    const targetLevel = athlete?.goals?.targetLevels?.[0] || 'D2';
+    const benchmarks = sportSupported && positions.primary.group
+        ? await fetchBenchmarks(athlete.sport, positions.primary.group, targetLevel)
+        : [];
 
     const { data: savedSchools } = await safeSelect('athlete_saved_schools', (table) =>
         table
@@ -280,6 +287,7 @@ export async function buildAthleteProfile(athleteId) {
         sportSupported,
         positions,
         measurables,
+        benchmarks,
         executionSignals,
         schools,
         upcomingEvents: eventsNext14Days,

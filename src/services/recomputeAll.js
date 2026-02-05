@@ -4,8 +4,7 @@ import {
     computeSchoolInterest
 } from './recomputeScores.js';
 import { getAthletePhase } from '../lib/constants.js';
-import { getSportSchema } from '../config/sportSchema.js';
-import { fetchBenchmarks, saveGapResult, saveWeeklyPlan } from '../lib/recruitingData.js';
+import { saveGapResult, saveWeeklyPlan } from '../lib/recruitingData.js';
 import { computeGap } from './engines/gapEngine.js';
 import { generateWeeklyPlan } from './engines/weeklyPlanEngine.js';
 
@@ -21,37 +20,31 @@ export async function recomputeAll(profile) {
     const athleteId = profile?.athlete?.id || profile?.id;
     if (!athleteId) throw new Error('No athlete id provided for recomputeAll');
 
-    const normalizedProfile = await buildAthleteProfile(athleteId);
+    const profile = await buildAthleteProfile(athleteId);
 
-    console.log('[recomputeAll] profile.sport', normalizedProfile.sport);
-    console.log('[recomputeAll] profile.positions.primary.group', normalizedProfile.positions?.primary?.group);
-    console.log('[recomputeAll] profile.measurables.positionGroup', normalizedProfile.measurables?.positionGroup);
-    console.log('[recomputeAll] profile.flags', normalizedProfile.flags);
+    console.log('[recomputeAll] profile.sport', profile.sport);
+    console.log('[recomputeAll] profile.positions.primary.group', profile.positions?.primary?.group);
+    console.log('[recomputeAll] profile.measurables.positionGroup', profile.measurables?.positionGroup);
+    console.log('[recomputeAll] profile.flags', profile.flags);
 
-    const sportSchema = getSportSchema(normalizedProfile.sport);
-    const positionGroup = normalizedProfile.positions?.primary?.group || null;
-    const targetLevel = normalizedProfile?.goals?.targetLevels?.[0] || 'D2';
+    const positionGroup = profile.positions?.primary?.group || null;
+    const targetLevel = profile?.goals?.targetLevels?.[0] || 'D2';
 
-    console.log(`[recomputeAll] Executing global analysis for ${normalizedProfile.first_name}...`);
+    console.log(`[recomputeAll] Executing global analysis for ${profile.first_name}...`);
 
-    const phase = normalizedProfile.phase || getAthletePhase(normalizedProfile.grad_year);
+    const phase = profile.phase || getAthletePhase(profile.grad_year);
 
-    const benchmarks = sportSchema && positionGroup
-        ? await fetchBenchmarks(normalizedProfile.sport, positionGroup, targetLevel)
-        : [];
-
-    const gapResult = computeGap(normalizedProfile, { targetLevel, benchmarks });
+    const gapResult = computeGap(profile);
 
     console.log('[recomputeAll] athleteId', athleteId);
-    console.log('[recomputeAll] sport', normalizedProfile.sport);
+    console.log('[recomputeAll] sport', profile.sport);
     console.log('[recomputeAll] position_group', positionGroup);
-    console.log('[recomputeAll] targetLevel', targetLevel);
     console.log('[recomputeAll] primaryGap.metricKey', gapResult?.primaryGap?.metricKey || null);
 
     if (gapResult?.notes?.reason) {
         return {
             success: false,
-            athlete_id: normalizedProfile.id,
+            athlete_id: profile.id,
             timestamp: new Date().toISOString(),
             reason: gapResult.notes
         };
@@ -59,22 +52,22 @@ export async function recomputeAll(profile) {
 
     await saveGapResult({
         athlete_id: athleteId,
-        sport: normalizedProfile.sport,
+        sport: profile.sport,
         position_group: positionGroup,
         target_level: gapResult.benchmarkLevelUsed || targetLevel,
         gap_score: gapResult.gapScore0to100,
         details_json: gapResult
     });
 
-    const weeklyPlan = generateWeeklyPlan(normalizedProfile, gapResult);
+    const weeklyPlan = generateWeeklyPlan(profile, gapResult);
     await saveWeeklyPlan(athleteId, weeklyPlan.weekOfDate, weeklyPlan);
 
-    const { readinessResult } = await computeReadiness({ ...normalizedProfile, phase }, gapResult);
-    await computeSchoolInterest(normalizedProfile, readinessResult);
+    const { readinessResult } = await computeReadiness({ ...profile, phase }, gapResult);
+    await computeSchoolInterest(profile, readinessResult);
 
     return {
         success: true,
-        athlete_id: normalizedProfile.id,
+        athlete_id: profile.id,
         timestamp: new Date().toISOString(),
         summary: "Full analysis complete: Gap results, Readiness, School Interest, and Weekly Plan updated."
     };
