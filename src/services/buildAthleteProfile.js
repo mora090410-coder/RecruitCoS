@@ -1,0 +1,272 @@
+import { supabase } from '../lib/supabase';
+import { getMetricKeysForSport, getSportSchema } from '../config/sportSchema';
+import { getAthletePhase } from '../lib/constants';
+import { calculateSchoolSignal } from '../lib/signalEngine';
+import {
+    mapCanonicalToGroup,
+    mapPositionToCanonical,
+    normalizeMetricKey,
+    normalizeText,
+    normalizeUnit
+} from '../lib/normalize';
+
+const CLOSED_STATUSES = new Set(['closed', 'inactive', 'rejected', 'archived']);
+
+const isMissingTableError = (error) => {
+    if (!error) return false;
+    if (error.code === '42P01') return true;
+    return typeof error.message === 'string' && error.message.toLowerCase().includes('relation') && error.message.toLowerCase().includes('does not exist');
+};
+
+const safeSelect = async (table, builder) => {
+    try {
+        const result = await builder(supabase.from(table));
+        if (result.error && isMissingTableError(result.error)) {
+            return { data: [], error: null, missing: true };
+        }
+        return { data: result.data || [], error: result.error || null, missing: false };
+    } catch (error) {
+        if (isMissingTableError(error)) {
+            return { data: [], error: null, missing: true };
+        }
+        return { data: [], error, missing: false };
+    }
+};
+
+const computeSignalHeat = (interactions) => {
+    if (!Array.isArray(interactions) || interactions.length === 0) return 0;
+    const signalScore = calculateSchoolSignal(interactions);
+    return Math.min(100, Math.round((signalScore / 40) * 100));
+};
+
+const buildLatestByMetric = (rows) => {
+    const latestMap = new Map();
+    rows.forEach((row) => {
+        const key = row.metric;
+        if (!key) return;
+        const existing = latestMap.get(key);
+        if (!existing) {
+            latestMap.set(key, row);
+            return;
+        }
+        const existingDate = new Date(existing.measured_at || existing.created_at || 0).getTime();
+        const rowDate = new Date(row.measured_at || row.created_at || 0).getTime();
+        if (rowDate >= existingDate) {
+            latestMap.set(key, row);
+        }
+    });
+    return Object.fromEntries(latestMap.entries());
+};
+
+const getDateWindow = (days) => {
+    const now = new Date();
+    const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    return { now, start };
+};
+
+export async function buildAthleteProfile(athleteId) {
+    const { data: athlete, error: athleteError } = await supabase
+        .from('athletes')
+        .select('id, first_name, last_name, name, sport, grad_year, position, city, state, zip_code, latitude, longitude, gpa, gpa_range, academic_tier, dream_school, target_divisions, preferred_regions, distance_preference, goals, created_at, updated_at, primary_position_display, primary_position_canonical, primary_position_group, secondary_positions_canonical, secondary_position_groups')
+        .eq('id', athleteId)
+        .maybeSingle();
+
+    if (athleteError) throw athleteError;
+    if (!athlete) throw new Error('Athlete not found');
+
+    const sportSchema = getSportSchema(athlete.sport);
+    const sportSupported = !!sportSchema;
+
+    const primaryDisplay = normalizeText(athlete.primary_position_display || athlete.position || '');
+    const primaryCanonical = athlete.primary_position_canonical || mapPositionToCanonical(athlete.sport, primaryDisplay);
+    const primaryGroup = athlete.primary_position_group || mapCanonicalToGroup(athlete.sport, primaryCanonical);
+
+    const unmappedInputs = [];
+    if (primaryDisplay && (!primaryCanonical || !primaryGroup)) {
+        unmappedInputs.push(primaryDisplay);
+    }
+
+    const secondaryCanonical = Array.isArray(athlete.secondary_positions_canonical) ? athlete.secondary_positions_canonical : [];
+    const secondaryGroups = Array.isArray(athlete.secondary_position_groups)
+        ? athlete.secondary_position_groups
+        : secondaryCanonical.map((value) => mapCanonicalToGroup(athlete.sport, value)).filter(Boolean);
+
+    const positions = {
+        primary: {
+            display: primaryDisplay || null,
+            canonical: primaryCanonical || null,
+            group: primaryGroup || null
+        },
+        secondary: secondaryCanonical.map((value, index) => ({
+            canonical: value,
+            group: secondaryGroups[index] || mapCanonicalToGroup(athlete.sport, value) || null
+        })),
+        unmappedInputs
+    };
+
+    const { data: measurablesRaw } = await safeSelect('athlete_measurables', (table) =>
+        table
+            .select('*')
+            .eq('athlete_id', athleteId)
+            .eq('sport', athlete.sport)
+            .order('measured_at', { ascending: false })
+            .limit(200)
+    );
+
+    const allowedMetrics = new Set(getMetricKeysForSport(athlete.sport));
+    const measurablesHistory = (measurablesRaw || []).map((row) => {
+        const canonicalMetric = row.metric_canonical || normalizeMetricKey(row.metric);
+        return {
+            ...row,
+            metric: canonicalMetric,
+            unit: row.unit_canonical || normalizeUnit(row.unit)
+        };
+    });
+
+    const unknownMetrics = measurablesHistory
+        .map((row) => row.metric)
+        .filter((metric) => metric && !allowedMetrics.has(metric));
+
+    const measurables = {
+        positionGroup: positions.primary.group || null,
+        latestByMetric: buildLatestByMetric(measurablesHistory),
+        history: measurablesHistory.slice(0, 25),
+        unknownMetrics: Array.from(new Set(unknownMetrics))
+    };
+
+    const { data: savedSchools } = await safeSelect('athlete_saved_schools', (table) =>
+        table
+            .select('id, school_name, division, conference, status, created_at, updated_at, distance_miles')
+            .eq('athlete_id', athleteId)
+    );
+
+    const { data: interactions } = await safeSelect('athlete_interactions', (table) =>
+        table
+            .select('id, school_id, type, interaction_date, intensity_score, created_at')
+            .eq('athlete_id', athleteId)
+    );
+
+    const { data: events } = await safeSelect('events', (table) =>
+        table
+            .select('id, event_date, created_at')
+            .eq('athlete_id', athleteId)
+    );
+
+    const { data: posts } = await safeSelect('posts', (table) =>
+        table
+            .select('id, created_at, posted_at')
+            .eq('athlete_id', athleteId)
+    );
+
+    const { data: interestResults } = await safeSelect('athlete_school_interest_results', (table) =>
+        table
+            .select('school_id, interest_score, next_action, computed_at')
+            .eq('athlete_id', athleteId)
+            .order('computed_at', { ascending: false })
+    );
+
+    const now = new Date();
+    const { start: start30 } = getDateWindow(30);
+    const { start: start90 } = getDateWindow(90);
+    const interactionsLast30Days = interactions.filter((item) => new Date(item.interaction_date || item.created_at) >= start30);
+    const interactionsLast90Days = interactions.filter((item) => new Date(item.interaction_date || item.created_at) >= start90);
+    const eventsNext14Days = events.filter((item) => {
+        const date = new Date(item.event_date || item.created_at);
+        return date >= now && date <= new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+    });
+    const eventsLast90Days = events.filter((item) => new Date(item.event_date || item.created_at) >= start90);
+    const postsLast30Days = posts.filter((item) => new Date(item.created_at || item.posted_at) >= start30);
+
+    const activeSchoolsCount = savedSchools.filter((school) => {
+        if (!school.status) return true;
+        return !CLOSED_STATUSES.has(school.status.toLowerCase());
+    }).length;
+
+    const executionSignals = {
+        savedSchoolsCount: savedSchools.length,
+        activeSchoolsCount,
+        interactionsLast30Days: interactionsLast30Days.length,
+        interactionsLast90Days: interactionsLast90Days.length,
+        eventsNext14Days: eventsNext14Days.length,
+        eventsLast90Days: eventsLast90Days.length,
+        postsLast30Days: postsLast30Days.length,
+        momentumScore0to100: computeSignalHeat(interactionsLast30Days)
+    };
+
+    const interestMap = new Map();
+    interestResults.forEach((row) => {
+        if (!interestMap.has(row.school_id)) {
+            interestMap.set(row.school_id, row);
+        }
+    });
+
+    const interactionsBySchool = interactions.reduce((acc, interaction) => {
+        const key = interaction.school_id;
+        if (!acc.has(key)) acc.set(key, []);
+        acc.get(key).push(interaction);
+        return acc;
+    }, new Map());
+
+    const schools = savedSchools.map((school) => {
+        const schoolInteractions = interactionsBySchool.get(school.id) || [];
+        const lastInteraction = schoolInteractions.reduce((latest, item) => {
+            const date = new Date(item.interaction_date || item.created_at);
+            if (!latest || date > latest) return date;
+            return latest;
+        }, null);
+        const interest = interestMap.get(school.id) || null;
+        return {
+            schoolId: school.id,
+            name: school.school_name,
+            division: school.division || null,
+            conference: school.conference || null,
+            location: null,
+            pipelineStatus: school.status || null,
+            lastInteractionAt: lastInteraction ? lastInteraction.toISOString() : null,
+            signalHeat0to100: computeSignalHeat(schoolInteractions),
+            interestScore0to100: interest ? Number(interest.interest_score) : null,
+            nextAction: interest ? interest.next_action : null
+        };
+    });
+
+    const phase = getAthletePhase(athlete.grad_year);
+    const flags = {
+        needsPositionSelection: sportSupported && !positions.primary.group,
+        unsupportedSportMode: !sportSupported,
+        degradedScoringReason: !sportSupported ? 'unsupported_sport' : (!positions.primary.group ? 'missing_position' : null)
+    };
+
+    return {
+        athlete: {
+            id: athlete.id,
+            first_name: athlete.first_name,
+            last_name: athlete.last_name,
+            name: athlete.name,
+            sport: athlete.sport,
+            grad_year: athlete.grad_year,
+            position: athlete.position,
+            city: athlete.city,
+            state: athlete.state,
+            zip_code: athlete.zip_code,
+            latitude: athlete.latitude,
+            longitude: athlete.longitude,
+            gpa: athlete.gpa,
+            gpa_range: athlete.gpa_range,
+            academic_tier: athlete.academic_tier,
+            dream_school: athlete.dream_school,
+            target_divisions: athlete.target_divisions,
+            preferred_regions: athlete.preferred_regions,
+            distance_preference: athlete.distance_preference,
+            goals: athlete.goals,
+            created_at: athlete.created_at,
+            updated_at: athlete.updated_at
+        },
+        sportSupported,
+        positions,
+        measurables,
+        executionSignals,
+        schools,
+        phase,
+        flags
+    };
+}
