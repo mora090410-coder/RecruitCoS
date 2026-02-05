@@ -1,4 +1,5 @@
 import React from 'react';
+import { Flame } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 /**
@@ -9,7 +10,7 @@ import { cn } from '../../lib/utils';
  * @param {boolean} showLabel - Whether to show the text label next to bars.
  */
 export default function SignalMeter({ heat, showLabel = false, className }) {
-    const { score = 0, label = 'COLD', bars = 1, color = 'text-zinc-300' } = heat || {};
+    const { score = 0, label = 'COLD', bars = 1, color = 'text-zinc-300', momentum = false } = heat || {};
 
     // Define bar heights as percentages
     const barHeights = ['20%', '40%', '60%', '80%', '100%'];
@@ -34,10 +35,28 @@ export default function SignalMeter({ heat, showLabel = false, className }) {
                     />
                 ))}
 
+                {momentum && (
+                    <div className="ml-1 mb-[1px] transform transition-all duration-500 scale-110">
+                        <Flame size={12} className="text-orange-500 fill-orange-500 animate-pulse drop-shadow-[0_0_5px_rgba(249,115,22,0.5)]" />
+                    </div>
+                )}
+
                 {/* Tooltip-like label on hover */}
                 <div className="absolute bottom-full left-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                    <div className="bg-zinc-900 border border-zinc-800 text-white text-[10px] py-1 px-2 rounded-lg whitespace-nowrap shadow-xl">
-                        <span className="font-bold">{label}</span> • {heat?.count || 0} interaction{heat?.count !== 1 ? 's' : ''}
+                    <div className="bg-zinc-900 border border-zinc-800 text-white text-[10px] py-1.5 px-3 rounded-lg whitespace-nowrap shadow-xl">
+                        <div className="flex flex-col gap-0.5">
+                            <div className="flex items-center gap-1.5">
+                                <span className="font-bold">{label}</span>
+                                <span className="text-zinc-500">•</span>
+                                <span>{heat?.count || 0} interaction{heat?.count !== 1 ? 's' : ''}</span>
+                            </div>
+                            {momentum && (
+                                <div className="text-orange-400 font-medium flex items-center gap-1">
+                                    <Flame size={10} className="fill-orange-400" />
+                                    Your outreach to this school is in the top 10% of recruits in your class.
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

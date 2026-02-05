@@ -34,6 +34,26 @@ export function calculateSchoolSignal(interactions = []) {
 }
 
 /**
+ * Calculates momentum based on recent activity (last 30 days)
+ * @param {Array} interactions 
+ * @returns {Object} { isHighMomentum: boolean, recentCount: number }
+ */
+export function getRecruitingMomentum(interactions = []) {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const recentInteractions = interactions.filter(i => {
+        const interactionDate = new Date(i.created_at || Date.now());
+        return interactionDate >= thirtyDaysAgo;
+    });
+
+    return {
+        isHighMomentum: recentInteractions.length >= 3,
+        recentCount: recentInteractions.length
+    };
+}
+
+/**
  * Returns the signal level metadata for a given score
  * @param {number} score - The total signal score
  * @returns {Object} Level metadata (label, bars, color)
@@ -49,10 +69,13 @@ export function getSignalLevel(score) {
 export function getSchoolHeat(interactions) {
     const score = calculateSchoolSignal(interactions);
     const level = getSignalLevel(score);
+    const momentum = getRecruitingMomentum(interactions);
 
     return {
         score,
         count: interactions.length,
-        ...level
+        ...level,
+        momentum: momentum.isHighMomentum,
+        recentCount: momentum.recentCount
     };
 }
