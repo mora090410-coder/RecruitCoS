@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/button'
-import { ChevronLeft, Loader2, Save } from 'lucide-react'
+import { ChevronLeft, Loader2, Save, Rocket } from 'lucide-react'
 
 export default function EditPost() {
     const { id } = useParams()
@@ -54,6 +54,10 @@ export default function EditPost() {
                 .eq('id', id)
 
             if (error) throw error
+
+            // One-Tap X Posting Deep Link
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(content)}`
+            window.open(twitterUrl, '_blank')
 
             navigate('/dashboard')
         } catch (err) {
@@ -116,9 +120,9 @@ export default function EditPost() {
                             <Button
                                 onClick={handleSave}
                                 disabled={saving || !content.trim()}
-                                className="bg-green-500 hover:bg-green-600 text-white min-w-[100px]"
+                                className="bg-brand-primary hover:bg-brand-primary/90 text-white min-w-[120px]"
                             >
-                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" /> Save Changes</>}
+                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Rocket className="w-4 h-4 mr-2" /> Post to X</>}
                             </Button>
                         </div>
                     </div>

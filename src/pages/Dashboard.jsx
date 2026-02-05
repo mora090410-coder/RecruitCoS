@@ -291,23 +291,31 @@ export default function Dashboard() {
     const handleSharePost = async (postText) => {
         if (!postText) return
 
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: 'Athlete Update',
-                    text: postText,
-                })
-                toast.success('Shared successfully!')
-            } catch (error) {
-                console.error('Error sharing:', error)
-            }
-        } else {
-            try {
-                await navigator.clipboard.writeText(postText)
-                toast.success('Text copied to clipboard!')
-            } catch (error) {
-                console.error('Error copying to clipboard:', error)
-                toast.error('Failed to copy to clipboard.')
+        try {
+            // Prioritize One-Tap X Posting
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(postText)}`
+            window.open(twitterUrl, '_blank')
+            toast.success('Opening X...')
+        } catch (error) {
+            // Fallback to share or clipboard
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'Athlete Update',
+                        text: postText,
+                    })
+                    toast.success('Shared successfully!')
+                } catch (shareError) {
+                    console.error('Error sharing:', shareError)
+                }
+            } else {
+                try {
+                    await navigator.clipboard.writeText(postText)
+                    toast.success('Text copied to clipboard!')
+                } catch (copyError) {
+                    console.error('Error copying to clipboard:', copyError)
+                    toast.error('Failed to copy to clipboard.')
+                }
             }
         }
     }

@@ -240,8 +240,9 @@ export default function EventLogger() {
         const optionLabel = ['A', 'B', 'C'][selectedOptionIndex]
 
         try {
-            // 1. Copy to clipboard
-            await navigator.clipboard.writeText(selectedPost.content)
+            // 1. One-Tap X Posting Deep Link
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(selectedPost.content)}`
+            window.open(twitterUrl, '_blank')
 
             // 2. Save to Database
             const { error } = await supabase.from('posts').insert([
@@ -249,19 +250,13 @@ export default function EventLogger() {
                     athlete_id: athlete.id,
                     event_id: eventId,
                     post_text: selectedPost.content,
-                    selected_option: optionLabel,
-                    coach_tags: selectedCoaches.map(c => c.twitter_handle).filter(Boolean),
-                    status: 'draft' // Mark as copied/draft
+                    status: 'Posted',
+                    style_option: optionLabel
                 }
             ])
 
             if (error) throw error
 
-            alert("Copied to clipboard & saved to History!")
-            navigate('/')
-
-        } catch (error) {
-            console.error("Error saving post:", error)
             alert(`Copied, but failed to save: ${error.message}`)
         }
     }
@@ -543,7 +538,7 @@ export default function EventLogger() {
                             disabled={selectedOptionIndex === null}
                             className="bg-brand-primary hover:bg-brand-primary/90 px-8 text-lg shadow-brand-primary/25 shadow-lg transition-all"
                         >
-                            {selectedOptionIndex !== null ? 'Copy & Save Post' : 'Select an Option'}
+                            {selectedOptionIndex !== null ? 'Post to X' : 'Select an Option'}
                         </Button>
                     </div>
                     {/* Spacer for fixed bottom bar */}
