@@ -182,9 +182,12 @@ Return ONLY a valid JSON object matching this schema:
 ${JSON.stringify(RECRUITING_INSIGHT_SCHEMA, null, 2)}
 
 ANALYSIS LOGIC:
-1. A "Traction Shift" occurs if athlete has 0 traction at D1 (Reach) but 2+ traction at D2/D3 (Target).
-2. If traction shift: Encourage leaning into where they are wanted, keep reach goals as secondary.
-3. If no shift: Provide "Keep Grinding" message focusing on daily habits and signal building.
+1. PHASE SPECIFIC MISSIONS:
+   - If phase is 'Exposure': You MUST mention that "Coaches from your Target schools are attending the PGF Showcase this weekend" and recommend a "Pre-Event" post to get on their radar.
+2. TRACTION ANALYSIS:
+   - A "Traction Shift" occurs if athlete has 0 traction at D1 (Reach) but 2+ traction at D2/D3 (Target).
+   - If traction shift: Encourage leaning into where they are wanted, keep reach goals as secondary.
+   - If no shift: Provide "Keep Grinding" message focusing on daily habits and signal building.
 
 STYLE:
 Be professional, motivating, and straight-talking. No fluff.`;

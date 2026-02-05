@@ -8,7 +8,8 @@ import DashboardLayout from '../components/DashboardLayout'
 import {
     Calendar, CheckCircle, Clock, Search, SlidersHorizontal,
     Plus, ChevronRight, Share2, MoreHorizontal, Edit2,
-    Trash2, Archive, ExternalLink, PlusCircle, Copy, User as UserIcon, Sparkles, ArrowRight, Zap
+    Trash2, Archive, ExternalLink, PlusCircle, Copy, User as UserIcon, Sparkles, ArrowRight, Zap,
+    Rocket
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { getAthletePhase, PHASE_CONFIG, RECRUITING_PHASES } from '../lib/constants'
@@ -30,7 +31,7 @@ export default function Dashboard() {
     const [coaches, setCoaches] = useState([]) // This will be replaced by suggestedCoaches
     const { user } = useAuth()
     const { activeAthlete, isImpersonating, profile } = useProfile()
-    const [stats, setStats] = useState({ eventCount: 0 })
+    const [stats, setStats] = useState({ eventCount: 0, targetCount: 0, recentPostCount: 0 })
     const [posts, setPosts] = useState([])
     const [activeTab, setActiveTab] = useState('All Sources') // Visual state for tabs
     const [phase, setPhase] = useState('Discovery')
@@ -66,9 +67,27 @@ export default function Dashboard() {
             const currentPhase = getAthletePhase(targetGradYear)
             setPhase(currentPhase)
 
-            // 4. Get Stats & Recent Posts
-            const { count } = await supabase.from('events').select('*', { count: 'exact', head: true }).eq('athlete_id', targetAthleteId)
-            setStats({ eventCount: count || 0 })
+            // 4. Get Stats (Events, Target Schools, Recent Posts)
+            const { count: eventCount } = await supabase.from('events').select('*', { count: 'exact', head: true }).eq('athlete_id', targetAthleteId)
+
+            const { count: targetCount } = await supabase
+                .from('athlete_saved_schools')
+                .select('*', { count: 'exact', head: true })
+                .eq('athlete_id', targetAthleteId)
+                .eq('category', 'target')
+
+            const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+            const { count: recentPostCount } = await supabase
+                .from('posts')
+                .select('*', { count: 'exact', head: true })
+                .eq('athlete_id', targetAthleteId)
+                .gt('created_at', fourteenDaysAgo)
+
+            setStats({
+                eventCount: eventCount || 0,
+                targetCount: targetCount || 0,
+                recentPostCount: recentPostCount || 0
+            })
 
             const { data: recentPosts } = await supabase
                 .from('posts')
@@ -298,6 +317,66 @@ export default function Dashboard() {
         navigate('/vibes')
     }
 
+    const ShowcaseReadinessMeter = () => {
+        const targetGoal = 10
+        const postGoal = 5
+        const targetProgress = Math.min((stats.targetCount / targetGoal) * 100, 100)
+        const postProgress = Math.min((stats.recentPostCount / postGoal) * 100, 100)
+        const overallProgress = (targetProgress + postProgress) / 2
+
+        return (
+            <Card className="border-green-100 bg-green-50/30 overflow-hidden">
+                <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Rocket className="w-4 h-4 text-green-600" />
+                            <CardTitle className="text-sm font-bold text-green-900">Showcase Readiness</CardTitle>
+                        </div>
+                        <span className="text-xs font-bold text-green-700">{Math.round(overallProgress)}%</span>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-1.5">
+                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-green-800">
+                            <span>Target Engine ({stats.targetCount}/{targetGoal})</span>
+                            <span className={stats.targetCount >= targetGoal ? 'text-green-600' : 'text-orange-600'}>
+                                {stats.targetCount >= targetGoal ? 'Primed' : 'Building'}
+                            </span>
+                        </div>
+                        <div className="h-2 bg-green-100 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full transition-all duration-1000 ${stats.targetCount >= targetGoal ? 'bg-green-500' : 'bg-orange-400'}`}
+                                style={{ width: `${targetProgress}%` }}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-green-800">
+                            <span>Exposure Momentum ({stats.recentPostCount}/{postGoal})</span>
+                            <span className={stats.recentPostCount >= postGoal ? 'text-green-600' : 'text-orange-600'}>
+                                {stats.recentPostCount >= postGoal ? 'Active' : 'Low Sig'}
+                            </span>
+                        </div>
+                        <div className="h-2 bg-green-100 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full transition-all duration-1000 ${stats.recentPostCount >= postGoal ? 'bg-green-500' : 'bg-orange-400'}`}
+                                style={{ width: `${postProgress}%` }}
+                            />
+                        </div>
+                    </div>
+
+                    {overallProgress >= 80 && (
+                        <div className="pt-2 flex items-center gap-2 text-xs text-green-700 font-medium">
+                            <CheckCircle className="w-4 h-4" />
+                            Ready for Elite Showcase
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        )
+    }
+
     return (
         <DashboardLayout phase={phase}>
             <div className="space-y-8">
@@ -305,12 +384,18 @@ export default function Dashboard() {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <h1 className="text-4xl font-serif font-medium text-gray-900">Content Feed</h1>
+                            <h1 className="text-4xl font-serif font-medium text-gray-900">
+                                {phase === 'Exposure' ? "Mission: Build Showcase Momentum." : "Content Feed"}
+                            </h1>
                             <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${PHASE_CONFIG[phase]?.badgeClass || 'bg-gray-100 text-gray-600'}`}>
                                 {phase} Phase
                             </span>
                         </div>
-                        <p className="text-gray-500 mt-1">Manage your generated posts and upcoming events.</p>
+                        <p className="text-gray-500 mt-1">
+                            {phase === 'Exposure'
+                                ? "Focus on high-signal outreach and pre-event engagement."
+                                : "Manage your generated posts and upcoming events."}
+                        </p>
                     </div>
                     <Button onClick={() => navigate('/log-event')} className="bg-brand-primary hover:bg-brand-secondary text-white">
                         <PlusCircle className="w-4 h-4 mr-2" />
@@ -430,6 +515,8 @@ export default function Dashboard() {
 
                     {/* Right Column: Sidebar (1 span) */}
                     <div className="space-y-6">
+                        {phase === 'Exposure' && <ShowcaseReadinessMeter />}
+
                         {/* Chief of Staff Insight Card */}
                         <Card className="overflow-hidden border-brand-primary/20 bg-gradient-to-br from-white to-brand-primary/5">
                             <CardHeader className="pb-3">
