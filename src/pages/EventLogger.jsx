@@ -257,7 +257,10 @@ export default function EventLogger() {
 
             if (error) throw error
 
-            alert(`Copied, but failed to save: ${error.message}`)
+            navigate('/')
+        } catch (err) {
+            console.error('Error processing post:', err)
+            alert('Failed to process post: ' + err.message)
         }
     }
 
