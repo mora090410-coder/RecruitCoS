@@ -53,14 +53,19 @@ export default function Measurables() {
     }
 
     async function handleRecompute() {
-        if (!profile?.sport || !profile?.position_group || !profile?.goals?.division_priority) {
-            toast.error("Profile incomplete. Please ensure sport, position group, and division goals are set.");
+        const positionGroup = profile?.primary_position_group || profile?.position_group;
+        if (!profile?.sport || !positionGroup || !profile?.goals?.division_priority) {
+            toast.error("Profile incomplete. Please ensure sport, primary position, and division goals are set.");
             return;
         }
 
         setIsRecomputing(true);
         try {
             const result = await recomputeAll(profile);
+            if (!result?.success) {
+                toast.error(result?.reason?.message || "Scoring is currently unavailable.");
+                return;
+            }
             toast.success(result.summary);
             loadData();
         } catch (error) {

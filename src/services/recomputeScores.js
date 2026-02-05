@@ -109,7 +109,7 @@ export async function recomputeReadiness(athleteId, sport, targetLevel, athleteP
         console.log(`[recomputeReadiness] Success! Score: ${readinessOutput.readinessScore0to100}`);
 
         // 4. Trigger Interest Recompute for all saved schools
-        await recomputeInterestForAllSchools(athleteId, readinessOutput);
+        await recomputeInterestForAllSchools(athleteId, readinessOutput, athleteProfile);
 
         // 5. Regenerate Weekly Plan
         await regenerateWeeklyPlan(athleteId, phase, gapResult, readinessOutput);
@@ -125,7 +125,7 @@ export async function recomputeReadiness(athleteId, sport, targetLevel, athleteP
 /**
  * Recomputes interest scores for every school on an athlete's list.
  */
-export async function recomputeInterestForAllSchools(athleteId, readinessResult) {
+export async function recomputeInterestForAllSchools(athleteId, readinessResult, athleteProfile) {
     try {
         console.log(`[recomputeInterest] Starting for athlete ${athleteId}...`);
 
@@ -142,6 +142,7 @@ export async function recomputeInterestForAllSchools(athleteId, readinessResult)
         const interestResults = schools.map(school => {
             const output = computeSchoolInterest({
                 athleteReadiness: readinessResult,
+                athleteProfile,
                 schoolData: school,
                 interactions: school.interactions || []
             });

@@ -70,6 +70,8 @@ export default function ProfileSetup() {
         sport: '',
         primaryPositionDisplay: '',
         positionGroup: '',
+        secondaryPositionsCanonical: [],
+        secondaryPositionGroups: [],
 
         // Step 3: Academic
         gpaRange: '',
@@ -136,7 +138,9 @@ export default function ProfileSetup() {
             ...prev,
             sport: value,
             primaryPositionDisplay: '',
-            positionGroup: ''
+            positionGroup: '',
+            secondaryPositionsCanonical: [],
+            secondaryPositionGroups: []
         }))
     }
 
@@ -150,6 +154,27 @@ export default function ProfileSetup() {
             primaryPositionDisplay: selected?.label || '',
             positionGroup: group || selected?.group || ''
         }))
+    }
+
+    const handleSecondaryToggle = (code) => {
+        const canonical = code
+        const group = mapCanonicalToGroup(formData.sport, canonical)
+        setFormData(prev => {
+            const exists = prev.secondaryPositionsCanonical.includes(canonical)
+            if (exists) {
+                const nextPositions = prev.secondaryPositionsCanonical.filter(p => p !== canonical)
+                const nextGroups = prev.secondaryPositionGroups.filter(g => g !== group)
+                return { ...prev, secondaryPositionsCanonical: nextPositions, secondaryPositionGroups: nextGroups }
+            }
+
+            if (prev.secondaryPositionsCanonical.length >= 2) return prev
+
+            return {
+                ...prev,
+                secondaryPositionsCanonical: [...prev.secondaryPositionsCanonical, canonical],
+                secondaryPositionGroups: group ? [...prev.secondaryPositionGroups, group] : prev.secondaryPositionGroups
+            }
+        })
     }
 
     const handleDivisionToggle = (divId) => {
@@ -221,6 +246,10 @@ export default function ProfileSetup() {
             const canonicalPosition = mapPositionToCanonical(formData.sport, normalizedDisplay)
             const normalizedGroup = mapCanonicalToGroup(formData.sport, canonicalPosition) || formData.positionGroup
 
+            if (!canonicalPosition || !normalizedGroup) {
+                throw new Error("Please select a supported primary position.")
+            }
+
             const profileData = {
                 id: userId,
                 first_name: formData.firstName.trim(),
@@ -230,8 +259,10 @@ export default function ProfileSetup() {
                 sport: formData.sport,
                 position: normalizedDisplay,
                 primary_position_display: normalizedDisplay,
-                position_canonical: canonicalPosition,
-                position_group: normalizedGroup,
+                primary_position_canonical: canonicalPosition,
+                primary_position_group: normalizedGroup,
+                secondary_positions_canonical: formData.secondaryPositionsCanonical,
+                secondary_position_groups: formData.secondaryPositionGroups,
                 gpa_range: formData.gpaRange,
                 city: formData.locationCity,
                 state: formData.locationState,
@@ -377,6 +408,32 @@ export default function ProfileSetup() {
                         <option key={option.code} value={option.code}>{option.label}</option>
                     ))}
                 </select>
+            </div>
+            <div className="space-y-2">
+                <label className="text-zinc-400 text-sm">Secondary Positions (Optional, up to 2)</label>
+                <div className="grid grid-cols-2 gap-2">
+                    {getPositionOptionsForSport(formData.sport).map(option => {
+                        const isPrimary = option.label === formData.primaryPositionDisplay
+                        const isChecked = formData.secondaryPositionsCanonical.includes(option.code)
+                        const isDisabled = isPrimary || (!isChecked && formData.secondaryPositionsCanonical.length >= 2)
+                        return (
+                            <label
+                                key={option.code}
+                                className={`flex items-center gap-2 text-xs px-2 py-2 rounded-lg border ${isDisabled ? 'opacity-50' : 'cursor-pointer'} ${isChecked ? 'border-green-400 bg-zinc-800' : 'border-zinc-800 bg-zinc-900/50'}`}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    disabled={isDisabled}
+                                    onChange={() => handleSecondaryToggle(option.code)}
+                                    className="w-4 h-4 text-green-500 rounded border-zinc-600 bg-zinc-700"
+                                />
+                                <span>{option.label}</span>
+                            </label>
+                        )
+                    })}
+                </div>
+                <p className="text-[10px] text-zinc-500">These help provide a broader fit signal but won’t replace your primary position.</p>
             </div>
         </div>
     )

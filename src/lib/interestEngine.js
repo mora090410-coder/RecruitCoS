@@ -7,6 +7,7 @@ import { LEVEL_THRESHOLDS, INTEREST_WEIGHTS } from './sportConfig.js';
 
 export function computeSchoolInterest({
     athleteReadiness,
+    athleteProfile,
     schoolData,
     interactions = []
 }) {
@@ -35,8 +36,11 @@ export function computeSchoolInterest({
                     : 30;
     }
 
-    // 3. Position Fit (Baseline 50)
-    const positionFit = 50;
+    // 3. Position Fit (Baseline 50 + minor flexibility signal)
+    const secondaryCount = Array.isArray(athleteProfile?.secondary_positions_canonical)
+        ? athleteProfile.secondary_positions_canonical.length
+        : 0;
+    const positionFit = 50 + Math.min(10, secondaryCount * 5);
 
     // 4. Composite Interest Score
     const interestScore = Math.round(
