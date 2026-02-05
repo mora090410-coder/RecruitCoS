@@ -250,8 +250,8 @@ export default function EventLogger() {
                     athlete_id: athlete.id,
                     event_id: eventId,
                     post_text: selectedPost.content,
-                    status: 'Posted',
-                    style_option: optionLabel
+                    status: 'posted',
+                    selected_option: optionLabel
                 }
             ])
 
