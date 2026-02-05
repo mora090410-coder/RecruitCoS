@@ -23,7 +23,7 @@ export async function recomputeAll(profile) {
     const result = await recomputeGap(
         profile.id,
         profile.sport,
-        profile.position,
+        profile.position_group,
         profile.goals?.division_priority || 'D1',
         profile,
         phase

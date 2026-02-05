@@ -51,8 +51,8 @@ export default function Measurables() {
     }
 
     async function handleRecompute() {
-        if (!profile?.sport || !profile?.position || !profile?.goals?.division_priority) {
-            toast.error("Profile incomplete. Please ensure sport, position, and division goals are set.");
+        if (!profile?.sport || !profile?.position_group || !profile?.goals?.division_priority) {
+            toast.error("Profile incomplete. Please ensure sport, position group, and division goals are set.");
             return;
         }
 

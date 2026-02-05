@@ -7,6 +7,8 @@
  * @property {number} [grad_year]
  * @property {string} [sport]
  * @property {string} [position]
+ * @property {string} [primary_position_display]
+ * @property {string} [position_group]
  * @property {number} [gpa]
  * @property {string} [city]
  * @property {string} [state]

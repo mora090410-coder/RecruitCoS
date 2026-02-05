@@ -36,6 +36,38 @@ const SEARCH_PREFERENCES = [
     { id: 'national', label: 'Anywhere', icon: '🌎', description: 'Coast to coast' }
 ]
 
+const SPORT_OPTIONS = ['Softball', 'Baseball']
+
+const POSITION_OPTIONS_BY_SPORT = {
+    Softball: [
+        { label: 'Pitcher', group: 'P' },
+        { label: 'Catcher', group: 'C' },
+        { label: 'First Base', group: 'IF' },
+        { label: 'Second Base', group: 'IF' },
+        { label: 'Third Base', group: 'IF' },
+        { label: 'Shortstop', group: 'IF' },
+        { label: 'Left Field', group: 'OF' },
+        { label: 'Center Field', group: 'OF' },
+        { label: 'Right Field', group: 'OF' },
+        { label: 'Infield', group: 'IF' },
+        { label: 'Outfield', group: 'OF' },
+        { label: 'Utility', group: 'IF' }
+    ],
+    Baseball: [
+        { label: 'Pitcher', group: 'P' },
+        { label: 'Catcher', group: 'C' },
+        { label: 'First Base', group: 'IF' },
+        { label: 'Second Base', group: 'IF' },
+        { label: 'Third Base', group: 'IF' },
+        { label: 'Shortstop', group: 'IF' },
+        { label: 'Left Field', group: 'OF' },
+        { label: 'Center Field', group: 'OF' },
+        { label: 'Right Field', group: 'OF' },
+        { label: 'Infield', group: 'IF' },
+        { label: 'Outfield', group: 'OF' }
+    ]
+}
+
 export default function ProfileSetup() {
     const { signUp, user } = useAuth()
     const { athleteProfile, accessibleAthletes, refreshProfile, isProfileLoading, isInitialized, hasProfile } = useProfile()
@@ -66,7 +98,8 @@ export default function ProfileSetup() {
 
         // Step 2: Sport
         sport: '',
-        position: '',
+        primaryPositionDisplay: '',
+        positionGroup: '',
 
         // Step 3: Academic
         gpaRange: '',
@@ -124,6 +157,25 @@ export default function ProfileSetup() {
     const handleNext = () => setStep(s => Math.min(s + 1, TOTAL_STEPS))
     const handleBack = () => setStep(s => Math.max(s - 1, 1))
 
+    const handleSportChange = (value) => {
+        setFormData(prev => ({
+            ...prev,
+            sport: value,
+            primaryPositionDisplay: '',
+            positionGroup: ''
+        }))
+    }
+
+    const handlePositionChange = (value) => {
+        const options = POSITION_OPTIONS_BY_SPORT[formData.sport] || []
+        const selected = options.find(option => option.label === value)
+        setFormData(prev => ({
+            ...prev,
+            primaryPositionDisplay: selected?.label || '',
+            positionGroup: selected?.group || ''
+        }))
+    }
+
     const handleDivisionToggle = (divId) => {
         setManualDivisions(true) // User is taking control
         setFormData(prev => {
@@ -154,7 +206,7 @@ export default function ProfileSetup() {
                 throw new Error("Invalid graduation year. Please go back and select a year.")
             }
 
-            if (!formData.sport || !formData.position) {
+            if (!formData.sport || !formData.positionGroup) {
                 throw new Error("Sport and position information is missing.")
             }
 
@@ -196,7 +248,9 @@ export default function ProfileSetup() {
                 name: fullName,
                 grad_year: parsedGradYear,
                 sport: formData.sport,
-                position: formData.position,
+                position: formData.primaryPositionDisplay,
+                primary_position_display: formData.primaryPositionDisplay,
+                position_group: formData.positionGroup,
                 gpa_range: formData.gpaRange,
                 city: formData.locationCity,
                 state: formData.locationState,
@@ -251,7 +305,7 @@ export default function ProfileSetup() {
     const canProceed = () => {
         switch (step) {
             case 1: return formData.firstName && formData.lastName && formData.gradYear
-            case 2: return formData.sport && formData.position
+            case 2: return formData.sport && formData.positionGroup
             case 3: return !!formData.gpaRange
             case 4: return formData.locationCity && formData.locationState && formData.searchPreference
             case 5: return formData.targetDivisions.length > 0
@@ -318,23 +372,30 @@ export default function ProfileSetup() {
             </div>
             <div className="space-y-2">
                 <label className="text-zinc-400 text-sm">Sport</label>
-                <input
-                    type="text"
-                    className="w-full bg-zinc-800 border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-green-400 outline-none"
-                    placeholder="e.g. Basketball"
+                <select
+                    className="w-full bg-zinc-800 border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-green-400 outline-none cursor-pointer"
                     value={formData.sport}
-                    onChange={e => setFormData({ ...formData, sport: e.target.value })}
-                />
+                    onChange={e => handleSportChange(e.target.value)}
+                >
+                    <option value="" disabled>Select your sport</option>
+                    {SPORT_OPTIONS.map(sport => (
+                        <option key={sport} value={sport}>{sport}</option>
+                    ))}
+                </select>
             </div>
             <div className="space-y-2">
                 <label className="text-zinc-400 text-sm">Position</label>
-                <input
-                    type="text"
-                    className="w-full bg-zinc-800 border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-green-400 outline-none"
-                    placeholder="e.g. Point Guard"
-                    value={formData.position}
-                    onChange={e => setFormData({ ...formData, position: e.target.value })}
-                />
+                <select
+                    className="w-full bg-zinc-800 border-none rounded-lg p-3 text-white focus:ring-2 focus:ring-green-400 outline-none cursor-pointer"
+                    value={formData.primaryPositionDisplay}
+                    onChange={e => handlePositionChange(e.target.value)}
+                    disabled={!formData.sport}
+                >
+                    <option value="" disabled>{formData.sport ? 'Select your position' : 'Select a sport first'}</option>
+                    {(POSITION_OPTIONS_BY_SPORT[formData.sport] || []).map(option => (
+                        <option key={option.label} value={option.label}>{option.label}</option>
+                    ))}
+                </select>
             </div>
         </div>
     )

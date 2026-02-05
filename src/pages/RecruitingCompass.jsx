@@ -64,7 +64,7 @@ export default function RecruitingCompass() {
             // Load profile
             const { data: athlete, error: athleteError } = await supabase
                 .from('athletes')
-                .select('id, name, position, sport, grad_year, gpa, city, state, goals, academic_tier, search_preference, latitude, longitude')
+                .select('id, name, position, primary_position_display, position_group, sport, grad_year, gpa, city, state, goals, academic_tier, search_preference, latitude, longitude')
                 .eq('id', user.id)
                 .single()
 
@@ -78,7 +78,8 @@ export default function RecruitingCompass() {
                 setAthleteProfile({
                     id: athlete.id,
                     name: athlete.name || 'Athlete',
-                    position: athlete.position || 'Not Set',
+                    positionDisplay: athlete.primary_position_display || athlete.position || 'Not Set',
+                    positionGroup: athlete.position_group || null,
                     sport: athlete.sport || 'Not Set',
                     gradYear: athlete.grad_year || new Date().getFullYear() + 4,
                     gpa: athlete.gpa || null,
@@ -285,7 +286,7 @@ If it is close to 'Prestige' (towards 0), prioritize elite academic and athletic
             // Context first, then instruction (2026 long-context optimization)
             const prompt = `STRATEGIC RECRUITMENT PARAMETERS:
 Athlete Profile:
-- Position: ${sanitizeInput(athleteProfile?.position) || 'Unknown'}
+            - Position: ${sanitizeInput(athleteProfile?.positionDisplay) || 'Unknown'}
 - Sport: ${sanitizeInput(athleteProfile?.sport) || 'Unknown'}
 - GPA: ${sanitizeInput(athleteProfile?.gpa) || 'Not provided'}
 - Academic Tier: ${sanitizeInput(athleteProfile?.academicTier) || 'selective'}

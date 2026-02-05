@@ -172,7 +172,7 @@ export default function CompassSearch({
             {/* Profile Summary */}
             {athleteProfile && (
                 <div className="mt-6 text-xs text-gray-400">
-                    Using: {athleteProfile.sport} • {athleteProfile.position} • {athleteProfile.location}
+                    Using: {athleteProfile.sport} • {athleteProfile.positionDisplay || athleteProfile.position} • {athleteProfile.location}
                 </div>
             )}
         </div>
