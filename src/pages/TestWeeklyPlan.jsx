@@ -7,7 +7,7 @@ import { getSportSchema } from '../config/sportSchema';
 
 const DEFAULT_TARGET_LEVEL = 'D2';
 
-export default function TestWeeklyPlan() {
+export default function WeeklyPlanDebug() {
     const { athleteId } = useParams();
     const [state, setState] = useState({
         loading: true,
@@ -16,6 +16,14 @@ export default function TestWeeklyPlan() {
     });
 
     useEffect(() => {
+        if (!import.meta.env.DEV) {
+            setState({
+                loading: false,
+                error: null,
+                payload: null
+            });
+            return undefined;
+        }
         let active = true;
 
         const load = async () => {
@@ -92,7 +100,7 @@ export default function TestWeeklyPlan() {
         return (
             <div className="min-h-screen bg-zinc-950 text-white p-6">
                 <h1 className="text-lg font-semibold">Weekly Plan Debug</h1>
-                <p className="text-sm text-zinc-400 mt-2">This route is available in development only.</p>
+                <p className="text-sm text-zinc-400 mt-2">Debug disabled in production.</p>
             </div>
         );
     }

@@ -16,7 +16,7 @@ import EditPost from './pages/EditPost'
 import Vibes from './pages/Vibes'
 import StrategyEdit from './pages/StrategyEdit'
 import Measurables from './pages/Measurables'
-import TestWeeklyPlan from './pages/TestWeeklyPlan'
+import WeeklyPlanDebug from './pages/TestWeeklyPlan'
 
 // --- TRAFFIC CONTROLLER ---
 function MainNavigator() {
@@ -92,11 +92,13 @@ function MainNavigator() {
       <Route path="/vibes" element={<Vibes />} />
       <Route path="/log-event" element={<EventLogger />} />
       <Route path="/strategy" element={<StrategyEdit />} />
-      {import.meta.env.DEV && (
+      {import.meta.env.DEV ? (
         <>
-          <Route path="/test-weekly-plan/:athleteId" element={<TestWeeklyPlan />} />
-          <Route path="/debug/weekly-plan/:athleteId" element={<TestWeeklyPlan />} />
+          <Route path="/test-weekly-plan/:athleteId" element={<WeeklyPlanDebug />} />
+          <Route path="/debug/weekly-plan/:athleteId" element={<WeeklyPlanDebug />} />
         </>
+      ) : (
+        <Route path="/debug/weekly-plan/:athleteId" element={<Navigate to="/" replace />} />
       )}
 
       {/* Catch-all */}
