@@ -1,11 +1,10 @@
 import { supabase } from '../lib/supabase';
-import { getMetricKeysForSport, getSportSchema } from '../config/sportSchema';
+import { canonicalizeMetricKey, getMetricKeysForSport, getSportSchema } from '../config/sportSchema';
 import { getAthletePhase } from '../lib/constants';
 import { calculateSchoolSignal } from '../lib/signalEngine';
 import {
     mapCanonicalToGroup,
     mapPositionToCanonical,
-    normalizeMetricKey,
     normalizeText,
     normalizeUnit
 } from '../lib/normalize';
@@ -115,7 +114,7 @@ export async function buildAthleteProfile(athleteId) {
 
     const allowedMetrics = new Set(getMetricKeysForSport(athlete.sport));
     const measurablesHistory = (measurablesRaw || []).map((row) => {
-        const canonicalMetric = row.metric_canonical || normalizeMetricKey(row.metric);
+        const canonicalMetric = row.metric_canonical || canonicalizeMetricKey(athlete.sport, row.metric);
         return {
             ...row,
             metric: canonicalMetric,

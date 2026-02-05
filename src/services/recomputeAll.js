@@ -1,12 +1,13 @@
 import { buildAthleteProfile } from './buildAthleteProfile.js';
 import {
-    computeGap,
     computeReadiness,
-    computeSchoolInterest,
-    computeWeeklyPlan
+    computeSchoolInterest
 } from './recomputeScores.js';
 import { getAthletePhase } from '../lib/constants.js';
 import { getSportSchema } from '../config/sportSchema.js';
+import { fetchBenchmarks, saveGapResult, saveWeeklyPlan } from '../lib/recruitingData.js';
+import { computeGap } from './engines/gapEngine.js';
+import { generateWeeklyPlan } from './engines/weeklyPlanEngine.js';
 
 /**
  * Orchestrates a full recompute of all scores and plans for an athlete.
@@ -28,44 +29,53 @@ export async function recomputeAll(profile) {
     console.log('[recomputeAll] profile.flags', normalizedProfile.flags);
 
     const sportSchema = getSportSchema(normalizedProfile.sport);
-    if (!sportSchema) {
-        return {
-            success: false,
-            athlete_id: normalizedProfile.id,
-            timestamp: new Date().toISOString(),
-            reason: {
-                code: 'UNSUPPORTED_SPORT',
-                message: 'Scoring engines are disabled for this sport. CRM features remain available.'
-            }
-        };
-    }
-
     const positionGroup = normalizedProfile.positions?.primary?.group || null;
-    if (!positionGroup) {
-        return {
-            success: false,
-            athlete_id: normalizedProfile.id,
-            timestamp: new Date().toISOString(),
-            reason: {
-                code: 'MISSING_POSITION_GROUP',
-                message: 'Primary position is not set. Please select a supported position to run scoring.'
-            }
-        };
-    }
+    const targetLevel = normalizedProfile?.goals?.targetLevels?.[0] || 'D2';
 
     console.log(`[recomputeAll] Executing global analysis for ${normalizedProfile.first_name}...`);
 
     const phase = normalizedProfile.phase || getAthletePhase(normalizedProfile.grad_year);
 
-    const { gapResult } = await computeGap({ ...normalizedProfile, phase });
+    const benchmarks = sportSchema && positionGroup
+        ? await fetchBenchmarks(normalizedProfile.sport, positionGroup, targetLevel)
+        : [];
+
+    const gapResult = computeGap(normalizedProfile, { targetLevel, benchmarks });
+
+    console.log('[recomputeAll] athleteId', athleteId);
+    console.log('[recomputeAll] sport', normalizedProfile.sport);
+    console.log('[recomputeAll] position_group', positionGroup);
+    console.log('[recomputeAll] targetLevel', targetLevel);
+    console.log('[recomputeAll] primaryGap.metricKey', gapResult?.primaryGap?.metricKey || null);
+
+    if (gapResult?.notes?.reason) {
+        return {
+            success: false,
+            athlete_id: normalizedProfile.id,
+            timestamp: new Date().toISOString(),
+            reason: gapResult.notes
+        };
+    }
+
+    await saveGapResult({
+        athlete_id: athleteId,
+        sport: normalizedProfile.sport,
+        position_group: positionGroup,
+        target_level: gapResult.benchmarkLevelUsed || targetLevel,
+        gap_score: gapResult.gapScore0to100,
+        details_json: gapResult
+    });
+
+    const weeklyPlan = generateWeeklyPlan(normalizedProfile, gapResult);
+    await saveWeeklyPlan(athleteId, weeklyPlan.weekOfDate, weeklyPlan);
+
     const { readinessResult } = await computeReadiness({ ...normalizedProfile, phase }, gapResult);
-    const interestResults = await computeSchoolInterest(normalizedProfile, readinessResult);
-    await computeWeeklyPlan(normalizedProfile, gapResult, readinessResult, interestResults);
+    await computeSchoolInterest(normalizedProfile, readinessResult);
 
     return {
         success: true,
         athlete_id: normalizedProfile.id,
         timestamp: new Date().toISOString(),
-        summary: "Full analysis complete: Gaps, Readiness, School Interest, and Weekly Plan updated."
+        summary: "Full analysis complete: Gap results, Readiness, School Interest, and Weekly Plan updated."
     };
 }

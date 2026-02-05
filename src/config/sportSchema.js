@@ -102,14 +102,22 @@ export const SPORT_SCHEMA = {
         metrics: [
             { key: 'home_to_first', label: 'Home to First', unit: 'sec', direction: 'lower_better', appliesToGroups: ['IF', 'OF'], weightDefault: 5, input: defaultInputs.time },
             { key: 'pop_time', label: 'Pop Time', unit: 'sec', direction: 'lower_better', appliesToGroups: ['C'], weightDefault: 5, input: defaultInputs.time },
-            { key: 'throw_velocity', label: 'Throw Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['C', 'IF', 'OF'], weightDefault: 5, input: defaultInputs.velocity },
+            { key: 'overhand_velocity', label: 'Overhand Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['C', 'IF', 'OF'], weightDefault: 5, input: defaultInputs.velocity },
             { key: 'exit_velo', label: 'Exit Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['IF', 'OF'], weightDefault: 5, input: defaultInputs.velocity },
             { key: 'pitch_velocity', label: 'Pitch Velocity', unit: 'mph', direction: 'higher_better', appliesToGroups: ['P'], weightDefault: 5, input: defaultInputs.velocity }
         ],
         metricAliases: buildMetricAliases({
             home_to_first: ['home to first', 'home to 1st', 'home_to_1st'],
             pop_time: ['pop', 'pop time'],
-            throw_velocity: ['throw velo', 'throwing velo', 'throw vel'],
+            overhand_velocity: [
+                'overhand velocity',
+                'overhand velo',
+                'throw velocity',
+                'throw velo',
+                'throwing velo',
+                'throw vel',
+                'throw_velocity'
+            ],
             exit_velo: ['exit velo', 'exit vel', 'exit velocity'],
             pitch_velocity: ['pitch velo', 'pitching velo']
         }),
