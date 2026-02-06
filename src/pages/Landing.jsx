@@ -196,8 +196,8 @@ export default function Landing() {
                 <div className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-3 px-4 py-6 text-sm text-zinc-600 sm:flex-row sm:items-center sm:px-6">
                     <p>© {new Date().getFullYear()} RecruitCoS</p>
                     <div className="flex items-center gap-4">
-                        <a href="#" className="hover:text-zinc-900">Privacy</a>
-                        <a href="#" className="hover:text-zinc-900">Terms</a>
+                        <Link to="/privacy" className="hover:text-zinc-900">Privacy</Link>
+                        <Link to="/terms" className="hover:text-zinc-900">Terms</Link>
                     </div>
                 </div>
             </footer>

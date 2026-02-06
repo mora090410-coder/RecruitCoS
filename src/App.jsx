@@ -12,6 +12,8 @@ import { getAthletePhase } from './lib/constants'
 import Login from './pages/Login'
 import SignUp from './pages/SignUp'
 import Landing from './pages/Landing'
+import Privacy from './pages/Privacy'
+import Terms from './pages/Terms'
 import Dashboard from './pages/Dashboard'
 import EventLogger from './pages/EventLogger'
 import ProfileSetup from './pages/ProfileSetup'
@@ -125,6 +127,8 @@ function MainNavigator() {
     return (
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="*" element={<Navigate to="/" replace />} />
@@ -147,6 +151,8 @@ function MainNavigator() {
     <Routes>
       {/* Redirect Public & Setup Routes to Access-Aware Destination */}
       <Route path="/" element={destinationLoading ? <AppLoading /> : <Navigate to={postLoginDestination} replace />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
       <Route path="/login" element={destinationLoading ? <AppLoading /> : <Navigate to={postLoginDestination} replace />} />
       <Route path="/signup" element={destinationLoading ? <AppLoading /> : <Navigate to={postLoginDestination} replace />} />
       <Route path="/profile-setup" element={destinationLoading ? <AppLoading /> : <Navigate to={postLoginDestination} replace />} />
