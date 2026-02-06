@@ -265,9 +265,15 @@ export async function fetchWeeklyPlanItems(athleteId, weekStartDate) {
 export async function insertWeeklyPlanItems(items) {
     if (!items || items.length === 0) return [];
 
+    const upsertItems = items.map((item) => ({
+        ...item,
+        status: 'open',
+        completed_at: null
+    }));
+
     const { data, error } = await supabase
         .from('athlete_weekly_plan_items')
-        .insert(items)
+        .upsert(upsertItems, { onConflict: 'athlete_id,week_start_date,priority_rank' })
         .select();
 
     if (error) {

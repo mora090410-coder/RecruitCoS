@@ -40,6 +40,9 @@ export default function DashboardLayout({ children, phase }) {
                             <Link to="/measurables" className="text-gray-500 hover:text-gray-900 transition-colors">
                                 Measurables
                             </Link>
+                            <Link to="/weekly-plan" className="text-gray-500 hover:text-gray-900 transition-colors">
+                                Weekly Plan
+                            </Link>
                             <Link to="/log-event" className="text-gray-500 hover:text-gray-900 transition-colors">
                                 Log Event
                             </Link>
