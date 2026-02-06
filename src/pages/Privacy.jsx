@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button'
 export default function Privacy() {
     return (
         <div className="min-h-screen bg-zinc-50 text-zinc-900">
-            <header className="border-b border-zinc-200 bg-white">
+            <header className="rc-header">
                 <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
                     <Link to="/" className="text-xl font-bold tracking-tight">RecruitCoS</Link>
                     <div className="flex items-center gap-2 sm:gap-3">
