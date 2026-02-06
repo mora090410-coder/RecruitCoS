@@ -202,17 +202,30 @@ export async function saveInterestResults(results) {
  * Saves a generated weekly plan.
  */
 export async function saveWeeklyPlan(athleteId, weekOf, planData) {
+    const generatedAt = new Date().toISOString();
+    const payload = [{
+        athlete_id: athleteId,
+        week_of_date: weekOf,
+        plan_json: {
+            ...(planData || {}),
+            phase: planData?.phase ?? null,
+            primary_gap_metric: planData?.primary_gap_metric
+                ?? planData?.primaryGapMetric
+                ?? planData?.primaryGap?.metricKey
+                ?? null,
+            summary: planData?.summary ?? null,
+            generated_at: generatedAt
+        },
+        computed_at: generatedAt
+    }];
+
     const { data, error } = await supabase
         .from('athlete_weekly_plans')
-        .insert([{
-            athlete_id: athleteId,
-            week_of_date: weekOf,
-            plan_json: planData
-        }])
+        .upsert(payload, { onConflict: 'athlete_id,week_of_date' })
         .select();
 
     if (error) {
-        console.error('[recruitingData] Error saving weekly plan:', error);
+        console.error('[WeeklyPlanHeaderPersist] error', error);
         throw error;
     }
     return data[0];
@@ -265,19 +278,61 @@ export async function fetchWeeklyPlanItems(athleteId, weekStartDate) {
 export async function insertWeeklyPlanItems(items) {
     if (!items || items.length === 0) return [];
 
-    const upsertItems = items.map((item) => ({
-        ...item,
-        status: 'open',
-        completed_at: null
-    }));
+    const missingRequiredFields = items.find((item) => (
+        !item?.athlete_id || !item?.week_start_date || item?.priority_rank == null
+    ));
+
+    if (missingRequiredFields) {
+        throw new Error('Weekly plan items must include athlete_id, week_start_date, and priority_rank.');
+    }
+
+    const uniqueScopes = Array.from(
+        new Map(
+            items.map((item) => [
+                `${item.athlete_id}::${item.week_start_date}`,
+                { athlete_id: item.athlete_id, week_start_date: item.week_start_date }
+            ])
+        ).values()
+    );
+
+    const existingRowsByKey = new Map();
+    for (const scope of uniqueScopes) {
+        const { data: existingRows, error: fetchError } = await supabase
+            .from('athlete_weekly_plan_items')
+            .select('athlete_id, week_start_date, priority_rank, status, completed_at')
+            .eq('athlete_id', scope.athlete_id)
+            .eq('week_start_date', scope.week_start_date);
+
+        if (fetchError) {
+            console.error('[WeeklyPlanPersist] error', fetchError);
+            throw fetchError;
+        }
+
+        (existingRows || []).forEach((row) => {
+            const key = `${row.athlete_id}::${row.week_start_date}::${row.priority_rank}`;
+            existingRowsByKey.set(key, row);
+        });
+    }
+
+    const upsertRows = items.map((item) => {
+        const key = `${item.athlete_id}::${item.week_start_date}::${item.priority_rank}`;
+        const existingRow = existingRowsByKey.get(key);
+        const shouldPreserveCompletion = existingRow?.status === 'done' || existingRow?.status === 'skipped';
+
+        return {
+            ...item,
+            status: shouldPreserveCompletion ? existingRow.status : 'open',
+            completed_at: shouldPreserveCompletion ? existingRow.completed_at : null
+        };
+    });
 
     const { data, error } = await supabase
         .from('athlete_weekly_plan_items')
-        .upsert(upsertItems, { onConflict: 'athlete_id,week_start_date,priority_rank' })
+        .upsert(upsertRows, { onConflict: 'athlete_id,week_start_date,priority_rank' })
         .select();
 
     if (error) {
-        console.error('[recruitingData] Error inserting weekly plan items:', error);
+        console.error('[WeeklyPlanPersist] error', error);
         throw error;
     }
     return data || [];
