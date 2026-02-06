@@ -38,8 +38,8 @@ const solutionMockItems = [
 
 function MiniPanelFrame({ chromeTitle, children }) {
     return (
-        <div className="h-full rounded-lg border border-[rgba(153,0,0,0.14)] bg-white p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
-            <div className="mb-2 flex items-center justify-between rounded-md border border-[var(--rc-border)] bg-[rgba(248,244,238,0.75)] px-2 py-1">
+        <div className="h-full rounded-[var(--radius)] border border-[rgba(153,0,0,0.14)] bg-white p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+            <div className="mb-2 flex items-center justify-between rounded-[var(--radius-internal)] border border-[var(--rc-border)] bg-[rgba(248,244,238,0.75)] px-2 py-1">
                 <div className="flex items-center gap-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-[rgba(153,0,0,0.28)]" />
                     <span className="h-1.5 w-1.5 rounded-full bg-[rgba(153,0,0,0.2)]" />
@@ -49,6 +49,28 @@ function MiniPanelFrame({ chromeTitle, children }) {
             </div>
             <div className="space-y-1.5">{children}</div>
         </div>
+    )
+}
+
+function ChaosCardIcon({ type }) {
+    const iconPathByType = {
+        graph: 'M200,152a31.84,31.84,0,0,0-19.53,6.68l-23.11-18A31.65,31.65,0,0,0,160,128c0-.74,0-1.48-.08-2.21l13.23-4.41A32,32,0,1,0,168,104c0,.74,0,1.48.08,2.21l-13.23,4.41A32,32,0,0,0,128,96a32.59,32.59,0,0,0-5.27.44L115.89,81A32,32,0,1,0,96,88a32.59,32.59,0,0,0,5.27-.44l6.84,15.4a31.92,31.92,0,0,0-8.57,39.64L73.83,165.44a32.06,32.06,0,1,0,10.63,12l25.71-22.84a31.91,31.91,0,0,0,37.36-1.24l23.11,18A31.65,31.65,0,0,0,168,184a32,32,0,1,0,32-32Zm0-64a16,16,0,1,1-16,16A16,16,0,0,1,200,88ZM80,56A16,16,0,1,1,96,72,16,16,0,0,1,80,56ZM56,208a16,16,0,1,1,16-16A16,16,0,0,1,56,208Zm56-80a16,16,0,1,1,16,16A16,16,0,0,1,112,128Zm88,72a16,16,0,1,1,16-16A16,16,0,0,1,200,200Z',
+        currency: 'M152,120H136V56h8a32,32,0,0,1,32,32,8,8,0,0,0,16,0,48.05,48.05,0,0,0-48-48h-8V24a8,8,0,0,0-16,0V40h-8a48,48,0,0,0,0,96h8v64H104a32,32,0,0,1-32-32,8,8,0,0,0-16,0,48.05,48.05,0,0,0,48,48h16v16a8,8,0,0,0,16,0V216h16a48,48,0,0,0,0-96Zm-40,0a32,32,0,0,1,0-64h8v64Zm40,80H136V136h16a32,32,0,0,1,0,64Z',
+        arrows: 'M216,48V96a8,8,0,0,1-16,0V67.31l-42.34,42.35a8,8,0,0,1-11.32-11.32L188.69,56H160a8,8,0,0,1,0-16h48A8,8,0,0,1,216,48ZM98.34,146.34,56,188.69V160a8,8,0,0,0-16,0v48a8,8,0,0,0,8,8H96a8,8,0,0,0,0-16H67.31l42.35-42.34a8,8,0,0,0-11.32-11.32ZM208,152a8,8,0,0,0-8,8v28.69l-42.34-42.35a8,8,0,0,0-11.32,11.32L188.69,200H160a8,8,0,0,0,0,16h48a8,8,0,0,0,8-8V160A8,8,0,0,0,208,152ZM67.31,56H96a8,8,0,0,0,0-16H48a8,8,0,0,0-8,8V96a8,8,0,0,0,16,0V67.31l42.34,42.35a8,8,0,0,0,11.32-11.32Z'
+    }
+    const scaleByType = { graph: 1.1, currency: 1.06, arrows: 1.02 }
+
+    return (
+        <span className="flex h-6 w-6 basis-6 shrink-0 grow-0 items-center justify-center">
+            <svg
+                aria-hidden="true"
+                viewBox="0 0 256 256"
+                className="h-6 w-6 opacity-100"
+                style={{ transform: `translateY(1px) scale(${scaleByType[type] ?? 1})` }}
+            >
+                <path d={iconPathByType[type]} fill="currentColor" />
+            </svg>
+        </span>
     )
 }
 
@@ -78,71 +100,125 @@ export default function Landing() {
     return (
         <div ref={landingRef} className="rc-landing min-h-screen text-[var(--rc-ink)]">
             <header className="rc-header">
-                <div className="mx-auto flex h-20 w-full max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:px-8">
-                    <div className="text-3xl font-bold tracking-tight text-[var(--rc-cardinal)]">RecruitCoS</div>
-                    <Link to="/login" className="text-base font-semibold text-[var(--rc-cardinal)] hover:text-[var(--rc-link-hover)]">Log in</Link>
+                <div className="mx-auto flex h-20 w-full max-w-[1200px] items-baseline justify-between px-4 sm:px-6 lg:px-8">
+                    <div className="text-3xl font-extrabold tracking-tight text-[var(--rc-cardinal)]">RecruitCoS</div>
+                    <Link to="/login" className="rc-login-ghost">Log in</Link>
                 </div>
             </header>
 
             <main>
-                <section data-reveal className="px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
-                    <div className="mx-auto grid w-full max-w-[1200px] gap-12 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
-                        <div className="space-y-8" data-stagger>
-                            <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl">Stop Guessing. Start Planning.</h1>
-                            <p className="max-w-2xl text-[18px] leading-[1.6] text-[var(--rc-muted)] sm:text-[20px]">
-                                Get your personalized weekly recruiting plan in under 3 minutes—based on your sport, position, and measurables.
+                <section data-reveal className="rc-landing-section px-4 sm:px-6 lg:px-8">
+                    <div className="rc-hero-grid mx-auto grid w-full max-w-[1200px] gap-12 lg:grid-cols-[1.08fr_0.92fr]">
+                        <div className="rc-hero-copy space-y-8" data-stagger>
+                            <h1 className="text-5xl font-extrabold tracking-[-0.04em] sm:text-6xl">Stop Guessing. Start Planning.</h1>
+                            <p className="max-w-2xl text-[17px] leading-[1.6] text-[var(--rc-muted)] sm:text-[18px]">
+                                Get your personalized recruiting execution OS. Close the gap on D1 benchmarks for $0/mo.
                             </p>
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                            <div className="flex flex-col gap-8 sm:items-start">
                                 <Link to="/signup">
-                                    <Button size="lg" className="rc-btn-primary rc-hero-cta w-full sm:w-auto">Get My Free Plan</Button>
+                                    <Button size="lg" className="rc-btn-primary rc-hero-cta w-full font-semibold sm:w-auto">Get My Free Plan</Button>
                                 </Link>
-                                <p className="text-sm text-[var(--rc-muted)]">Join 250+ athletes already planning smarter</p>
-                            </div>
-                        </div>
-
-                        <div className="rc-hero-mock-card p-6 sm:p-7" data-stagger>
-                            <div className="mb-4 flex items-center justify-between">
-                                <p className="rc-pill">Weekly Recruiting Plan</p>
-                                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--rc-muted)]">This Week</span>
-                            </div>
-                            <div className="space-y-3">
-                                {weeklyPlanItems.map((item) => (
-                                    <div key={item.title} className="rc-inner-card p-4">
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--rc-muted)]">{item.label}</p>
-                                        <p className="mt-1.5 text-base font-semibold">{item.title}</p>
-                                        <p className="mt-1 text-sm text-[var(--rc-muted)]">{item.detail}</p>
+                                <div className="flex items-end gap-3">
+                                    <div className="flex -space-x-2" aria-hidden="true">
+                                        <img src="https://i.pravatar.cc/40?img=12" alt="" className="h-7 w-7 rounded-full border border-white object-cover" />
+                                        <img src="https://i.pravatar.cc/40?img=19" alt="" className="h-7 w-7 rounded-full border border-white object-cover" />
+                                        <img src="https://i.pravatar.cc/40?img=28" alt="" className="h-7 w-7 rounded-full border border-white object-cover" />
                                     </div>
-                                ))}
+                                    <p className="text-sm leading-none text-[var(--rc-muted)]">Join 250+ athletes already planning smarter</p>
+                                </div>
                             </div>
                         </div>
+
+                        <div className="space-y-3 self-start" data-stagger>
+                            <div className="rc-hero-mock-card p-6 sm:p-7">
+                                <div className="mb-4 flex items-center justify-between">
+                                    <p className="rc-pill">Weekly Recruiting Plan</p>
+                                    <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--rc-muted)]">This Week</span>
+                                </div>
+                                <div id="weekly-plan-more" className="rc-hero-plan-list is-compact space-y-3">
+                                    {weeklyPlanItems.map((item) => (
+                                        <div key={item.title} className="rc-inner-card p-4">
+                                            <p className="rc-plan-label">{item.label}</p>
+                                            <p className="rc-plan-value">{item.title}</p>
+                                            <p className="rc-plan-detail">{item.detail}</p>
+                                            {item.label === 'Readiness' && (
+                                                <div className="rc-readiness-micro" aria-label="Readiness trend indicator">
+                                                    <span className="rc-readiness-chip">Score 78</span>
+                                                    <span className="rc-readiness-trend">+8 this week</span>
+                                                    <svg viewBox="0 0 72 16" className="rc-readiness-spark" aria-hidden="true">
+                                                        <polyline points="2,13 14,11 25,12 37,9 48,10 60,6 70,4" />
+                                                    </svg>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <p className="rc-verified-badge" aria-label="Verified 2026 NCAA Data">Verified 2026 NCAA Data</p>
+                        </div>
                     </div>
                 </section>
 
-                <section data-reveal className="border-y border-[var(--rc-border)] bg-[rgba(255,253,249,0.7)] px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
-                    <div className="mx-auto w-full max-w-[1200px]">
-                        <h2 data-stagger className="text-center text-4xl font-bold tracking-tight sm:text-5xl">Recruiting Feels Like Chaos</h2>
-                        <div className="mt-12 grid gap-5 md:grid-cols-3">
-                            <article data-stagger className="rc-surface p-7">
-                                <h3 className="text-2xl font-bold">📊 Fragmented</h3>
-                                <p className="mt-4 text-[18px] leading-[1.6] text-[var(--rc-muted)]">Emails, spreadsheets, DMs—nothing is organized</p>
+                <section data-reveal className="px-4 py-8 sm:px-6 lg:px-8">
+                    <div className="mx-auto w-full max-w-[1200px] text-center">
+                        <h2 data-stagger className="text-[32px] font-bold tracking-tight sm:text-[40px]">Timing matters.</h2>
+                        <div className="rc-timing-cards mx-auto mt-6 max-w-[1200px]">
+                            <article data-stagger className="rc-timing-card">
+                                <span className="rc-timing-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24"><path d="M6 12h12M14 8l4 4-4 4" /></svg>
+                                </span>
+                                <p className="text-[17px] leading-[1.6] text-[var(--rc-muted)] sm:text-[18px]">Coaches build lists early. The athletes who execute weekly get seen.</p>
                             </article>
-                            <article data-stagger className="rc-surface p-7">
-                                <h3 className="text-2xl font-bold">💸 Expensive</h3>
-                                <p className="mt-4 text-[18px] leading-[1.6] text-[var(--rc-muted)]">$5K–$20K/year with no clear ROI</p>
+                            <article data-stagger className="rc-timing-card">
+                                <span className="rc-timing-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><path d="M12 8v4l2.5 2.5" /></svg>
+                                </span>
+                                <p className="text-[17px] leading-[1.6] text-[var(--rc-muted)] sm:text-[18px]">Your first plan takes 3 minutes. <strong className="font-semibold text-[var(--rc-ink)]">Waiting costs seasons, not weeks.</strong></p>
                             </article>
-                            <article data-stagger className="rc-surface p-7">
-                                <h3 className="text-2xl font-bold">😰 Stressful</h3>
-                                <p className="mt-4 text-[18px] leading-[1.6] text-[var(--rc-muted)]">Conflicting advice from coaches, parents, recruiters</p>
+                            <article data-stagger className="rc-timing-card">
+                                <span className="rc-timing-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24"><path d="M6 16l4-4 3 3 5-5" /><path d="M14 10h4v4" /></svg>
+                                </span>
+                                <p className="text-[17px] leading-[1.6] text-[var(--rc-muted)] sm:text-[18px]">Start now—adjust weekly as camps, showcases, and seasons change.</p>
                             </article>
                         </div>
                     </div>
                 </section>
 
-                <section data-reveal className="px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
+                <section data-reveal className="rc-landing-section border-y border-[var(--rc-border)] bg-[rgba(255,253,249,0.7)] px-4 sm:px-6 lg:px-8">
                     <div className="mx-auto w-full max-w-[1200px]">
-                        <h2 data-stagger className="text-center text-4xl font-bold tracking-tight sm:text-5xl">Your Weekly Recruiting Plan</h2>
-                        <div className="mt-12 grid gap-10 lg:grid-cols-[0.96fr_1.04fr] lg:items-center">
-                            <div data-stagger className="rc-device-frame mx-auto w-full max-w-[430px]">
+                        <h2 data-stagger className="text-center text-[32px] font-bold tracking-tight sm:text-[40px]">Recruiting Feels Like Chaos</h2>
+                        <div className="mt-12 grid gap-5 md:grid-cols-3">
+                            <article data-stagger className="rc-chaos-card flex flex-col">
+                                <h3 className="flex items-center gap-3 text-xl font-semibold">
+                                    <ChaosCardIcon type="graph" />
+                                    <span>Fragmented</span>
+                                </h3>
+                                <p className="mt-3 text-[18px] leading-[1.6] text-[var(--rc-muted)]">Emails, spreadsheets, DMs—nothing is organized</p>
+                            </article>
+                            <article data-stagger className="rc-chaos-card flex flex-col">
+                                <h3 className="flex items-center gap-3 text-xl font-semibold">
+                                    <ChaosCardIcon type="currency" />
+                                    <span>Expensive</span>
+                                </h3>
+                                <p className="mt-3 text-[18px] leading-[1.6] text-[var(--rc-muted)]">$5K–$20K/year with no clear ROI</p>
+                            </article>
+                            <article data-stagger className="rc-chaos-card flex flex-col">
+                                <h3 className="flex items-center gap-3 text-xl font-semibold">
+                                    <ChaosCardIcon type="arrows" />
+                                    <span>Stressful</span>
+                                </h3>
+                                <p className="mt-3 text-[18px] leading-[1.6] text-[var(--rc-muted)]">Conflicting advice from coaches, parents, recruiters</p>
+                            </article>
+                        </div>
+                    </div>
+                </section>
+
+                <section data-reveal className="rc-landing-section px-4 sm:px-6 lg:px-8">
+                    <div className="mx-auto w-full max-w-[1200px]">
+                        <h2 data-stagger className="text-center text-[32px] font-bold tracking-tight sm:text-[40px]">Your Weekly Recruiting Plan</h2>
+                        <div className="mt-12 grid gap-10 lg:grid-cols-[0.96fr_1.04fr] lg:items-start">
+                            <div data-stagger className="rc-device-frame mx-auto w-full max-w-[430px] self-start">
                                 <div className="rc-device-screen">
                                     <div className="rc-plan-scroll">
                                         {solutionMockItems.concat(solutionMockItems).map((line, idx) => (
@@ -152,41 +228,62 @@ export default function Landing() {
                                 </div>
                             </div>
 
-                            <div className="grid gap-4">
+                            <div className="grid gap-4 self-start">
                                 <article data-stagger className="rc-surface p-6">
-                                    <h3 className="text-2xl font-bold">✅ Stage-Aware Guidance</h3>
-                                    <p className="mt-3 text-[18px] leading-[1.6] text-[var(--rc-muted)]">Tailored to your grad year and recruiting phase</p>
+                                    <p className="rc-caps-label">PHASE</p>
+                                    <h3 className="text-2xl font-bold">Stage-Aware Guidance</h3>
+                                    <p className="mt-2 text-[17px] font-normal leading-[1.6] text-[var(--rc-muted)] sm:text-[18px]">Tailored to your grad year and recruiting phase</p>
                                 </article>
                                 <article data-stagger className="rc-surface p-6">
-                                    <h3 className="text-2xl font-bold">✅ Measurable Gaps</h3>
-                                    <p className="mt-3 text-[18px] leading-[1.6] text-[var(--rc-muted)]">Compare your metrics to D1/D2/D3 benchmarks</p>
+                                    <p className="rc-caps-label">BENCHMARKS</p>
+                                    <h3 className="text-2xl font-bold">Measurable Gaps</h3>
+                                    <p className="mt-2 text-[17px] font-normal leading-[1.6] text-[var(--rc-muted)] sm:text-[18px]">Compare your metrics to D1/D2/D3 benchmarks</p>
+                                    <div
+                                        className="rc-gap-viz"
+                                        role="group"
+                                        aria-label="60-yard time comparison. Lower is faster. You: 4.60 seconds. D1 target: 4.45 seconds. Gap: plus 0.15 seconds."
+                                    >
+                                        <p className="rc-gap-viz-metric">60-yard time</p>
+                                        <div className="rc-gap-viz-values" aria-hidden="true">
+                                            <span>You: 4.60s</span>
+                                            <span>D1 Target: 4.45s</span>
+                                        </div>
+                                        <div className="rc-gap-track-wrap" aria-hidden="true">
+                                            <span className="rc-gap-track" />
+                                            <span className="rc-gap-marker rc-gap-marker-target" style={{ left: '30%' }} />
+                                            <span className="rc-gap-marker rc-gap-marker-you" style={{ left: '60%' }} />
+                                            <span className="rc-gap-badge" style={{ left: '45%' }}>Gap: +0.15s</span>
+                                        </div>
+                                    </div>
                                 </article>
                                 <article data-stagger className="rc-surface p-6">
-                                    <h3 className="text-2xl font-bold">✅ 3-Action Priorities</h3>
-                                    <p className="mt-3 text-[18px] leading-[1.6] text-[var(--rc-muted)]">Know exactly what to focus on this week</p>
+                                    <p className="rc-caps-label">PRIORITIES</p>
+                                    <h3 className="text-2xl font-bold">3-Action Priorities</h3>
+                                    <p className="mt-2 text-[17px] font-normal leading-[1.6] text-[var(--rc-muted)] sm:text-[18px]">Know exactly what to focus on this week</p>
                                 </article>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <section data-reveal className="border-y border-[var(--rc-border)] bg-[rgba(255,253,249,0.72)] px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
+                <section data-reveal className="rc-landing-section border-y border-[var(--rc-border)] bg-[rgba(255,253,249,0.72)] px-4 sm:px-6 lg:px-8">
                     <div className="mx-auto w-full max-w-[1200px]">
-                        <h2 data-stagger className="text-center text-4xl font-bold tracking-tight sm:text-5xl">Get Your Plan in 3 Minutes</h2>
+                        <h2 data-stagger className="text-center text-[32px] font-bold tracking-tight sm:text-[40px]">Get Your Plan in 3 Minutes</h2>
                         <div className="relative mt-12">
                             <div className="grid gap-5 md:grid-cols-3">
                                 <article data-stagger className="rc-surface flex h-full flex-col p-7">
                                     <p className="mb-5 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(153,0,0,0.24)] bg-white text-base font-bold text-[var(--rc-cardinal)]">①</p>
-                                    <div className="mb-3 rounded-xl border border-[var(--rc-border)] bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,252,246,0.92))] p-3">
+                                    <div className="mb-3 rounded-[var(--radius)] border border-[var(--rc-border)] bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,252,246,0.92))] p-3">
                                         <div className="aspect-square">
                                             <MiniPanelFrame chromeTitle="Form">
-                                                <div className="rounded border border-[var(--rc-border)] bg-[rgba(255,253,249,0.9)] px-2 py-1.5 text-[10px] text-[var(--rc-muted)]">Sport ▾</div>
-                                                <div className="rounded border border-[var(--rc-border)] bg-[rgba(255,253,249,0.9)] px-2 py-1.5 text-[10px] text-[var(--rc-muted)]">Position ▾</div>
-                                                <div className="rounded border border-[var(--rc-border)] bg-[rgba(255,253,249,0.9)] px-2 py-1.5 text-[10px] text-[var(--rc-muted)]">Grad year ▾</div>
-                                                <div className="grid grid-cols-3 gap-1.5 pt-0.5">
-                                                    <div className="rounded border border-[var(--rc-border)] bg-[rgba(255,253,249,0.9)] px-1.5 py-1 text-center text-[9px] text-[var(--rc-muted)]">40 yd</div>
-                                                    <div className="rounded border border-[var(--rc-border)] bg-[rgba(255,253,249,0.9)] px-1.5 py-1 text-center text-[9px] text-[var(--rc-muted)]">Vert</div>
-                                                    <div className="rounded border border-[rgba(153,0,0,0.32)] bg-[rgba(255,204,0,0.18)] px-1.5 py-1 text-center text-[9px] font-semibold text-[var(--rc-cardinal)]">Shuttle</div>
+                                                <div className="rounded-[var(--radius-internal)] border border-[rgba(0,0,0,0.08)] bg-[rgba(255,255,255,0.95)] px-2 py-1.5 text-[10px] text-[var(--rc-muted)]">Sport ▾</div>
+                                                <div className="rounded-[var(--radius-internal)] border border-[rgba(0,0,0,0.08)] bg-[rgba(255,255,255,0.95)] px-2 py-1.5 text-[10px] text-[var(--rc-muted)]">Position ▾</div>
+                                                <div className="rounded-[var(--radius-internal)] border border-[rgba(0,0,0,0.08)] bg-[rgba(255,255,255,0.95)] px-2 py-1.5 text-[10px] text-[var(--rc-muted)]">Grad year ▾</div>
+                                                <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                                                    <div className="rounded-[var(--radius-internal)] border border-[rgba(0,0,0,0.08)] bg-[rgba(255,255,255,0.95)] px-1.5 py-1 text-center text-[9px] text-[var(--rc-muted)]">40 yd</div>
+                                                    <div className="rounded-[var(--radius-internal)] border border-[rgba(0,0,0,0.08)] bg-[rgba(255,255,255,0.95)] px-1.5 py-1 text-center text-[9px] text-[var(--rc-muted)]">Vert</div>
+                                                    <div className="rounded-[var(--radius-internal)] border border-[rgba(0,0,0,0.08)] bg-[rgba(255,255,255,0.95)] px-1.5 py-1 text-center text-[9px] text-[var(--rc-muted)]">Shuttle</div>
+                                                    <div className="rounded-[var(--radius-internal)] border border-[rgba(0,0,0,0.08)] bg-[rgba(255,255,255,0.95)] px-1.5 py-1 text-center text-[9px] text-[var(--rc-muted)]">Broad</div>
                                                 </div>
                                             </MiniPanelFrame>
                                         </div>
@@ -198,16 +295,16 @@ export default function Landing() {
 
                                 <article data-stagger className="rc-surface flex h-full flex-col p-7">
                                     <p className="mb-5 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(153,0,0,0.24)] bg-white text-base font-bold text-[var(--rc-cardinal)]">②</p>
-                                    <div className="mb-3 rounded-xl border border-[var(--rc-border)] bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,252,246,0.92))] p-3">
+                                    <div className="mb-3 rounded-[var(--radius)] border border-[var(--rc-border)] bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,252,246,0.92))] p-3">
                                         <div className="aspect-square">
                                             <MiniPanelFrame chromeTitle="Plan">
                                                 <div className="mb-1 flex items-center justify-between">
                                                     <p className="text-[10px] font-semibold text-[var(--rc-ink)]">This Week&apos;s Priorities</p>
                                                     <span className="rounded-full border border-[rgba(153,0,0,0.3)] bg-[rgba(255,204,0,0.2)] px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.08em] text-[var(--rc-cardinal)]">Phase</span>
                                                 </div>
-                                                <div className="rounded border border-[var(--rc-border)] bg-[rgba(255,253,249,0.9)] px-2 py-1 text-[10px] text-[var(--rc-muted)]">1. Sprint gap session + retest</div>
-                                                <div className="rounded border border-[var(--rc-border)] bg-[rgba(255,253,249,0.9)] px-2 py-1 text-[10px] text-[var(--rc-muted)]">2. Send updates to 3 schools</div>
-                                                <div className="rounded border border-[rgba(153,0,0,0.32)] bg-[rgba(255,204,0,0.18)] px-2 py-1 text-[10px] font-semibold text-[var(--rc-cardinal)]">3. Publish one verified clip</div>
+                                                <div className="rounded-[var(--radius-internal)] border border-[var(--rc-border)] bg-[rgba(255,253,249,0.9)] px-2 py-1 text-[10px] text-[var(--rc-muted)]">1. Sprint gap session + retest</div>
+                                                <div className="rounded-[var(--radius-internal)] border border-[var(--rc-border)] bg-[rgba(255,253,249,0.9)] px-2 py-1 text-[10px] text-[var(--rc-muted)]">2. Send updates to 3 schools</div>
+                                                <div className="rounded-[var(--radius-internal)] border border-[rgba(153,0,0,0.32)] bg-[rgba(255,204,0,0.18)] px-2 py-1 text-[10px] font-semibold text-[var(--rc-cardinal)]">3. Publish one verified clip</div>
                                             </MiniPanelFrame>
                                         </div>
                                         <p className="mt-2 text-center text-sm font-semibold text-[var(--rc-muted)]">Plan</p>
@@ -218,21 +315,23 @@ export default function Landing() {
 
                                 <article data-stagger className="rc-surface flex h-full flex-col p-7">
                                     <p className="mb-5 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(153,0,0,0.24)] bg-white text-base font-bold text-[var(--rc-cardinal)]">③</p>
-                                    <div className="mb-3 rounded-xl border border-[var(--rc-border)] bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,252,246,0.92))] p-3">
+                                    <div className="mb-3 rounded-[var(--radius)] border border-[var(--rc-border)] bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(255,252,246,0.92))] p-3">
                                         <div className="aspect-square">
                                             <MiniPanelFrame chromeTitle="Track">
                                                 <p className="text-[10px] font-semibold text-[var(--rc-ink)]">Progress</p>
-                                                <div className="rounded border border-[var(--rc-border)] bg-[rgba(255,253,249,0.9)] p-2">
+                                                <div className="rounded-[var(--radius-internal)] border border-[rgba(0,0,0,0.08)] bg-[rgba(255,255,255,0.95)] p-2">
                                                     <div className="relative h-8">
                                                         <span className="absolute bottom-0 left-0 h-[1px] w-full bg-[var(--rc-border)]" />
                                                         <span className="absolute bottom-[4px] left-[8%] h-[1px] w-[24%] rotate-[8deg] bg-[var(--rc-muted)]/50" />
                                                         <span className="absolute bottom-[10px] left-[32%] h-[1px] w-[22%] -rotate-[6deg] bg-[var(--rc-muted)]/50" />
-                                                        <span className="absolute bottom-[14px] left-[54%] h-[1.5px] w-[34%] rotate-[9deg] bg-[var(--rc-cardinal)]" />
+                                                        <span className="absolute bottom-[14px] left-[54%] h-[1.5px] w-[34%] rotate-[9deg] bg-[rgba(0,0,0,0.72)]" />
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center justify-between text-[10px]">
-                                                    <span className="text-[var(--rc-muted)]">Completed 2/3</span>
-                                                    <span className="font-semibold text-[var(--rc-cardinal)]">Next plan ready</span>
+                                                <div className="rounded-[var(--radius-internal)] border border-[rgba(0,0,0,0.08)] bg-[rgba(255,255,255,0.95)] px-2 py-1 text-[10px] text-[var(--rc-muted)]">
+                                                    Completed 2/3
+                                                </div>
+                                                <div className="rounded-[var(--radius-internal)] border border-[rgba(0,0,0,0.08)] bg-[rgba(255,255,255,0.95)] px-2 py-1 text-[10px] font-medium text-[rgba(0,0,0,0.72)]">
+                                                    Next plan ready
                                                 </div>
                                             </MiniPanelFrame>
                                         </div>
@@ -253,9 +352,9 @@ export default function Landing() {
                     </div>
                 </section>
 
-                <section data-reveal className="px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
+                <section data-reveal className="rc-landing-section px-4 sm:px-6 lg:px-8">
                     <div className="mx-auto w-full max-w-[1200px]">
-                        <h2 data-stagger className="text-center text-4xl font-bold tracking-tight sm:text-5xl">Athletes Are Already Planning Smarter</h2>
+                        <h2 data-stagger className="text-center text-[32px] font-bold tracking-tight sm:text-[40px]">Athletes Are Already Planning Smarter</h2>
                         <div className="mt-12 grid gap-5 md:grid-cols-3">
                             {testimonials.map((testimonial) => (
                                 <article key={testimonial.quote} data-stagger className="rc-surface rc-testimonial-card p-7">
@@ -268,12 +367,12 @@ export default function Landing() {
                     </div>
                 </section>
 
-                <section id="pricing" data-reveal className="rc-pricing-manifesto border-y border-[var(--rc-border)] bg-[rgba(255,253,249,0.72)] px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
+                <section id="pricing" data-reveal className="rc-landing-section rc-pricing-manifesto border-y border-[var(--rc-border)] bg-[rgba(255,253,249,0.72)] px-4 sm:px-6 lg:px-8">
                     <div className="rc-pricing-inner">
                         <div className="rc-pricing-panel">
                             <div data-stagger className="rc-pricing-row rc-pricing-row-hero">
                                 <div>
-                                    <h2 className="text-center text-4xl font-bold tracking-tight sm:text-left sm:text-5xl">Built for the 95%</h2>
+                                    <h2 className="text-center text-[32px] font-bold tracking-tight sm:text-left sm:text-[40px]">Built for the 95%</h2>
                                     <p className="mt-5 text-center text-[18px] leading-[1.6] text-[var(--rc-muted)] sm:text-left">
                                         Weekly recruiting guidance for athletes who don’t have $4,200 coordinators.
                                     </p>
@@ -325,9 +424,9 @@ export default function Landing() {
                     </div>
                 </section>
 
-                <section id="faq" data-reveal className="px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
+                <section id="faq" data-reveal className="rc-landing-section px-4 sm:px-6 lg:px-8">
                     <div className="mx-auto w-full max-w-[900px]">
-                        <h2 data-stagger className="text-center text-4xl font-bold tracking-tight sm:text-5xl">Common Questions</h2>
+                        <h2 data-stagger className="text-center text-[32px] font-bold tracking-tight sm:text-[40px]">Common Questions</h2>
                         <div className="mt-12 space-y-3">
                             {faqItems.map((item, idx) => {
                                 const isOpen = openFaqIndex === idx
@@ -362,10 +461,10 @@ export default function Landing() {
                     </div>
                 </section>
 
-                <section data-reveal className="border-t border-[var(--rc-border)] px-4 pb-24 pt-20 sm:px-6 lg:px-8 lg:pb-28 lg:pt-24">
+                <section data-reveal className="rc-landing-section border-t border-[var(--rc-border)] px-4 sm:px-6 lg:px-8">
                     <div className="mx-auto w-full max-w-[900px] text-center">
-                        <h2 data-stagger className="text-4xl font-bold tracking-tight sm:text-5xl">Ready to Stop Guessing?</h2>
-                        <p data-stagger className="mx-auto mt-5 max-w-2xl text-[18px] leading-[1.6] text-[var(--rc-muted)] sm:text-[20px]">
+                        <h2 data-stagger className="text-[32px] font-bold tracking-tight sm:text-[40px]">Ready to Stop Guessing?</h2>
+                        <p data-stagger className="mx-auto mt-5 max-w-2xl text-[17px] leading-[1.6] text-[var(--rc-muted)] sm:text-[18px]">
                             Get your first weekly plan in 3 minutes.
                         </p>
                         <Link data-stagger to="/signup" className="mt-8 inline-block">
