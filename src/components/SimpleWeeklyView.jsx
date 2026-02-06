@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import PlanItemToggle from './PlanItemToggle';
+import ProgressiveDisclosureCard from './ProgressiveDisclosureCard';
 
 const formatAthleteSubtitle = (athlete, phaseLabel) => {
     const gradYear = athlete?.grad_year ? `Class of ${athlete.grad_year}` : null;
@@ -17,7 +18,12 @@ export default function SimpleWeeklyView({
     loading,
     error,
     onStatusChange,
-    targetAthleteId
+    targetAthleteId,
+    showUnlockCard,
+    engagement,
+    unlockingDashboard,
+    unlockError,
+    onUnlockDashboard
 }) {
     const subtitle = formatAthleteSubtitle(athlete, phaseLabel);
     const hasActions = Array.isArray(actions) && actions.length > 0;
@@ -115,6 +121,16 @@ export default function SimpleWeeklyView({
                     ))}
                 </CardContent>
             </Card>
+
+            {showUnlockCard && (
+                <ProgressiveDisclosureCard
+                    weeksActive={engagement?.weeksActive || 0}
+                    actionsCompleted={engagement?.actionsCompleted || 0}
+                    onUnlock={onUnlockDashboard}
+                    saving={unlockingDashboard}
+                    error={unlockError}
+                />
+            )}
         </div>
     );
 }

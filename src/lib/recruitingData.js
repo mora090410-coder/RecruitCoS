@@ -417,3 +417,101 @@ export async function updateWeeklyPlanItemStatus(itemId, status) {
     }
     return data;
 }
+
+/**
+ * Computes weekly-plan engagement metrics for progressive disclosure.
+ * Completion rate is defined as done/total across plan items in the latest 2 plan headers by week_of_date.
+ */
+export async function getAthleteEngagement(athleteId) {
+    if (!athleteId) {
+        return {
+            weeksActive: 0,
+            actionsCompleted: 0,
+            completionRate: 0,
+            windowDescription: 'latest 2 plans'
+        };
+    }
+
+    const [
+        { count: weeksActiveCount, error: weeksActiveError },
+        { count: actionsCompletedCount, error: actionsCompletedError },
+        { data: latestPlans, error: latestPlansError }
+    ] = await Promise.all([
+        supabase
+            .from('athlete_weekly_plans')
+            .select('week_of_date', { count: 'exact', head: true })
+            .eq('athlete_id', athleteId),
+        supabase
+            .from('athlete_weekly_plan_items')
+            .select('id', { count: 'exact', head: true })
+            .eq('athlete_id', athleteId)
+            .eq('status', 'done'),
+        supabase
+            .from('athlete_weekly_plans')
+            .select('week_of_date')
+            .eq('athlete_id', athleteId)
+            .order('week_of_date', { ascending: false })
+            .limit(2)
+    ]);
+
+    if (weeksActiveError) {
+        console.error('[recruitingData] Error fetching weeks active:', weeksActiveError);
+    }
+    if (actionsCompletedError) {
+        console.error('[recruitingData] Error fetching actions completed:', actionsCompletedError);
+    }
+    if (latestPlansError) {
+        console.error('[recruitingData] Error fetching latest plans for completion rate:', latestPlansError);
+    }
+
+    const latestWeeks = (latestPlans || [])
+        .map((row) => row.week_of_date)
+        .filter(Boolean);
+
+    let completionRate = 0;
+    if (latestWeeks.length > 0) {
+        const { data: completionRows, error: completionRowsError } = await supabase
+            .from('athlete_weekly_plan_items')
+            .select('status')
+            .eq('athlete_id', athleteId)
+            .in('week_start_date', latestWeeks);
+
+        if (completionRowsError) {
+            console.error('[recruitingData] Error fetching completion rate rows:', completionRowsError);
+        } else {
+            const totalActions = completionRows?.length || 0;
+            const doneActions = (completionRows || []).filter((row) => row.status === 'done').length;
+            completionRate = totalActions > 0 ? doneActions / totalActions : 0;
+        }
+    }
+
+    return {
+        weeksActive: weeksActiveCount || 0,
+        actionsCompleted: actionsCompletedCount || 0,
+        completionRate,
+        windowDescription: 'latest 2 plans'
+    };
+}
+
+/**
+ * Sets dashboard_unlocked_at for an athlete if it has not been set yet.
+ */
+export async function unlockDashboard(athleteId) {
+    if (!athleteId) return { unlockedNow: false };
+
+    const { data, error } = await supabase
+        .from('athletes')
+        .update({ dashboard_unlocked_at: new Date().toISOString() })
+        .eq('id', athleteId)
+        .is('dashboard_unlocked_at', null)
+        .select('id, dashboard_unlocked_at');
+
+    if (error) {
+        console.error('[recruitingData] Error unlocking dashboard:', error);
+        throw error;
+    }
+
+    return {
+        unlockedNow: Array.isArray(data) && data.length > 0
+    };
+}
