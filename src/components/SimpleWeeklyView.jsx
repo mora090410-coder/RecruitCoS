@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import PlanItemToggle from './PlanItemToggle';
 import ProgressiveDisclosureCard from './ProgressiveDisclosureCard';
 import { Button } from './ui/button';
+import { track } from '../lib/analytics';
 
 const formatAthleteSubtitle = (athlete, phaseLabel) => {
     const gradYear = athlete?.grad_year ? `Class of ${athlete.grad_year}` : null;
@@ -66,7 +67,12 @@ export default function SimpleWeeklyView({
                                 Add your first measurable to unlock your personalized primary gap.
                             </p>
                             <Button asChild type="button" variant="outline" size="sm">
-                                <Link to="/measurables">Add Measurables &rarr;</Link>
+                                <Link
+                                    to="/measurables"
+                                    onClick={() => track('add_measurables_clicked', { source: 'weekly_plan_primary_gap_card' })}
+                                >
+                                    Add Measurables &rarr;
+                                </Link>
                             </Button>
                         </div>
                     )}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { trackAppError } from '../lib/analytics';
 
 export default class ErrorBoundary extends React.Component {
     constructor(props) {
@@ -12,6 +13,7 @@ export default class ErrorBoundary extends React.Component {
 
     componentDidCatch(error, errorInfo) {
         console.error("Uncaught error:", error, errorInfo);
+        trackAppError('ErrorBoundary', error, { component_stack: errorInfo?.componentStack || null });
     }
 
     render() {

@@ -5,6 +5,8 @@ import AppLoading from './components/AppLoading'
 import { Toaster } from 'sonner'
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './lib/supabase'
+import { ensureSignupTimestamp, getSignupTimestamp, identify, markSessionStart, page } from './lib/analytics'
+import { getAthletePhase } from './lib/constants'
 
 // Pages
 import Login from './pages/Login'
@@ -33,6 +35,28 @@ function MainNavigator() {
   const isPostLoginEntryPath = useMemo(() => (
     ['/', '/login', '/signup', '/profile-setup'].includes(location.pathname)
   ), [location.pathname])
+
+  useEffect(() => {
+    page(location.pathname, { route: location.pathname })
+    markSessionStart(location.pathname)
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (!user?.id) return
+    const userCreatedAt = ensureSignupTimestamp(user.created_at || getSignupTimestamp() || new Date().toISOString())
+    const athletePhase = profile?.grad_year ? getAthletePhase(profile.grad_year) : null
+
+    identify(user.id, {
+      email: user.email || null,
+      user_created_at: userCreatedAt,
+      signup_ts: userCreatedAt,
+      sport: profile?.sport || null,
+      position: profile?.position || profile?.primary_position_display || null,
+      grad_year: profile?.grad_year || null,
+      phase: athletePhase,
+      target_level: profile?.target_divisions?.[0] || null
+    })
+  }, [user?.id, user?.email, user?.created_at, profile?.grad_year, profile?.position, profile?.primary_position_display, profile?.sport, profile?.target_divisions])
 
   useEffect(() => {
     let isMounted = true

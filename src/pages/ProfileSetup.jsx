@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -11,6 +11,8 @@ import {
 import RecruitingGoals from '../components/profile/RecruitingGoals'
 import { SUPPORTED_SPORTS, getPositionOptionsForSport } from '../config/sportSchema'
 import { mapCanonicalToGroup, mapPositionToCanonical, normalizeText, logSamplePositionMappings } from '../lib/normalize'
+import { toast } from 'sonner'
+import { track } from '../lib/analytics'
 
 // Constants
 const TOTAL_STEPS = 7
@@ -101,6 +103,7 @@ export default function ProfileSetup() {
 
     // Track if user has manually modified divisions to prevent overwrite
     const [manualDivisions, setManualDivisions] = useState(false)
+    const onboardingStartRef = useRef(Date.now())
 
     // Smart Defaults for Divisions based on GPA
     useEffect(() => {
@@ -130,7 +133,14 @@ export default function ProfileSetup() {
         logSamplePositionMappings(formData.sport || 'Softball')
     }, [formData.sport])
 
-    const handleNext = () => setStep(s => Math.min(s + 1, TOTAL_STEPS))
+    useEffect(() => {
+        track('onboarding_viewed', { step, route: '/profile-setup' })
+    }, [step])
+
+    const handleNext = () => {
+        track('onboarding_step_completed', { step })
+        setStep(s => Math.min(s + 1, TOTAL_STEPS))
+    }
     const handleBack = () => setStep(s => Math.max(s - 1, 1))
 
     const handleSportChange = (value) => {
@@ -222,6 +232,7 @@ export default function ProfileSetup() {
 
     // Step 7: Create Account & Save Profile
     const handleCreateAccount = async () => {
+        track('onboarding_step_completed', { step: 7 })
         setLoading(true)
         setError(null)
 
@@ -328,12 +339,25 @@ export default function ProfileSetup() {
 
             setCompleted(true)
             toast.success("Profile launched successfully!")
+            track('onboarding_completed', {
+                sport: formData.sport || null,
+                grad_year: Number(formData.gradYear) || null,
+                position: formData.primaryPositionDisplay || null,
+                target_level: formData.targetDivisions?.[0] || null,
+                has_measurables: false,
+                onboarding_duration_ms: Date.now() - onboardingStartRef.current
+            })
 
         } catch (err) {
             console.error("Onboarding failed:", err)
             const errorMessage = err.message || "An unexpected error occurred during setup."
             setError(errorMessage)
             toast.error(errorMessage)
+            track('onboarding_failed', {
+                step,
+                error_code: err?.code || 'onboarding_failed',
+                error_message: errorMessage
+            })
         } finally {
             setLoading(false)
         }

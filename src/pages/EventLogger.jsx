@@ -9,6 +9,7 @@ import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
 import { Mic, Check, Twitter, Calendar, Rocket, Sparkles } from 'lucide-react'
+import { track } from '../lib/analytics'
 
 import CoachSelector from '../components/CoachSelector'
 
@@ -209,6 +210,9 @@ export default function EventLogger() {
         }
 
         setEventId(eventData.id)
+        track('recruiting_event_logged', {
+            event_type: formData.event_type || null
+        })
 
         // 3. Generate Content
         try {

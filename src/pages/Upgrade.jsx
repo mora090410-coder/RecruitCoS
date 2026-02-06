@@ -1,10 +1,16 @@
 import { useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
+import { track } from '../lib/analytics'
 
 export default function Upgrade() {
   const navigate = useNavigate()
+
+  useEffect(() => {
+    track('upgrade_viewed', { source: 'dashboard_gate' })
+  }, [])
 
   return (
     <DashboardLayout>

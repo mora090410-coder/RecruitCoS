@@ -14,6 +14,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Badge } from '../components/ui/badge';
 import { Activity, Target, AlertCircle, CheckCircle2, TrendingUp, TrendingDown, HelpCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { track } from '../lib/analytics';
+
+const toValueBucket = (rawValue) => {
+    const value = Number(rawValue);
+    if (Number.isNaN(value)) return 'unknown';
+    const roundedBase = Math.floor(value / 10) * 10;
+    const upper = roundedBase + 10;
+    return `${roundedBase}-${upper}`;
+};
 
 export default function Measurables() {
     const { profile } = useProfile();
@@ -308,6 +317,14 @@ function MeasurableEntryForm({ athleteId, sport, onSave }) {
         try {
             const metricKey = normalizeMetricKey(formData.metric);
             const unitValue = normalizeUnit(formData.unit);
+            const { data: existingMetric } = await supabase
+                .from('athlete_measurables')
+                .select('id')
+                .eq('athlete_id', athleteId)
+                .eq('metric_canonical', metricKey)
+                .order('measured_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
 
             const { error } = await supabase
                 .from('athlete_measurables')
@@ -323,6 +340,12 @@ function MeasurableEntryForm({ athleteId, sport, onSave }) {
                 }]);
 
             if (error) throw error;
+
+            const eventName = existingMetric?.id ? 'measurable_updated' : 'measurable_added';
+            track(eventName, {
+                metric_key: metricKey,
+                value_bucket: toValueBucket(formData.value)
+            });
 
             toast.success(`${getMetricLabel(sport, formData.metric)} saved!`);
             setFormData({ ...formData, metric: '', value: '', unit: '' });

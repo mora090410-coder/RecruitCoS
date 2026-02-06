@@ -9,6 +9,7 @@ import {
     unlockDashboard,
     updateWeeklyPlanItemStatus
 } from '../lib/recruitingData';
+import { track } from '../lib/analytics';
 
 export default function WeeklyPlan() {
     const navigate = useNavigate();
@@ -20,11 +21,18 @@ export default function WeeklyPlan() {
     const [unlockingDashboard, setUnlockingDashboard] = useState(false);
     const [unlockError, setUnlockError] = useState(null);
     const [reloadNonce, setReloadNonce] = useState(0);
+    const [hasTrackedPlanView, setHasTrackedPlanView] = useState(false);
+    const [hasTrackedUnlockPrompt, setHasTrackedUnlockPrompt] = useState(false);
 
     const targetAthleteId = useMemo(() => {
         if (isImpersonating) return activeAthlete?.id || null;
         return profile?.id || null;
     }, [activeAthlete?.id, isImpersonating, profile?.id]);
+
+    useEffect(() => {
+        setHasTrackedPlanView(false);
+        setHasTrackedUnlockPrompt(false);
+    }, [targetAthleteId, reloadNonce]);
 
     useEffect(() => {
         let active = true;
@@ -77,6 +85,11 @@ export default function WeeklyPlan() {
 
     const handleUnlockDashboard = async () => {
         if (!targetAthleteId || unlockingDashboard) return;
+        track('unlock_clicked', {
+            weeks_active: engagement?.weeksActive || 0,
+            actions_completed: engagement?.actionsCompleted || 0,
+            completion_rate: engagement?.completionRate || 0
+        });
         setUnlockingDashboard(true);
         setUnlockError(null);
 
@@ -92,6 +105,7 @@ export default function WeeklyPlan() {
 
     const handleStatusChange = async (item, nextStatus) => {
         if (!item?.id || !targetAthleteId) return null;
+        const fromStatus = item.status || 'open';
         const normalizedStatus = nextStatus === 'todo' ? 'open' : nextStatus;
         if (!normalizedStatus) return null;
         if (item.status === normalizedStatus) return item;
@@ -101,6 +115,14 @@ export default function WeeklyPlan() {
 
         const updated = await updateWeeklyPlanItemStatus(item.id, normalizedStatus);
         if (!updated) return null;
+
+        track('weekly_action_status_changed', {
+            week_start: simplePlan?.weekStartDate || null,
+            action_id: item.id,
+            action_type: item.item_type || null,
+            from_status: fromStatus,
+            to_status: normalizedStatus
+        });
 
         setSimplePlan((prev) => {
             if (!prev?.actions) return prev;
@@ -112,6 +134,29 @@ export default function WeeklyPlan() {
 
         return updated;
     };
+
+    useEffect(() => {
+        if (!simplePlan || loading || hasTrackedPlanView) return;
+        track('weekly_plan_viewed', {
+            week_start: simplePlan.weekStartDate || null,
+            phase: simplePlan.phaseLabel || null,
+            sport: simplePlan.athlete?.sport || null,
+            position: simplePlan.athlete?.position || null,
+            grad_year: simplePlan.athlete?.grad_year || null,
+            has_primary_gap: Boolean(simplePlan?.primaryGap?.metricKey)
+        });
+        setHasTrackedPlanView(true);
+    }, [simplePlan, loading, hasTrackedPlanView]);
+
+    useEffect(() => {
+        if (!showUnlockCard || hasTrackedUnlockPrompt) return;
+        track('unlock_prompt_shown', {
+            weeks_active: engagement?.weeksActive || 0,
+            actions_completed: engagement?.actionsCompleted || 0,
+            completion_rate: engagement?.completionRate || 0
+        });
+        setHasTrackedUnlockPrompt(true);
+    }, [showUnlockCard, hasTrackedUnlockPrompt, engagement?.weeksActive, engagement?.actionsCompleted, engagement?.completionRate]);
 
     return (
         <DashboardLayout phase={simplePlan?.phaseLabel}>

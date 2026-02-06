@@ -29,6 +29,7 @@ import {
 } from '../components/ui/dropdown-menu'
 import { ReadinessScoreCard } from '../components/ReadinessScoreCard'
 import { fetchLatestReadiness } from '../lib/recruitingData'
+import { track } from '../lib/analytics'
 
 const logMatchCoachesDisabledOnce = () => {
     if (!import.meta.env.DEV) return;
@@ -57,8 +58,22 @@ export default function Dashboard() {
     const [loadingReadiness, setLoadingReadiness] = useState(false)
     const [accessLoading, setAccessLoading] = useState(true)
     const [hasDashboardAccess, setHasDashboardAccess] = useState(false)
+    const [hasTrackedGateView, setHasTrackedGateView] = useState(false)
+    const [hasTrackedDashboardView, setHasTrackedDashboardView] = useState(false)
 
     if (!profile) return null;
+
+    useEffect(() => {
+        if (accessLoading || hasDashboardAccess || hasTrackedGateView) return
+        track('dashboard_gate_viewed', { reason: 'not_unlocked' })
+        setHasTrackedGateView(true)
+    }, [accessLoading, hasDashboardAccess, hasTrackedGateView])
+
+    useEffect(() => {
+        if (accessLoading || !hasDashboardAccess || hasTrackedDashboardView) return
+        track('dashboard_viewed', { unlocked: true })
+        setHasTrackedDashboardView(true)
+    }, [accessLoading, hasDashboardAccess, hasTrackedDashboardView])
 
     useEffect(() => {
         let isMounted = true

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { ensureSignupTimestamp, getAttributionProps, track } from '../lib/analytics'
 
 const AuthContext = createContext({})
 
@@ -50,6 +51,14 @@ export const AuthProvider = ({ children }) => {
             const result = await supabase.auth.signUp(data)
             if (result.data?.user && result.data?.session) {
                 setUser(result.data.user)
+            }
+            if (result.data?.user && !result.error) {
+                const userCreatedAt = ensureSignupTimestamp(result.data.user.created_at || new Date().toISOString())
+                track('signup_completed', {
+                    ...getAttributionProps(),
+                    signup_path: typeof window !== 'undefined' ? window.location.pathname : null,
+                    user_created_at: userCreatedAt
+                })
             }
             return result
         },

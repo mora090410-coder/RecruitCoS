@@ -9,6 +9,7 @@ import {
     deleteWeeklyPlanItemsForWeek
 } from '../lib/recruitingData';
 import { getMetricKeysForSport, getMetricLabel } from '../config/sportSchema';
+import { track } from '../lib/analytics';
 
 const DEFAULT_WEEK_START = 1;
 
@@ -187,7 +188,7 @@ const buildWeeklyPlanItems = async (athleteId, weekStartDate, options = {}) => {
     return { items, decisions, lastWeekItems };
 };
 
-export async function generateAndPersistWeeklyPlan(athleteId) {
+export async function generateAndPersistWeeklyPlan(athleteId, options = {}) {
     if (!athleteId) return [];
 
     const weekStartDate = resolveWeekStartDate();
@@ -212,6 +213,13 @@ export async function generateAndPersistWeeklyPlan(athleteId) {
     }
 
     const inserted = await insertWeeklyPlanItems(items);
+    if (inserted.length > 0) {
+        const generatedReason = options.reason || (refreshPlan ? 'regen' : 'bootstrap');
+        track('weekly_plan_generated', {
+            week_start: weekStartDate,
+            generated_reason: generatedReason
+        });
+    }
     return inserted;
 }
 

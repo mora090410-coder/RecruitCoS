@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
+import { track } from '../lib/analytics'
 
 export default function DashboardAccessGate() {
     const navigate = useNavigate()
@@ -21,7 +22,14 @@ export default function DashboardAccessGate() {
                         <Button asChild className="bg-brand-primary text-white hover:bg-brand-secondary">
                             <Link to="/weekly-plan">Keep using Weekly Plan</Link>
                         </Button>
-                        <Button type="button" variant="outline" onClick={() => navigate('/upgrade')}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                track('upgrade_clicked', { source: 'dashboard_gate' })
+                                navigate('/upgrade')
+                            }}
+                        >
                             Upgrade
                         </Button>
                     </div>
