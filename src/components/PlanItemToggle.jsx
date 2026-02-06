@@ -33,7 +33,7 @@ export default function PlanItemToggle({ item, onStatusChange, targetAthleteId }
             <div className="flex flex-wrap items-center gap-2">
                 {isDone ? (
                     <>
-                        <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                        <span className="inline-flex items-center rounded-full border border-[rgba(153,0,0,0.22)] bg-[rgba(255,204,0,0.2)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--rc-cardinal)]">
                             Done
                         </span>
                         <button
@@ -52,7 +52,7 @@ export default function PlanItemToggle({ item, onStatusChange, targetAthleteId }
                         size="sm"
                         onClick={() => handleStatusUpdate('done')}
                         disabled={isSaving}
-                        className="h-7 rounded-full bg-emerald-600 px-3 text-[11px] font-semibold text-white hover:bg-emerald-700"
+                        className="rc-btn-primary h-7 rounded-full px-3 text-[11px] font-semibold"
                         aria-label={`Mark ${item?.title || 'plan item'} done`}
                     >
                         Done
@@ -65,7 +65,7 @@ export default function PlanItemToggle({ item, onStatusChange, targetAthleteId }
                     onClick={() => handleStatusUpdate(isSkipped ? 'todo' : 'skipped')}
                     disabled={isSaving}
                     className={isSkipped
-                        ? 'h-7 rounded-full bg-amber-500 px-3 text-[11px] font-semibold text-white hover:bg-amber-600'
+                        ? 'h-7 rounded-full border border-[rgba(255,204,0,0.7)] bg-[rgba(255,204,0,0.95)] px-3 text-[11px] font-semibold text-[#3d2d00] hover:bg-[rgba(255,204,0,0.85)]'
                         : 'h-7 rounded-full px-3 text-[11px] font-semibold'}
                     aria-label={`${isSkipped ? 'Unskip' : 'Skip'} ${item?.title || 'plan item'}`}
                 >

@@ -20,27 +20,27 @@ export default function ProfileSwitcher() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex items-center gap-2 px-3 hover:bg-gray-100">
+                <Button variant="ghost" size="sm" className="flex items-center gap-2 px-3 hover:bg-[rgba(153,0,0,0.05)]">
                     <div className="flex items-center gap-2">
                         {activeAthlete ? (
-                            <Users className="w-4 h-4 text-brand-primary" />
+                            <Users className="h-4 w-4 text-[var(--rc-cardinal)]" />
                         ) : (
-                            <User className="w-4 h-4 text-gray-500" />
+                            <User className="h-4 w-4 text-[var(--rc-muted)]" />
                         )}
                         <span className="text-sm font-medium">
                             {activeAthlete ? activeAthlete.full_name : 'My Profile'}
                         </span>
                     </div>
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                    <ChevronDown className="h-4 w-4 text-[var(--rc-muted)]" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-56 border-[var(--rc-border)] bg-[var(--rc-surface)] text-[var(--rc-ink)]">
                 <DropdownMenuLabel>Switch Profile</DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
                 <DropdownMenuItem
                     onClick={() => switchAthlete(null)}
-                    className={!activeAthlete ? 'bg-gray-100' : ''}
+                    className={!activeAthlete ? 'bg-[rgba(153,0,0,0.06)]' : ''}
                 >
                     <User className="w-4 h-4 mr-2" />
                     My Profile
@@ -50,7 +50,7 @@ export default function ProfileSwitcher() {
                     <DropdownMenuItem
                         key={access.athlete.id}
                         onClick={() => switchAthlete(access.athlete.id)}
-                        className={activeAthlete?.id === access.athlete.id ? 'bg-gray-100' : ''}
+                        className={activeAthlete?.id === access.athlete.id ? 'bg-[rgba(153,0,0,0.06)]' : ''}
                     >
                         <Users className="w-4 h-4 mr-2" />
                         {access.athlete.full_name}

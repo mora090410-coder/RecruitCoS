@@ -32,28 +32,28 @@ export default function SignUp() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-zinc-950 px-4">
-            <Card className="w-full max-w-md bg-zinc-900 border-zinc-800 text-white shadow-2xl">
+        <div className="rc-auth-shell flex min-h-screen items-center justify-center px-4">
+            <Card className="rc-auth-card w-full max-w-md">
                 <CardHeader className="text-center space-y-2">
                     <CardTitle className="text-2xl font-bold tracking-tight">Get Started</CardTitle>
-                    <p className="text-sm text-zinc-400">Create your account to start building your brand</p>
+                    <p className="text-sm rc-muted">Create your account to start building your brand</p>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSignUp} className="space-y-4">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-zinc-300">Email</label>
+                            <label className="text-sm font-medium rc-muted">Email</label>
                             <Input
                                 type="email"
                                 placeholder="name@example.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                className="bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-600 focus:border-blue-600 focus:ring-blue-600/20"
+                                className="rc-input"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-zinc-300">Password</label>
+                            <label className="text-sm font-medium rc-muted">Password</label>
                             <Input
                                 type="password"
                                 placeholder="Create a password"
@@ -61,29 +61,29 @@ export default function SignUp() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                                 minLength={6}
-                                className="bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-600 focus:border-blue-600 focus:ring-blue-600/20"
+                                className="rc-input"
                             />
                         </div>
 
                         <Button
                             type="submit"
-                            className="w-full bg-[#007AFF] hover:bg-[#0056b3] text-white mt-2"
+                            className="rc-btn-primary mt-2 w-full"
                             disabled={loading}
                         >
                             {loading ? 'Creating Account...' : 'Create Account'}
                         </Button>
 
                         {message && (
-                            <div className={`text-sm text-center p-2 rounded ${message.includes('Error') ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`}>
+                            <div className={`rc-alert text-center ${message.includes('Error') ? 'rc-alert-error' : 'rc-alert-success'}`}>
                                 {message}
                             </div>
                         )}
                     </form>
                 </CardContent>
-                <CardFooter className="justify-center border-t border-zinc-800 pt-6">
-                    <p className="text-sm text-zinc-500">
+                <CardFooter className="justify-center border-t border-[var(--rc-border)] pt-6">
+                    <p className="text-sm rc-muted">
                         Already have an account?{' '}
-                        <Link to="/login" className="text-[#007AFF] hover:underline font-medium">
+                        <Link to="/login" className="font-medium hover:underline">
                             Sign In
                         </Link>
                     </p>

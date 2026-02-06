@@ -49,6 +49,7 @@ export default function EventLogger() {
     const [eventId, setEventId] = useState(null)
     const [athlete, setAthlete] = useState(null)
     const [showVoiceModal, setShowVoiceModal] = useState(false)
+    const [selectedToneId, setSelectedToneId] = useState('')
     const [selectedOptionIndex, setSelectedOptionIndex] = useState(null)
 
     // Throttling State
@@ -268,35 +269,42 @@ export default function EventLogger() {
         }
     }
 
+    const handleVoiceSelection = (prompt, toneId) => {
+        setSelectedToneId(toneId)
+        setAthlete((prev) => (prev ? { ...prev, voice_profile: prompt } : prev))
+        setShowVoiceModal(false)
+    }
+
     // Voice Modal
     const VoiceModal = () => (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-            <Card className="w-full max-w-md bg-zinc-900 border-zinc-800 text-white">
+        <div className="rc-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+            <Card className="rc-modal-card w-full max-w-md">
                 <CardHeader>
-                    <div className="flex items-center gap-2 text-green-400 mb-2">
-                        <Mic className="w-5 h-5" />
+                    <div className="mb-2 flex items-center gap-2 text-[var(--rc-cardinal)]">
+                        <Mic className="h-5 w-5" />
                         <span className="text-sm font-semibold uppercase tracking-wider">Voice Calibration</span>
                     </div>
                     <CardTitle className="text-xl">How should your posts sound?</CardTitle>
-                    <p className="text-zinc-400 text-sm">Select a tone for your AI-generated content.</p>
+                    <p className="text-sm text-[var(--rc-muted)]">Select a tone for your AI-generated content.</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {TONES.map(tone => (
-                        <div
+                        <button
                             key={tone.id}
-                            onClick={() => handleVoiceSelection(tone.prompt)}
-                            className="p-4 rounded-xl cursor-pointer border-2 border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800 transition-all group"
+                            type="button"
+                            onClick={() => handleVoiceSelection(tone.prompt, tone.id)}
+                            className={`rc-option-card group w-full cursor-pointer p-4 text-left ${selectedToneId === tone.id ? 'is-selected' : ''}`}
                         >
                             <div className="flex items-center gap-3">
                                 <span className="text-2xl group-hover:scale-110 transition-transform">{tone.icon}</span>
                                 <div>
-                                    <h3 className="font-bold text-white group-hover:text-green-400 transition-colors">
+                                    <h3 className="font-bold text-[var(--rc-ink)] group-hover:text-[var(--rc-cardinal)] transition-colors">
                                         {tone.title}
                                     </h3>
-                                    <p className="text-zinc-400 text-sm">{tone.description}</p>
+                                    <p className="text-sm text-[var(--rc-muted)]">{tone.description}</p>
                                 </div>
                             </div>
-                        </div>
+                        </button>
                     ))}
                 </CardContent>
             </Card>

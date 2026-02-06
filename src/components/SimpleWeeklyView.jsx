@@ -13,9 +13,9 @@ const formatAthleteMeta = (athlete) => {
 };
 
 const ITEM_TYPE_STYLES = {
-    gap: 'bg-rose-100 text-rose-700 border-rose-200',
-    strength: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    phase: 'bg-blue-100 text-blue-700 border-blue-200'
+    gap: 'border-[rgba(153,0,0,0.22)] bg-[rgba(153,0,0,0.08)] text-[var(--rc-cardinal)]',
+    strength: 'border-[rgba(255,204,0,0.55)] bg-[rgba(255,204,0,0.22)] text-[#7a5a00]',
+    phase: 'border-[var(--rc-border)] bg-[rgba(255,255,255,0.85)] text-[var(--rc-muted)]'
 };
 
 export default function SimpleWeeklyView({
@@ -59,25 +59,25 @@ export default function SimpleWeeklyView({
         <div className="mx-auto max-w-5xl space-y-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                 <div className="space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-secondary">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--rc-muted)]">
                         {phaseLabel || 'Weekly Plan'}
                     </p>
-                    <h1 className="text-3xl font-bold tracking-tight text-zinc-900 font-serif">
+                    <h1 className="text-3xl font-bold tracking-tight text-[var(--rc-ink)] font-serif">
                         This Week&apos;s Focus
                     </h1>
                     {subtitle && (
-                        <p className="text-sm text-zinc-500">{subtitle}</p>
+                        <p className="text-sm text-[var(--rc-muted)]">{subtitle}</p>
                     )}
                 </div>
                 <Link
                     to="/dashboard"
-                    className="text-sm font-semibold text-brand-primary transition-colors hover:text-brand-secondary"
+                    className="text-sm font-semibold text-[var(--rc-cardinal)] transition-colors hover:text-[#7a0000]"
                 >
                     See Full Analysis &rarr;
                 </Link>
             </div>
 
-            <Card className="rounded-2xl border-zinc-200 shadow-sm">
+            <Card className="rounded-2xl">
                 <CardHeader className="pb-3">
                     <CardTitle className="text-base">
                         {primaryGapState === 'missing_baseline' ? 'Primary Focus' : 'Primary Gap'}
@@ -92,7 +92,7 @@ export default function SimpleWeeklyView({
                     )}
                     {!loading && primaryGapState === 'missing_baseline' && (
                         <div className="space-y-3">
-                            <p className="text-sm text-zinc-600">
+                            <p className="text-sm text-[var(--rc-muted)]">
                                 Add your first measurable to unlock your personalized primary gap.
                             </p>
                             <Button asChild type="button" size="default" className="w-full sm:w-auto">
@@ -103,7 +103,7 @@ export default function SimpleWeeklyView({
                                     Add Measurables &rarr;
                                 </Link>
                             </Button>
-                            <p className="text-xs text-zinc-500">
+                            <p className="text-xs text-[var(--rc-muted)]">
                                 Takes ~60 seconds. You can skip anything you don&apos;t know.
                             </p>
                         </div>
@@ -113,19 +113,19 @@ export default function SimpleWeeklyView({
                             <div className="grid gap-4 md:grid-cols-3">
                                 {metricFields.map((field) => (
                                     <div key={field.key}>
-                                        <p className="text-xs uppercase tracking-wide text-zinc-400">{field.label}</p>
-                                        <p className="text-lg font-semibold text-zinc-900">{field.value}</p>
+                                        <p className="text-xs uppercase tracking-wide text-[var(--rc-muted)]">{field.label}</p>
+                                        <p className="text-lg font-semibold text-[var(--rc-ink)]">{field.value}</p>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-sm text-zinc-500">Primary gap data will appear here after your next update.</p>
+                            <p className="text-sm text-[var(--rc-muted)]">Primary gap data will appear here after your next update.</p>
                         )
                     )}
                 </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border-zinc-200 shadow-sm">
+            <Card className="rounded-2xl">
                 <CardHeader className="pb-3">
                     <CardTitle className="text-base">This Week&apos;s Actions</CardTitle>
                 </CardHeader>
@@ -143,7 +143,7 @@ export default function SimpleWeeklyView({
                         </div>
                     )}
                     {!loading && error && (
-                        <div className="rounded-xl border border-red-200 bg-red-50 p-3">
+                        <div className="rc-alert rc-alert-error rounded-xl p-3">
                             <p className="text-sm text-red-700">{error}</p>
                             {typeof onRetry === 'function' && (
                                 <Button type="button" variant="outline" size="sm" onClick={onRetry} className="mt-2">
@@ -153,13 +153,13 @@ export default function SimpleWeeklyView({
                         </div>
                     )}
                     {!loading && !error && !hasActions && (
-                        <p className="text-sm text-zinc-500">No weekly plan items available.</p>
+                        <p className="text-sm text-[var(--rc-muted)]">No weekly plan items available.</p>
                     )}
                     {!loading && !error && hasActions && actions.map((item) => {
                         const typeKey = (item.item_type || '').toLowerCase();
                         const typeClassName = ITEM_TYPE_STYLES[typeKey] || 'bg-zinc-100 text-zinc-700 border-zinc-200';
                         return (
-                            <div key={item.id} className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+                            <div key={item.id} className="rc-surface rounded-xl p-4">
                                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                     <div className="space-y-1.5">
                                         <div className="flex items-center gap-2">
@@ -167,8 +167,8 @@ export default function SimpleWeeklyView({
                                                 {item.item_type}
                                             </span>
                                         </div>
-                                        <h3 className="text-base font-semibold text-zinc-900">{item.title}</h3>
-                                        <p className="text-xs leading-5 text-zinc-500">{item.why}</p>
+                                        <h3 className="text-base font-semibold text-[var(--rc-ink)]">{item.title}</h3>
+                                        <p className="text-xs leading-5 text-[var(--rc-muted)]">{item.why}</p>
                                     </div>
                                     <PlanItemToggle
                                         item={item}
@@ -177,7 +177,7 @@ export default function SimpleWeeklyView({
                                     />
                                 </div>
                                 {Array.isArray(item.actions) && item.actions.length > 0 && (
-                                    <ul className="mt-3 space-y-1 pl-5 text-xs text-zinc-600 list-disc">
+                                    <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-[var(--rc-muted)]">
                                         {item.actions.map((action, index) => (
                                             <li key={`${item.id}-action-${index}`}>{action}</li>
                                         ))}

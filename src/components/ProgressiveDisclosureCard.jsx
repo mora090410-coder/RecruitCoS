@@ -21,13 +21,13 @@ export default function ProgressiveDisclosureCard({
                         type="button"
                         onClick={onUnlock}
                         disabled={saving}
-                        className="inline-flex items-center rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rc-btn-primary inline-flex items-center rounded-md px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {saving ? 'Unlocking...' : 'View Full Dashboard →'}
                     </button>
                 </div>
                 {error && (
-                    <p className="text-sm text-red-500">{error}</p>
+                    <p className="text-sm text-red-600">{error}</p>
                 )}
             </CardContent>
         </Card>

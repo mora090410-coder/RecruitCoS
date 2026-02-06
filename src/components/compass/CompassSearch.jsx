@@ -127,7 +127,7 @@ export default function CompassSearch({
                         <button
                             key={school}
                             onClick={() => handleQuickPick(school)}
-                            className="text-sm text-brand-primary hover:text-brand-secondary hover:underline mx-1"
+                            className="rc-link mx-1 text-sm"
                         >
                             {school}{idx < POPULAR_SCHOOLS.length - 1 && ' •'}
                         </button>

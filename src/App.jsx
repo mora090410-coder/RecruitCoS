@@ -95,16 +95,16 @@ function MainNavigator() {
   // 0. FATAL ERROR SHIELD
   if (profileError) {
     return (
-      <div className="fixed inset-0 bg-red-950 flex items-center justify-center z-50 p-4">
-        <div className="bg-white/10 backdrop-blur-md p-8 rounded-2xl border border-red-500/30 max-w-md w-full">
-          <h2 className="text-xl font-bold text-red-500 mb-2">Connection Error</h2>
-          <p className="text-white mb-4">We couldn't load your profile. This might be a temporary issue.</p>
-          <pre className="bg-black/50 p-3 rounded text-xs text-red-300 overflow-auto mb-4">
+      <div className="rc-auth-shell fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="rc-auth-card w-full max-w-md rounded-2xl border border-red-300/40 p-8">
+          <h2 className="mb-2 text-xl font-bold text-red-700">Connection Error</h2>
+          <p className="mb-4 text-sm text-[var(--rc-muted)]">We couldn't load your profile. This might be a temporary issue.</p>
+          <pre className="mb-4 overflow-auto rounded bg-[rgba(185,28,28,0.06)] p-3 text-xs text-red-700">
             {profileError.message}
           </pre>
           <button
             onClick={() => window.location.reload()}
-            className="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
+            className="rc-btn-primary w-full rounded-lg py-2 font-semibold transition-colors"
           >
             Retry Connection
           </button>
@@ -116,8 +116,8 @@ function MainNavigator() {
   // 1. GLOBAL LOADING SHIELD
   if (authLoading || isProfileLoading || !isInitialized) {
     return (
-      <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center z-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+      <div className="rc-auth-shell fixed inset-0 z-50 flex items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-[var(--rc-cardinal)]"></div>
       </div>
     )
   }

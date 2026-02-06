@@ -47,8 +47,8 @@ export default function ProfileSetup() {
     // STRICT ROUTE GUARD:
     if (isProfileLoading || !isInitialized || hasProfile) {
         return (
-            <div className="fixed inset-0 bg-zinc-950 flex items-center justify-center z-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+            <div className="rc-onboard-shell fixed inset-0 z-50 flex items-center justify-center">
+                <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-[var(--rc-cardinal)]"></div>
             </div>
         )
     }
@@ -718,7 +718,7 @@ export default function ProfileSetup() {
     // Completion Screen (Step 8 equivalent)
     if (completed) {
         return (
-            <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">
+            <div className="rc-onboard-shell flex min-h-screen items-center justify-center p-4">
                 <div className="w-full max-w-md text-center space-y-8 animate-in zoom-in duration-500">
                     <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(34,197,94,0.3)]">
                         <span className="text-4xl">🎉</span>
@@ -767,16 +767,16 @@ export default function ProfileSetup() {
     }
 
     return (
-        <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">
+        <div className="rc-onboard-shell flex min-h-screen items-center justify-center p-4">
             {/* Legal Modal */}
             {showLegalModal && (
-                <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-zinc-900 border border-zinc-800 text-white p-6 rounded-2xl max-w-lg w-full max-h-[80vh] flex flex-col shadow-2xl">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[rgba(27,22,18,0.25)] p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="rc-onboard-card max-h-[80vh] w-full max-w-lg rounded-2xl p-6 shadow-2xl flex flex-col">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-bold">
                                 {legalContentType === 'terms' ? 'Terms of Service' : 'Privacy Policy'}
                             </h3>
-                            <button onClick={() => setShowLegalModal(false)} className="text-zinc-400 hover:text-white">
+                            <button onClick={() => setShowLegalModal(false)} className="rc-muted hover:text-[var(--rc-cardinal)]">
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
@@ -799,8 +799,8 @@ export default function ProfileSetup() {
                                 </>
                             )}
                         </div>
-                        <div className="pt-4 mt-4 border-t border-zinc-800">
-                            <Button className="w-full bg-green-500 hover:bg-green-600" onClick={() => setShowLegalModal(false)}>
+                        <div className="mt-4 border-t border-[var(--rc-border)] pt-4">
+                            <Button className="rc-btn-primary w-full" onClick={() => setShowLegalModal(false)}>
                                 Close
                             </Button>
                         </div>
@@ -813,19 +813,19 @@ export default function ProfileSetup() {
                 <div className="mb-8">
                     <div className="flex justify-between items-end mb-2">
                         <h1 className="text-2xl font-bold font-serif tracking-tight">
-                            <span className="text-green-400">Step {step}</span> of {TOTAL_STEPS}
+                            <span className="rc-pill">Step {step}</span> of {TOTAL_STEPS}
                         </h1>
                     </div>
-                    <div className="h-1 bg-zinc-900 rounded-full overflow-hidden">
+                    <div className="rc-onboard-stepper">
                         <div
-                            className="h-full bg-green-400 transition-all duration-500 ease-out"
+                            className="rc-onboard-stepper-fill"
                             style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
                         />
                     </div>
                 </div>
 
                 {/* Main Card */}
-                <div className="bg-zinc-900/40 backdrop-blur-sm border border-zinc-800 p-6 rounded-2xl shadow-xl">
+                <div className="rc-onboard-card p-6">
 
                     {step === 1 && renderStep1()}
                     {step === 2 && renderStep2()}
@@ -841,7 +841,7 @@ export default function ProfileSetup() {
                             <Button
                                 variant="ghost"
                                 onClick={handleBack}
-                                className="text-zinc-400 hover:text-white hover:bg-zinc-800"
+                                className="rc-btn-secondary"
                             >
                                 <ChevronLeft className="w-4 h-4 mr-1" />
                                 Back
@@ -852,7 +852,7 @@ export default function ProfileSetup() {
                             <Button
                                 onClick={handleNext}
                                 disabled={!canProceed()}
-                                className="ml-auto bg-green-500 hover:bg-green-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="rc-btn-primary ml-auto font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Next Step
                                 <ChevronRight className="w-4 h-4 ml-1" />
@@ -861,7 +861,7 @@ export default function ProfileSetup() {
                             <Button
                                 onClick={handleCreateAccount}
                                 disabled={!canProceed() || loading}
-                                className="ml-auto bg-green-500 hover:bg-green-600 text-white font-semibold w-full"
+                                className="rc-btn-primary ml-auto w-full font-semibold"
                             >
                                 {loading
                                     ? (user ? 'Saving Profile...' : 'Creating Account...')
@@ -872,7 +872,7 @@ export default function ProfileSetup() {
                     </div>
                 </div>
 
-                <p className="text-center text-zinc-600 text-xs mt-4">
+                <p className="rc-muted mt-4 text-center text-xs">
                     {step === 7 ? '🔒 Secure SSL Connection' : '⏱️ Takes about 2 minutes'}
                 </p>
             </div>
