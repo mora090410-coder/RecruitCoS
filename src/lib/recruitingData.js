@@ -259,7 +259,7 @@ export async function fetchLatestWeeklyPlan(athleteId) {
         .from('athlete_weekly_plans')
         .select('*')
         .eq('athlete_id', athleteId)
-        .order('created_at', { ascending: false })
+        .order('computed_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
