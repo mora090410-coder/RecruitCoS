@@ -11,7 +11,7 @@ import {
     Trash2, Archive, ExternalLink, PlusCircle, Copy, User as UserIcon, Sparkles, ArrowRight, Zap,
     Rocket, RefreshCw
 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { getAthletePhase, PHASE_CONFIG, RECRUITING_PHASES } from '../lib/constants'
 import WeeklyPlanCards from '../components/WeeklyPlanCards'
 import { recomputeGap } from '../services/recomputeScores';
@@ -370,6 +370,15 @@ export default function Dashboard() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-semibold text-gray-900">This Week</h2>
+                            <Link
+                                to="/weekly-plan"
+                                className="text-sm font-semibold text-brand-primary hover:text-brand-secondary transition-colors"
+                            >
+                                Open Weekly Plan &rarr;
+                            </Link>
+                        </div>
                         <WeeklyPlanCards />
                         {filteredPosts.length === 0 ? (
                             <div className="text-center py-20 bg-white rounded-lg border border-dashed">
