@@ -19,6 +19,7 @@ export default function WeeklyPlan() {
     const [error, setError] = useState(null);
     const [unlockingDashboard, setUnlockingDashboard] = useState(false);
     const [unlockError, setUnlockError] = useState(null);
+    const [reloadNonce, setReloadNonce] = useState(0);
 
     const targetAthleteId = useMemo(() => {
         if (isImpersonating) return activeAthlete?.id || null;
@@ -60,7 +61,11 @@ export default function WeeklyPlan() {
         return () => {
             active = false;
         };
-    }, [targetAthleteId]);
+    }, [targetAthleteId, reloadNonce]);
+
+    const handleRetryLoad = () => {
+        setReloadNonce((prev) => prev + 1);
+    };
 
     const showUnlockCard = useMemo(() => {
         const weeksActive = engagement?.weeksActive || 0;
@@ -114,6 +119,7 @@ export default function WeeklyPlan() {
                 athlete={simplePlan?.athlete}
                 phaseLabel={simplePlan?.phaseLabel}
                 primaryGap={simplePlan?.primaryGap}
+                primaryGapState={simplePlan?.primaryGapState}
                 actions={simplePlan?.actions || []}
                 loading={loading}
                 error={error}
@@ -124,6 +130,7 @@ export default function WeeklyPlan() {
                 unlockingDashboard={unlockingDashboard}
                 unlockError={unlockError}
                 onUnlockDashboard={handleUnlockDashboard}
+                onRetry={handleRetryLoad}
             />
         </DashboardLayout>
     );

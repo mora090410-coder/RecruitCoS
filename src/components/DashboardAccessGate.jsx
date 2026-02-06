@@ -1,8 +1,10 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 
 export default function DashboardAccessGate() {
+    const navigate = useNavigate()
+
     return (
         <div className="mx-auto max-w-2xl py-12">
             <Card>
@@ -19,8 +21,8 @@ export default function DashboardAccessGate() {
                         <Button asChild className="bg-brand-primary text-white hover:bg-brand-secondary">
                             <Link to="/weekly-plan">Keep using Weekly Plan</Link>
                         </Button>
-                        <Button disabled variant="outline">
-                            Upgrade (coming soon)
+                        <Button type="button" variant="outline" onClick={() => navigate('/upgrade')}>
+                            Upgrade
                         </Button>
                     </div>
                 </CardContent>

@@ -20,6 +20,7 @@ import StrategyEdit from './pages/StrategyEdit'
 import Measurables from './pages/Measurables'
 import WeeklyPlanDebug from './pages/TestWeeklyPlan'
 import WeeklyPlan from './pages/WeeklyPlan'
+import Upgrade from './pages/Upgrade'
 
 // --- TRAFFIC CONTROLLER ---
 function MainNavigator() {
@@ -135,6 +136,7 @@ function MainNavigator() {
       <Route path="/log-event" element={<EventLogger />} />
       <Route path="/strategy" element={<StrategyEdit />} />
       <Route path="/weekly-plan" element={<WeeklyPlan />} />
+      <Route path="/upgrade" element={<Upgrade />} />
       {import.meta.env.DEV ? (
         <>
           <Route path="/test-weekly-plan/:athleteId" element={<WeeklyPlanDebug />} />

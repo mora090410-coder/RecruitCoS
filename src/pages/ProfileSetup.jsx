@@ -193,6 +193,33 @@ export default function ProfileSetup() {
         setShowLegalModal(true)
     }
 
+    const extractMissingColumnName = (message = '') => {
+        const match = message.match(/Could not find the '([^']+)' column/)
+        return match?.[1] || null
+    }
+
+    const upsertAthleteProfileWithSchemaFallback = async (initialProfileData) => {
+        const profileData = { ...initialProfileData }
+        const maxRetries = 8
+
+        for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+            const { error: profileError } = await supabase
+                .from('athletes')
+                .upsert(profileData, { onConflict: 'id' })
+
+            if (!profileError) return null
+
+            const missingColumn = extractMissingColumnName(profileError.message)
+            if (!missingColumn || !(missingColumn in profileData)) {
+                return profileError
+            }
+
+            delete profileData[missingColumn]
+        }
+
+        return new Error('Profile storage failed: too many unknown column retries.')
+    }
+
     // Step 7: Create Account & Save Profile
     const handleCreateAccount = async () => {
         setLoading(true)
@@ -261,6 +288,8 @@ export default function ProfileSetup() {
                 primary_position_display: normalizedDisplay,
                 primary_position_canonical: canonicalPosition,
                 primary_position_group: normalizedGroup,
+                position_canonical: canonicalPosition,
+                position_group: normalizedGroup,
                 secondary_positions_canonical: formData.secondaryPositionsCanonical,
                 secondary_position_groups: formData.secondaryPositionGroups,
                 gpa_range: formData.gpaRange,
@@ -279,10 +308,7 @@ export default function ProfileSetup() {
                 onboarding_completed: true
             }
 
-            const { error: profileError } = await supabase
-                .from('athletes')
-                .upsert(profileData, { onConflict: 'id' })
-
+            const profileError = await upsertAthleteProfileWithSchemaFallback(profileData)
             if (profileError) {
                 console.error("Database upsert error:", profileError)
                 // Specific messaging for common errors

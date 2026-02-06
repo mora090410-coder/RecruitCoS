@@ -2,10 +2,16 @@ import { supabase } from '../supabase';
 import {
     fetchBenchmarks,
     fetchLatestMeasurables,
-    fetchLatestWeeklyPlan
+    fetchLatestWeeklyPlan,
+    saveGapResult,
+    saveWeeklyPlan
 } from '../recruitingData';
 import { getMetricLabel, getMetricUnit } from '../../config/sportSchema';
 import { getAthletePhase, RECRUITING_PHASES } from '../constants';
+import { buildAthleteProfile } from '../../services/buildAthleteProfile';
+import { computeGap } from '../../services/engines/gapEngine';
+import { generateWeeklyPlan } from '../../services/engines/weeklyPlanEngine';
+import { generateAndPersistWeeklyPlan, getCurrentWeekStartDate } from '../../services/weeklyPlanService';
 
 const PHASE_KEY_TO_LABEL = {
     foundation: RECRUITING_PHASES.FOUNDATION,
@@ -121,6 +127,70 @@ const fetchLatestGapDetails = async (athleteId) => {
     return data?.details_json || null;
 };
 
+const fetchMeasurableCount = async (athleteId) => {
+    if (!athleteId) return 0;
+    const { count, error } = await supabase
+        .from('athlete_measurables')
+        .select('id', { count: 'exact', head: true })
+        .eq('athlete_id', athleteId);
+
+    if (error) {
+        console.error('[getSimpleWeeklyPlan] Error fetching measurable count:', error);
+        return 0;
+    }
+
+    return count || 0;
+};
+
+const hasCurrentWeekHeader = (planHeader, currentWeekStartDate) => (
+    Boolean(planHeader?.week_of_date) && planHeader.week_of_date === currentWeekStartDate
+);
+
+const persistGapResultIfPossible = async (athleteId, athlete, profile, gapResult) => {
+    if (!gapResult || gapResult?.notes?.reason) return;
+    if (typeof gapResult.gapScore0to100 !== 'number') return;
+
+    const targetLevel = gapResult?.benchmarkLevelUsed
+        || profile?.goals?.targetLevels?.[0]
+        || athlete?.target_divisions?.[0]
+        || 'D2';
+    const positionGroup = profile?.positions?.primary?.group || null;
+    const sport = profile?.sport || athlete?.sport || null;
+
+    if (!sport || !positionGroup) return;
+
+    await saveGapResult({
+        athlete_id: athleteId,
+        sport,
+        position_group: positionGroup,
+        target_level: targetLevel,
+        gap_score: gapResult.gapScore0to100,
+        details_json: gapResult
+    });
+};
+
+const ensureCurrentWeekPlanBootstrap = async ({ athleteId, athlete, planHeader, gapDetails }) => {
+    const currentWeekStartDate = getCurrentWeekStartDate();
+    const missingCurrentWeekHeader = !hasCurrentWeekHeader(planHeader, currentWeekStartDate);
+    const missingPrimaryGap = !gapDetails?.primaryGap;
+
+    if (!missingCurrentWeekHeader && !missingPrimaryGap) return;
+
+    const profile = await buildAthleteProfile(athleteId);
+    const gapResult = computeGap(profile);
+
+    if (missingPrimaryGap) {
+        await persistGapResultIfPossible(athleteId, athlete, profile, gapResult);
+    }
+
+    if (missingCurrentWeekHeader) {
+        const weeklyPlan = generateWeeklyPlan(profile, gapResult);
+        const weekOfDate = weeklyPlan?.weekOfDate || currentWeekStartDate;
+        await saveWeeklyPlan(athleteId, weekOfDate, weeklyPlan);
+        await generateAndPersistWeeklyPlan(athleteId);
+    }
+};
+
 const fetchWeeklyPlanItemsForWeek = async (athleteId, weekStartDate) => {
     if (!athleteId || !weekStartDate) return [];
 
@@ -155,7 +225,26 @@ export async function getSimpleWeeklyPlan(userId) {
         throw athleteError;
     }
 
-    const planHeader = await fetchLatestWeeklyPlan(userId);
+    let planHeader = await fetchLatestWeeklyPlan(userId);
+    let gapDetails = await fetchLatestGapDetails(userId);
+
+    try {
+        await ensureCurrentWeekPlanBootstrap({
+            athleteId: userId,
+            athlete,
+            planHeader,
+            gapDetails
+        });
+    } catch (bootstrapError) {
+        console.error('[getSimpleWeeklyPlan] Failed to bootstrap weekly plan:', bootstrapError);
+        throw new Error('Unable to prepare your weekly plan. Please retry.');
+    }
+
+    planHeader = await fetchLatestWeeklyPlan(userId);
+    gapDetails = await fetchLatestGapDetails(userId);
+    const measurableCount = await fetchMeasurableCount(userId);
+    const hasBaseline = measurableCount > 0;
+
     const planJson = planHeader?.plan_json || {};
     const planSummary = planHeader?.summary || {};
 
@@ -163,12 +252,13 @@ export async function getSimpleWeeklyPlan(userId) {
     const positionGroup = resolvePositionGroup(planSummary, planJson);
     const targetDivision = resolveTargetDivision(planSummary, planJson, athlete);
 
-    const gapDetails = await fetchLatestGapDetails(userId);
-    const primaryGap = gapDetails?.primaryGap || null;
+    const rawPrimaryGap = gapDetails?.primaryGap || null;
+    const primaryGap = hasBaseline ? rawPrimaryGap : null;
     const primaryGapMetricKey = primaryGap?.metricKey
         || planHeader?.primary_gap_metric
         || planJson?.primary_gap_metric
         || null;
+    const primaryGapState = hasBaseline ? 'ok' : 'missing_baseline';
 
     const { athleteValue, benchmarkValue, unit } = await resolveMetricValues({
         athleteId: userId,
@@ -199,6 +289,7 @@ export async function getSimpleWeeklyPlan(userId) {
             targetValueText,
             targetDivision
         },
+        primaryGapState,
         actions: orderedActions,
         weekStartDate
     };

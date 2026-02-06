@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import PlanItemToggle from './PlanItemToggle';
 import ProgressiveDisclosureCard from './ProgressiveDisclosureCard';
+import { Button } from './ui/button';
 
 const formatAthleteSubtitle = (athlete, phaseLabel) => {
     const gradYear = athlete?.grad_year ? `Class of ${athlete.grad_year}` : null;
@@ -14,6 +15,7 @@ export default function SimpleWeeklyView({
     athlete,
     phaseLabel,
     primaryGap,
+    primaryGapState,
     actions,
     loading,
     error,
@@ -23,7 +25,8 @@ export default function SimpleWeeklyView({
     engagement,
     unlockingDashboard,
     unlockError,
-    onUnlockDashboard
+    onUnlockDashboard,
+    onRetry
 }) {
     const subtitle = formatAthleteSubtitle(athlete, phaseLabel);
     const hasActions = Array.isArray(actions) && actions.length > 0;
@@ -49,13 +52,25 @@ export default function SimpleWeeklyView({
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">Primary Gap</CardTitle>
+                    <CardTitle className="text-base">
+                        {primaryGapState === 'missing_baseline' ? 'Primary Focus' : 'Primary Gap'}
+                    </CardTitle>
                 </CardHeader>
                 <CardContent>
                     {loading && (
                         <p className="text-sm text-zinc-500">Loading primary gap...</p>
                     )}
-                    {!loading && (
+                    {!loading && primaryGapState === 'missing_baseline' && (
+                        <div className="space-y-3">
+                            <p className="text-sm text-zinc-600">
+                                Add your first measurable to unlock your personalized primary gap.
+                            </p>
+                            <Button asChild type="button" variant="outline" size="sm">
+                                <Link to="/measurables">Add Measurables &rarr;</Link>
+                            </Button>
+                        </div>
+                    )}
+                    {!loading && primaryGapState !== 'missing_baseline' && (
                         <div className="grid gap-4 md:grid-cols-3">
                             <div>
                                 <p className="text-xs uppercase tracking-wide text-zinc-400">Metric</p>
@@ -91,7 +106,14 @@ export default function SimpleWeeklyView({
                         <p className="text-sm text-zinc-500">Loading actions...</p>
                     )}
                     {!loading && error && (
-                        <p className="text-sm text-red-500">{error}</p>
+                        <div className="space-y-2">
+                            <p className="text-sm text-red-500">{error}</p>
+                            {typeof onRetry === 'function' && (
+                                <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+                                    Retry
+                                </Button>
+                            )}
+                        </div>
                     )}
                     {!loading && !error && !hasActions && (
                         <p className="text-sm text-zinc-500">No weekly plan items available.</p>
