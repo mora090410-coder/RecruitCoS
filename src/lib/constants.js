@@ -115,17 +115,18 @@ export const PHASE_CONFIG = {
 export function getAthletePhase(gradYear) {
     if (!gradYear) return RECRUITING_PHASES.FOUNDATION;
 
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth(); // 0-indexed
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // 1-indexed
 
-    // Academic year usually ends in May/June (month 4-5)
-    // If it's after June, we consider the "next" academic year starting.
-    const academicYearAdjust = currentMonth > 5 ? 1 : 0;
-    const yearsToGrad = gradYear - (currentYear + academicYearAdjust);
+    // Anchor against the current school year end:
+    // Aug-Dec belongs to the next school-year end, Jan-Jul to current year end.
+    const schoolYearEnd = currentMonth >= 8 ? currentYear + 1 : currentYear;
+    const diff = gradYear - schoolYearEnd;
 
-    if (yearsToGrad > 4) return RECRUITING_PHASES.FOUNDATION;
-    if (yearsToGrad === 4) return RECRUITING_PHASES.EVALUATION;
-    if (yearsToGrad === 3) return RECRUITING_PHASES.IDENTIFICATION;
-    if (yearsToGrad === 2) return RECRUITING_PHASES.COMPARISON;
+    if (diff > 3) return RECRUITING_PHASES.FOUNDATION;
+    if (diff === 3) return RECRUITING_PHASES.EVALUATION;
+    if (diff === 2) return RECRUITING_PHASES.IDENTIFICATION;
+    if (diff === 1) return RECRUITING_PHASES.COMPARISON;
     return RECRUITING_PHASES.COMMITMENT;
 }

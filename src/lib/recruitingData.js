@@ -420,7 +420,7 @@ export async function updateWeeklyPlanItemStatus(itemId, status) {
 
 /**
  * Computes weekly-plan engagement metrics for progressive disclosure.
- * Completion rate is defined as done/total across plan items in the latest 2 plan headers by week_of_date.
+ * Completion rate is defined as done/total across plan items in the last 2 plans by week_of_date DESC.
  */
 export async function getAthleteEngagement(athleteId) {
     if (!athleteId) {
@@ -428,7 +428,7 @@ export async function getAthleteEngagement(athleteId) {
             weeksActive: 0,
             actionsCompleted: 0,
             completionRate: 0,
-            windowDescription: 'latest 2 plans'
+            window: 'last 2 plans'
         };
     }
 
@@ -439,7 +439,7 @@ export async function getAthleteEngagement(athleteId) {
     ] = await Promise.all([
         supabase
             .from('athlete_weekly_plans')
-            .select('week_of_date', { count: 'exact', head: true })
+            .select('id', { count: 'exact', head: true })
             .eq('athlete_id', athleteId),
         supabase
             .from('athlete_weekly_plan_items')
@@ -448,9 +448,10 @@ export async function getAthleteEngagement(athleteId) {
             .eq('status', 'done'),
         supabase
             .from('athlete_weekly_plans')
-            .select('week_of_date')
+            .select('week_of_date, created_at')
             .eq('athlete_id', athleteId)
             .order('week_of_date', { ascending: false })
+            .order('created_at', { ascending: false })
             .limit(2)
     ]);
 
@@ -469,7 +470,7 @@ export async function getAthleteEngagement(athleteId) {
         .filter(Boolean);
 
     let completionRate = 0;
-    if (latestWeeks.length > 0) {
+    if (latestWeeks.length === 2) {
         const { data: completionRows, error: completionRowsError } = await supabase
             .from('athlete_weekly_plan_items')
             .select('status')
@@ -489,7 +490,7 @@ export async function getAthleteEngagement(athleteId) {
         weeksActive: weeksActiveCount || 0,
         actionsCompleted: actionsCompletedCount || 0,
         completionRate,
-        windowDescription: 'latest 2 plans'
+        window: 'last 2 plans'
     };
 }
 

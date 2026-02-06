@@ -4,8 +4,8 @@ import DashboardLayout from '../components/DashboardLayout';
 import SimpleWeeklyView from '../components/SimpleWeeklyView';
 import { useProfile } from '../hooks/useProfile';
 import { getSimpleWeeklyPlan } from '../lib/weeklyPlan/getSimpleWeeklyPlan';
+import { getAthleteEngagement } from '../lib/getAthleteEngagement';
 import {
-    getAthleteEngagement,
     unlockDashboard,
     updateWeeklyPlanItemStatus
 } from '../lib/recruitingData';
