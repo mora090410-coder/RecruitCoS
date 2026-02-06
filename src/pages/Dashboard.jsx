@@ -5,6 +5,7 @@ import { useProfile } from '../hooks/useProfile'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import DashboardLayout from '../components/DashboardLayout'
+import DashboardAccessGate from '../components/DashboardAccessGate'
 import {
     Calendar, CheckCircle, Clock, Search, SlidersHorizontal,
     Plus, ChevronRight, Share2, MoreHorizontal, Edit2,
@@ -41,6 +42,7 @@ export default function Dashboard() {
     const navigate = useNavigate()
     const { user } = useAuth()
     const { profile, activeAthlete, isImpersonating } = useProfile();
+    const targetAthleteId = isImpersonating ? activeAthlete?.id : profile?.id
     const [isRecomputing, setIsRecomputing] = useState(false);
     const [stats, setStats] = useState({ eventCount: 0, targetCount: 0, recentPostCount: 0 })
     const [posts, setPosts] = useState([])
@@ -53,19 +55,56 @@ export default function Dashboard() {
     const [page, setPage] = useState(0)
     const [readinessResult, setReadinessResult] = useState(null)
     const [loadingReadiness, setLoadingReadiness] = useState(false)
+    const [accessLoading, setAccessLoading] = useState(true)
+    const [hasDashboardAccess, setHasDashboardAccess] = useState(false)
 
     if (!profile) return null;
 
     useEffect(() => {
+        let isMounted = true
+
+        async function fetchDashboardAccess() {
+            if (!user || !targetAthleteId) {
+                if (isMounted) {
+                    setHasDashboardAccess(false)
+                    setAccessLoading(false)
+                }
+                return
+            }
+
+            setAccessLoading(true)
+            const { data, error } = await supabase
+                .from('athletes')
+                .select('dashboard_unlocked_at')
+                .eq('id', targetAthleteId)
+                .maybeSingle()
+
+            if (!isMounted) return
+
+            if (error) {
+                console.error('Dashboard access check failed:', error)
+                setHasDashboardAccess(false)
+                setAccessLoading(false)
+                return
+            }
+
+            setHasDashboardAccess(Boolean(data?.dashboard_unlocked_at))
+            setAccessLoading(false)
+        }
+
+        fetchDashboardAccess()
+        return () => {
+            isMounted = false
+        }
+    }, [user, targetAthleteId])
+
+    useEffect(() => {
         async function fetchData() {
-            let targetAthleteId = null
             let targetGradYear = null
 
             if (isImpersonating && activeAthlete) {
-                targetAthleteId = activeAthlete.id
                 targetGradYear = activeAthlete.grad_year
             } else if (profile) {
-                targetAthleteId = profile.id
                 targetGradYear = profile.grad_year
             }
 
@@ -117,19 +156,16 @@ export default function Dashboard() {
             setLoadingReadiness(false)
         }
 
-        if (user && (profile || (isImpersonating && activeAthlete))) fetchData()
-    }, [user, profile, activeAthlete, isImpersonating, navigate])
+        if (hasDashboardAccess && user && targetAthleteId) fetchData()
+    }, [hasDashboardAccess, user, targetAthleteId, profile, activeAthlete, isImpersonating, navigate])
 
     // Load AI Insight
     useEffect(() => {
         async function fetchInsight() {
-            if (!user || !phase) return
+            if (!hasDashboardAccess || !user || !phase || !targetAthleteId) return
             setLoadingInsight(true)
 
             try {
-                let targetAthleteId = isImpersonating ? activeAthlete?.id : profile?.id
-                if (!targetAthleteId) return
-
                 const { data: savedSchools } = await supabase
                     .from('athlete_saved_schools')
                     .select('*, interactions:athlete_interactions(*)')
@@ -164,7 +200,7 @@ export default function Dashboard() {
             }
         }
         fetchInsight()
-    }, [user, phase, activeAthlete, isImpersonating, profile])
+    }, [hasDashboardAccess, user, phase, targetAthleteId])
 
     const filteredPosts = useMemo(() => {
         if (activeTab === 'All Sources') return posts
@@ -182,7 +218,6 @@ export default function Dashboard() {
     const loadCoaches = async (pageNumber) => {
         try {
             setLoadingCoaches(true)
-            const targetAthleteId = isImpersonating ? activeAthlete?.id : profile?.id
             let newCoaches = []
             if (import.meta.env.VITE_DISABLE_MATCH_COACHES === 'true') {
                 logMatchCoachesDisabledOnce()
@@ -229,7 +264,6 @@ export default function Dashboard() {
     };
 
     const handleFollowCoach = async (coachId) => {
-        const targetAthleteId = isImpersonating ? activeAthlete?.id : profile?.id
         if (!targetAthleteId) return
 
         try {
@@ -312,6 +346,16 @@ export default function Dashboard() {
                     </div>
                 </CardContent>
             </Card>
+        )
+    }
+
+    if (accessLoading) return null
+
+    if (!hasDashboardAccess) {
+        return (
+            <DashboardLayout phase={phase}>
+                <DashboardAccessGate />
+            </DashboardLayout>
         )
     }
 

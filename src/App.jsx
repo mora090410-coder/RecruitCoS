@@ -3,6 +3,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ProfileProvider, useProfile } from './hooks/useProfile'
 import AppLoading from './components/AppLoading'
 import { Toaster } from 'sonner'
+import { useEffect, useMemo, useState } from 'react'
+import { supabase } from './lib/supabase'
 
 // Pages
 import Login from './pages/Login'
@@ -22,7 +24,46 @@ import WeeklyPlan from './pages/WeeklyPlan'
 // --- TRAFFIC CONTROLLER ---
 function MainNavigator() {
   const { user, loading: authLoading } = useAuth()
-  const { hasProfile, isProfileLoading, isInitialized, error: profileError } = useProfile()
+  const { hasProfile, isProfileLoading, isInitialized, error: profileError, profile, activeAthlete, isImpersonating } = useProfile()
+  const location = useLocation()
+  const [destinationLoading, setDestinationLoading] = useState(false)
+  const [postLoginDestination, setPostLoginDestination] = useState('/weekly-plan')
+  const targetAthleteId = isImpersonating ? activeAthlete?.id : profile?.id
+  const isPostLoginEntryPath = useMemo(() => (
+    ['/', '/login', '/signup', '/profile-setup'].includes(location.pathname)
+  ), [location.pathname])
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function resolvePostLoginDestination() {
+      if (!user || !hasProfile || !isPostLoginEntryPath || !targetAthleteId) return
+
+      setDestinationLoading(true)
+      const { data, error } = await supabase
+        .from('athletes')
+        .select('dashboard_unlocked_at')
+        .eq('id', targetAthleteId)
+        .maybeSingle()
+
+      if (!isMounted) return
+
+      if (error) {
+        console.error('Post-login destination check failed:', error)
+        setPostLoginDestination('/weekly-plan')
+        setDestinationLoading(false)
+        return
+      }
+
+      setPostLoginDestination(data?.dashboard_unlocked_at ? '/dashboard' : '/weekly-plan')
+      setDestinationLoading(false)
+    }
+
+    resolvePostLoginDestination()
+    return () => {
+      isMounted = false
+    }
+  }, [user, hasProfile, isPostLoginEntryPath, targetAthleteId])
 
   // 0. FATAL ERROR SHIELD
   if (profileError) {
@@ -79,11 +120,11 @@ function MainNavigator() {
   // 4. STATE C: LOGGED IN + HAS PROFILE
   return (
     <Routes>
-      {/* Redirect Public & Setup Routes to Dashboard */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/signup" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/profile-setup" element={<Navigate to="/dashboard" replace />} />
+      {/* Redirect Public & Setup Routes to Access-Aware Destination */}
+      <Route path="/" element={destinationLoading ? <AppLoading /> : <Navigate to={postLoginDestination} replace />} />
+      <Route path="/login" element={destinationLoading ? <AppLoading /> : <Navigate to={postLoginDestination} replace />} />
+      <Route path="/signup" element={destinationLoading ? <AppLoading /> : <Navigate to={postLoginDestination} replace />} />
+      <Route path="/profile-setup" element={destinationLoading ? <AppLoading /> : <Navigate to={postLoginDestination} replace />} />
 
       {/* Protected App Routes */}
       <Route path="/dashboard" element={<Dashboard />} />
