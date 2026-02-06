@@ -1,10 +1,5 @@
 import { useState } from 'react';
-
-const STATUS_LABELS = {
-    open: 'Open',
-    done: 'Done',
-    skipped: 'Skipped'
-};
+import { Button } from './ui/button';
 
 export default function PlanItemToggle({ item, onStatusChange, targetAthleteId }) {
     const [isSaving, setIsSaving] = useState(false);
@@ -34,33 +29,48 @@ export default function PlanItemToggle({ item, onStatusChange, targetAthleteId }
     const isSkipped = item?.status === 'skipped';
 
     return (
-        <div className="flex flex-col items-start gap-2">
-            <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
-                    <input
-                        type="checkbox"
-                        checked={isDone}
-                        onChange={(event) => handleStatusUpdate(event.target.checked ? 'done' : 'open')}
+        <div className="flex min-w-[160px] flex-col items-start gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+                {isDone ? (
+                    <>
+                        <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                            Done
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => handleStatusUpdate('todo')}
+                            disabled={isSaving}
+                            className="text-xs font-medium text-zinc-500 underline underline-offset-2 transition-colors hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            aria-label={`Reopen ${item?.title || 'plan item'}`}
+                        >
+                            Reopen
+                        </button>
+                    </>
+                ) : (
+                    <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => handleStatusUpdate('done')}
                         disabled={isSaving}
+                        className="h-7 rounded-full bg-emerald-600 px-3 text-[11px] font-semibold text-white hover:bg-emerald-700"
                         aria-label={`Mark ${item?.title || 'plan item'} done`}
-                        className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500"
-                    />
-                    Done
-                </label>
-                <label className="flex items-center gap-2 text-xs font-semibold text-amber-700">
-                    <input
-                        type="checkbox"
-                        checked={isSkipped}
-                        onChange={(event) => handleStatusUpdate(event.target.checked ? 'skipped' : 'open')}
-                        disabled={isSaving}
-                        aria-label={`Skip ${item?.title || 'plan item'}`}
-                        className="h-4 w-4 rounded border-zinc-300 text-amber-500 focus:ring-amber-500"
-                    />
-                    Skip
-                </label>
-                <span className="text-[10px] uppercase tracking-wide text-zinc-400">
-                    {STATUS_LABELS[item?.status] || 'Open'}
-                </span>
+                    >
+                        Done
+                    </Button>
+                )}
+                <Button
+                    type="button"
+                    size="sm"
+                    variant={isSkipped ? 'default' : 'outline'}
+                    onClick={() => handleStatusUpdate(isSkipped ? 'todo' : 'skipped')}
+                    disabled={isSaving}
+                    className={isSkipped
+                        ? 'h-7 rounded-full bg-amber-500 px-3 text-[11px] font-semibold text-white hover:bg-amber-600'
+                        : 'h-7 rounded-full px-3 text-[11px] font-semibold'}
+                    aria-label={`${isSkipped ? 'Unskip' : 'Skip'} ${item?.title || 'plan item'}`}
+                >
+                    {isSkipped ? 'Skipped' : 'Skip'}
+                </Button>
             </div>
             {isSaving && (
                 <span className="text-[10px] text-zinc-400">Saving...</span>
