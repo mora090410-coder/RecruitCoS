@@ -348,6 +348,14 @@ const profilePhaseFromKey = (phaseKey) => {
 export function generateWeeklyPlan(profile, gapResult) {
     const phaseKey = resolvePhaseKey(profile);
     const sport = profile?.sport || profile?.athlete?.sport || null;
+    const positionGroup = profile?.positions?.primary?.group
+        || profile?.measurables?.positionGroup
+        || profile?.position_group
+        || null;
+    const targetLevel = profile?.goals?.division_priority
+        || profile?.athlete?.goals?.division_priority
+        || profile?.goals?.targetLevels?.[0]
+        || null;
     const weekOfDate = resolveWeekOfDate();
 
     const priorities = [
@@ -359,6 +367,12 @@ export function generateWeeklyPlan(profile, gapResult) {
     return {
         weekOfDate,
         phase: phaseKey,
-        priorities
+        priorities,
+        sport,
+        position_group: positionGroup,
+        target_level: targetLevel,
+        primary_gap_metric: gapResult?.primaryGap?.metricKey ?? null,
+        primary_gap_band: gapResult?.primaryGap?.band ?? null,
+        primary_gap_score: gapResult?.primaryGap?.normalizedGapScore ?? null
     };
 }

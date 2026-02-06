@@ -203,19 +203,37 @@ export async function saveInterestResults(results) {
  */
 export async function saveWeeklyPlan(athleteId, weekOf, planData) {
     const generatedAt = new Date().toISOString();
+    const primaryGapMetric = planData?.primary_gap_metric
+        ?? planData?.primaryGapMetric
+        ?? planData?.primaryGap?.metricKey
+        ?? planData?.primary_gap?.metricKey
+        ?? null;
+    const primaryGapBand = planData?.primary_gap_band
+        ?? planData?.primaryGap?.band
+        ?? planData?.primary_gap?.band
+        ?? null;
+    const primaryGapScore = planData?.primary_gap_score
+        ?? planData?.primaryGap?.normalizedGapScore
+        ?? planData?.primary_gap?.normalizedGapScore
+        ?? planData?.primaryGap?.gapScore
+        ?? null;
+    const summary = {
+        priorities: Array.isArray(planData?.priorities) ? planData.priorities : [],
+        sport: planData?.sport ?? null,
+        position_group: planData?.position_group ?? planData?.positionGroup ?? null,
+        target_level: planData?.target_level ?? planData?.targetLevel ?? null,
+        ...(planData?.summary || {})
+    };
     const payload = [{
         athlete_id: athleteId,
         week_of_date: weekOf,
-        plan_json: {
-            ...(planData || {}),
-            phase: planData?.phase ?? null,
-            primary_gap_metric: planData?.primary_gap_metric
-                ?? planData?.primaryGapMetric
-                ?? planData?.primaryGap?.metricKey
-                ?? null,
-            summary: planData?.summary ?? null,
-            generated_at: generatedAt
-        },
+        phase: planData?.phase ?? null,
+        primary_gap_metric: primaryGapMetric,
+        primary_gap_band: primaryGapBand,
+        primary_gap_score: primaryGapScore,
+        summary,
+        generated_at: generatedAt,
+        plan_json: planData || {},
         computed_at: generatedAt
     }];
 
@@ -250,6 +268,26 @@ export async function fetchLatestWeeklyPlan(athleteId) {
         return null;
     }
     return data;
+}
+
+/**
+ * Fetches the latest weekly plan headers for an athlete.
+ */
+export async function fetchLatestWeeklyPlanHeaders(athleteId, limit = 2) {
+    if (!athleteId) return [];
+
+    const { data, error } = await supabase
+        .from('athlete_weekly_plans')
+        .select('*')
+        .eq('athlete_id', athleteId)
+        .order('week_of_date', { ascending: false })
+        .limit(limit);
+
+    if (error) {
+        console.error('[recruitingData] Error fetching weekly plan headers:', error);
+        return [];
+    }
+    return data || [];
 }
 
 /**

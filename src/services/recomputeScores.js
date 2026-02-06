@@ -215,7 +215,15 @@ export async function computeWeeklyPlan(profile, gapResult, readinessResult, int
         recentPostsCount
     });
 
-    await saveWeeklyPlan(athleteId, plan.weekOf, plan);
+    const planWithContext = {
+        ...plan,
+        sport: resolveSport(profile),
+        position_group: resolvePositionGroup(profile),
+        target_level: resolveTargetLevel(profile),
+        phase
+    };
+
+    await saveWeeklyPlan(athleteId, plan.weekOf, planWithContext);
     console.log(`[computeWeeklyPlan] Success for week ${plan.weekOf}`);
 
     return plan;

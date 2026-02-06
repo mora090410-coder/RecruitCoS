@@ -4,8 +4,12 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { useProfile } from '../hooks/useProfile';
-import { generateAndPersistWeeklyPlan, getCurrentWeekStartDate, getPreviousWeekStartDate } from '../services/weeklyPlanService';
-import { fetchWeeklyPlanItems, updateWeeklyPlanItemStatus } from '../lib/recruitingData';
+import { generateAndPersistWeeklyPlan, getCurrentWeekStartDate } from '../services/weeklyPlanService';
+import {
+    fetchLatestWeeklyPlanHeaders,
+    fetchWeeklyPlanItems,
+    updateWeeklyPlanItemStatus
+} from '../lib/recruitingData';
 
 const STATUS_LABELS = {
     open: 'Open',
@@ -22,7 +26,12 @@ const STATUS_STYLES = {
 export default function WeeklyPlanCards() {
     const { profile, activeAthlete, isImpersonating } = useProfile();
     const [items, setItems] = useState([]);
-    const [lastWeekSummary, setLastWeekSummary] = useState({ doneCount: 0, total: 0 });
+    const [lastWeekSummary, setLastWeekSummary] = useState({
+        status: 'missing',
+        completed: 0,
+        total: 0
+    });
+    const [savingById, setSavingById] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [manualAthleteId, setManualAthleteId] = useState('');
@@ -50,24 +59,50 @@ export default function WeeklyPlanCards() {
                 }
 
                 const weekStartDate = getCurrentWeekStartDate();
-                const lastWeekStartDate = getPreviousWeekStartDate(weekStartDate);
 
                 await generateAndPersistWeeklyPlan(targetAthleteId);
-                const [currentItems, lastWeekItems] = await Promise.all([
+
+                const [currentItems, weeklyHeaders] = await Promise.all([
                     fetchWeeklyPlanItems(targetAthleteId, weekStartDate),
-                    fetchWeeklyPlanItems(targetAthleteId, lastWeekStartDate)
+                    fetchLatestWeeklyPlanHeaders(targetAthleteId, 2)
                 ]);
+
+                const currentWeek = weeklyHeaders[0] || null;
+                const lastWeek = weeklyHeaders[1] || null;
+
+                if (import.meta.env.DEV) {
+                    console.log('[WeeklyPlanCards] weekly headers', {
+                        currentWeek: currentWeek?.week_of_date || null,
+                        lastWeek: lastWeek?.week_of_date || null
+                    });
+                }
+
+                let lastWeekItems = [];
+                if (lastWeek?.week_of_date) {
+                    lastWeekItems = await fetchWeeklyPlanItems(targetAthleteId, lastWeek.week_of_date);
+                }
 
                 if (!active) return;
 
                 setItems(currentItems || []);
-                setLastWeekSummary({
-                    doneCount: lastWeekItems.filter((item) => item.status === 'done').length,
-                    total: lastWeekItems.length
-                });
+                if (!lastWeek) {
+                    setLastWeekSummary({ status: 'missing', completed: 0, total: 0 });
+                } else if (!lastWeekItems || lastWeekItems.length === 0) {
+                    setLastWeekSummary({ status: 'empty', completed: 0, total: 0 });
+                } else {
+                    const doneCount = lastWeekItems.filter((item) => item.status === 'done').length;
+                    const skippedCount = lastWeekItems.filter((item) => item.status === 'skipped').length;
+                    setLastWeekSummary({
+                        status: 'ok',
+                        completed: doneCount + skippedCount,
+                        total: lastWeekItems.length
+                    });
+                }
             } catch (err) {
                 if (!active) return;
-                console.error('[WeeklyPlanCards] Failed to load weekly plan:', err);
+                if (import.meta.env.DEV) {
+                    console.error('[WeeklyPlanCards] Failed to load weekly plan:', err);
+                }
                 setError(err?.message || 'Failed to load weekly plan.');
             } finally {
                 if (active) setLoading(false);
@@ -85,14 +120,53 @@ export default function WeeklyPlanCards() {
     ), [items]);
 
     const topItems = useMemo(() => sortedItems.slice(0, 3), [sortedItems]);
+    const currentWeekStartDate = useMemo(() => getCurrentWeekStartDate(), []);
 
-    const handleStatusUpdate = async (itemId, status) => {
+    const handleStatusUpdate = async (item, nextStatus) => {
+        const itemId = item?.id;
+        if (!itemId) return;
+        if (savingById[itemId]) return;
         try {
-            const updated = await updateWeeklyPlanItemStatus(itemId, status);
+            setSavingById((prev) => ({ ...prev, [itemId]: true }));
+            if (import.meta.env.DEV) {
+                console.log('[WeeklyPlanCards] status click', {
+                    itemId,
+                    athleteId: item?.athlete_id || null,
+                    weekStartDate: item?.week_start_date || null,
+                    oldStatus: item?.status || 'open',
+                    newStatus: nextStatus
+                });
+            }
+            const updated = await updateWeeklyPlanItemStatus(itemId, nextStatus);
             if (!updated) return;
             setItems((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+            if (import.meta.env.DEV) {
+                console.log('[WeeklyPlanCards] status saved', {
+                    itemId,
+                    athleteId: item?.athlete_id || null,
+                    weekStartDate: item?.week_start_date || null,
+                    oldStatus: item?.status || 'open',
+                    newStatus: nextStatus
+                });
+            }
         } catch (err) {
-            console.error('[WeeklyPlanCards] Failed to update status:', err);
+            if (import.meta.env.DEV) {
+                console.error('[WeeklyPlanCards] Failed to update status:', {
+                    itemId,
+                    athleteId: item?.athlete_id || null,
+                    weekStartDate: item?.week_start_date || null,
+                    oldStatus: item?.status || 'open',
+                    newStatus: nextStatus,
+                    error: err
+                });
+            }
+        } finally {
+            setSavingById((prev) => {
+                if (!prev[itemId]) return prev;
+                const next = { ...prev };
+                delete next[itemId];
+                return next;
+            });
         }
     };
 
@@ -107,9 +181,10 @@ export default function WeeklyPlanCards() {
             <CardHeader>
                 <CardTitle>Weekly Plan</CardTitle>
                 <p className="text-sm text-slate-500">
-                    {lastWeekSummary.total === 0
-                        ? 'Last week: no plan found'
-                        : `Last week: ${lastWeekSummary.doneCount}/${lastWeekSummary.total} completed`}
+                    {lastWeekSummary.status === 'missing' && 'Last week: no plan found'}
+                    {lastWeekSummary.status === 'empty' && 'Last week: no items found'}
+                    {lastWeekSummary.status === 'ok'
+                        && `Last week: ${lastWeekSummary.completed} of ${lastWeekSummary.total} completed`}
                 </p>
             </CardHeader>
             <CardContent>
@@ -138,15 +213,19 @@ export default function WeeklyPlanCards() {
                 )}
                 <div className="grid gap-4 md:grid-cols-3">
                     {topItems.map((item) => {
-                        const isLocked = item.status !== 'open';
+                        const statusKey = item.status || 'open';
+                        const isSaving = Boolean(savingById[item.id]);
+                        const isCurrentWeek = item?.week_start_date
+                            ? item.week_start_date === currentWeekStartDate
+                            : true;
                         return (
                         <div key={item.id} className="rounded-lg border border-slate-200 p-4 bg-white">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs uppercase tracking-wide text-slate-400">
                                     {item.item_type}
                                 </span>
-                                <Badge className={STATUS_STYLES[item.status] || STATUS_STYLES.open}>
-                                    {STATUS_LABELS[item.status] || 'Open'}
+                                <Badge className={STATUS_STYLES[statusKey] || STATUS_STYLES.open}>
+                                    {STATUS_LABELS[statusKey] || 'Open'}
                                 </Badge>
                             </div>
                             <h3 className="text-sm font-semibold text-slate-900 mb-1">{item.title}</h3>
@@ -156,26 +235,46 @@ export default function WeeklyPlanCards() {
                                     <li key={index}>{action}</li>
                                 ))}
                             </ul>
-                            <div className="flex gap-2">
-                                <Button
-                                    size="sm"
-                                    variant={item.status === 'done' ? 'secondary' : 'default'}
-                                    onClick={() => handleStatusUpdate(item.id, 'done')}
-                                    disabled={isLocked}
-                                    aria-label={`Mark ${item.title} done`}
-                                >
-                                    Mark Done
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    variant={item.status === 'skipped' ? 'secondary' : 'outline'}
-                                    onClick={() => handleStatusUpdate(item.id, 'skipped')}
-                                    disabled={isLocked}
-                                    aria-label={`Skip ${item.title}`}
-                                >
-                                    Skip
-                                </Button>
-                            </div>
+                            {isCurrentWeek && (
+                                <div className="flex gap-2">
+                                    {statusKey === 'open' && (
+                                        <>
+                                            <Button
+                                                size="sm"
+                                                variant="default"
+                                                onClick={() => handleStatusUpdate(item, 'done')}
+                                                disabled={isSaving}
+                                                aria-label={`Mark ${item.title} done`}
+                                                data-testid="weekly-btn-done"
+                                            >
+                                                {isSaving ? 'Saving...' : 'Mark Done'}
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => handleStatusUpdate(item, 'skipped')}
+                                                disabled={isSaving}
+                                                aria-label={`Skip ${item.title}`}
+                                                data-testid="weekly-btn-skip"
+                                            >
+                                                {isSaving ? 'Saving...' : 'Skip'}
+                                            </Button>
+                                        </>
+                                    )}
+                                    {(statusKey === 'done' || statusKey === 'skipped') && (
+                                        <Button
+                                            size="sm"
+                                            variant="secondary"
+                                            onClick={() => handleStatusUpdate(item, 'open')}
+                                            disabled={isSaving}
+                                            aria-label={`Undo ${item.title}`}
+                                            data-testid="weekly-btn-undo"
+                                        >
+                                            {isSaving ? 'Saving...' : 'Undo'}
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
                         </div>
                         );
                     })}
