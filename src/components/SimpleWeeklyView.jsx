@@ -1,203 +1,174 @@
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import PlanItemToggle from './PlanItemToggle';
-import ProgressiveDisclosureCard from './ProgressiveDisclosureCard';
-import { Button } from './ui/button';
-import { track } from '../lib/analytics';
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Button } from './ui/button'
+
+const ITEM_ICONS = {
+    gap: '⚡',
+    strength: '🎯',
+    phase: '📹'
+}
 
 const formatAthleteMeta = (athlete) => {
-    const gradYear = athlete?.grad_year ? `Class of ${athlete.grad_year}` : null;
-    const position = athlete?.position || null;
-    const parts = [gradYear, position].filter(Boolean);
-    return parts.join(' · ');
-};
+    const gradYear = athlete?.grad_year ? `Class of ${athlete.grad_year}` : null
+    const position = athlete?.position || null
+    return [gradYear, position].filter(Boolean).join(' • ')
+}
 
-const ITEM_TYPE_STYLES = {
-    gap: 'border-[rgba(153,0,0,0.22)] bg-[rgba(153,0,0,0.08)] text-[var(--rc-cardinal)]',
-    strength: 'border-[rgba(255,204,0,0.55)] bg-[rgba(255,204,0,0.22)] text-[#7a5a00]',
-    phase: 'border-[var(--rc-border)] bg-[rgba(255,255,255,0.85)] text-[var(--rc-muted)]'
-};
+function resolveCardTitle(item) {
+    if (item?.title) return item.title
+
+    const itemType = (item?.item_type || '').toLowerCase()
+    if (itemType === 'gap') return 'Focus: Build Athletic Baseline'
+    if (itemType === 'strength') return 'Start: School Research'
+    if (itemType === 'phase') return 'Create: Skills Highlight'
+    return 'Weekly Action'
+}
+
+function resolveCardDescription(item) {
+    if (item?.why) return item.why
+    if (Array.isArray(item?.actions) && item.actions.length > 0) {
+        return item.actions[0]
+    }
+    return 'Complete this action to stay on track this week.'
+}
 
 export default function SimpleWeeklyView({
     athlete,
     phaseLabel,
-    primaryGap,
-    primaryGapState,
     actions,
     loading,
     error,
     onStatusChange,
     targetAthleteId,
-    showUnlockCard,
     engagement,
-    unlockingDashboard,
-    unlockError,
-    onUnlockDashboard,
     onRetry
 }) {
-    const subtitle = formatAthleteMeta(athlete);
-    const hasActions = Array.isArray(actions) && actions.length > 0;
-    const metricFields = [
-        {
-            key: 'metric',
-            label: 'Metric',
-            value: primaryGap?.metricLabel
-        },
-        {
-            key: 'athlete-value',
-            label: 'Athlete Value',
-            value: primaryGap?.athleteValueText
-        },
-        {
-            key: 'target-value',
-            label: `Target ${primaryGap?.targetDivision ? `(${primaryGap.targetDivision})` : ''}`.trim(),
-            value: primaryGap?.targetValueText
+    const subtitle = formatAthleteMeta(athlete)
+    const hasActions = Array.isArray(actions) && actions.length > 0
+    const [savingById, setSavingById] = useState({})
+
+    const completedCount = useMemo(() => {
+        if (!hasActions) return 0
+        return actions.filter((item) => item?.status === 'done').length
+    }, [actions, hasActions])
+
+    const handleMarkComplete = async (item) => {
+        if (!item?.id || !onStatusChange || item.status === 'done') return
+        if (item.athlete_id && targetAthleteId && item.athlete_id !== targetAthleteId) return
+
+        setSavingById((prev) => ({ ...prev, [item.id]: true }))
+        try {
+            await onStatusChange(item, 'done')
+        } finally {
+            setSavingById((prev) => ({ ...prev, [item.id]: false }))
         }
-    ].filter((field) => field.value);
+    }
 
     return (
-        <div className="mx-auto max-w-5xl space-y-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                <div className="space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--rc-muted)]">
-                        {phaseLabel || 'Weekly Plan'}
-                    </p>
-                    <h1 className="text-3xl font-bold tracking-tight text-[var(--rc-ink)] font-serif">
-                        This Week&apos;s Focus
-                    </h1>
-                    {subtitle && (
-                        <p className="text-sm text-[var(--rc-muted)]">{subtitle}</p>
-                    )}
-                </div>
-                <Link
-                    to="/dashboard"
-                    className="text-sm font-semibold text-[var(--rc-cardinal)] transition-colors hover:text-[#7a0000]"
-                >
-                    See Full Analysis &rarr;
-                </Link>
-            </div>
+        <div className="mx-auto w-full max-w-3xl space-y-6">
+            <header className="space-y-2">
+                <p className="text-sm font-semibold uppercase tracking-wide text-purple-600">
+                    {phaseLabel || 'Foundation Phase (12U)'}
+                </p>
+                <h1 className="text-3xl font-semibold tracking-tight text-gray-900">This Week&apos;s Focus</h1>
+                {subtitle && (
+                    <p className="text-base text-gray-600">{subtitle}</p>
+                )}
+                {!loading && hasActions && (
+                    <p className="text-sm text-gray-600">{completedCount} of {actions.length} actions completed this week.</p>
+                )}
+            </header>
 
-            <Card className="rounded-2xl">
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-base">
-                        {primaryGapState === 'missing_baseline' ? 'Primary Focus' : 'Primary Gap'}
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                    {loading && (
-                        <div className="space-y-3 animate-pulse" aria-label="Loading primary focus">
-                            <div className="h-4 w-48 rounded bg-zinc-200" />
-                            <div className="h-16 w-full rounded-xl bg-zinc-100" />
-                        </div>
-                    )}
-                    {!loading && primaryGapState === 'missing_baseline' && (
-                        <div className="space-y-3">
-                            <p className="text-sm text-[var(--rc-muted)]">
-                                Add your first measurable to unlock your personalized primary gap.
-                            </p>
-                            <Button asChild type="button" size="default" className="w-full sm:w-auto">
-                                <Link
-                                    to="/measurables"
-                                    onClick={() => track('add_measurables_clicked', { source: 'weekly_plan_primary_gap_card' })}
-                                >
-                                    Add Measurables &rarr;
-                                </Link>
+            <section className="space-y-4" aria-label="Weekly action cards">
+                {loading && (
+                    <div className="space-y-4" aria-label="Loading weekly plan">
+                        {[1, 2, 3].map((row) => (
+                            <div key={row} className="animate-pulse rounded-xl border border-gray-200 bg-white p-5">
+                                <div className="h-6 w-2/3 rounded bg-gray-200" />
+                                <div className="mt-4 h-4 w-full rounded bg-gray-100" />
+                                <div className="mt-2 h-4 w-5/6 rounded bg-gray-100" />
+                                <div className="mt-4 h-10 w-full rounded bg-gray-200" />
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {!loading && error && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                        <p>{error}</p>
+                        {typeof onRetry === 'function' && (
+                            <Button type="button" variant="outline" size="sm" onClick={onRetry} className="mt-3">
+                                Retry
                             </Button>
-                            <p className="text-xs text-[var(--rc-muted)]">
-                                Takes ~60 seconds. You can skip anything you don&apos;t know.
-                            </p>
-                        </div>
-                    )}
-                    {!loading && primaryGapState !== 'missing_baseline' && (
-                        metricFields.length > 0 ? (
-                            <div className="grid gap-4 md:grid-cols-3">
-                                {metricFields.map((field) => (
-                                    <div key={field.key}>
-                                        <p className="text-xs uppercase tracking-wide text-[var(--rc-muted)]">{field.label}</p>
-                                        <p className="text-lg font-semibold text-[var(--rc-ink)]">{field.value}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-sm text-[var(--rc-muted)]">Primary gap data will appear here after your next update.</p>
-                        )
-                    )}
-                </CardContent>
-            </Card>
+                        )}
+                    </div>
+                )}
 
-            <Card className="rounded-2xl">
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-base">This Week&apos;s Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {loading && (
-                        <div className="space-y-3" aria-label="Loading actions">
-                            {[1, 2, 3].map((row) => (
-                                <div key={row} className="animate-pulse rounded-xl border border-zinc-200 p-4">
-                                    <div className="h-4 w-20 rounded bg-zinc-200" />
-                                    <div className="mt-3 h-5 w-3/4 rounded bg-zinc-200" />
-                                    <div className="mt-3 h-3 w-full rounded bg-zinc-100" />
-                                    <div className="mt-2 h-3 w-2/3 rounded bg-zinc-100" />
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    {!loading && error && (
-                        <div className="rc-alert rc-alert-error rounded-xl p-3">
-                            <p className="text-sm text-red-700">{error}</p>
-                            {typeof onRetry === 'function' && (
-                                <Button type="button" variant="outline" size="sm" onClick={onRetry} className="mt-2">
-                                    Retry
-                                </Button>
-                            )}
-                        </div>
-                    )}
-                    {!loading && !error && !hasActions && (
-                        <p className="text-sm text-[var(--rc-muted)]">No weekly plan items available.</p>
-                    )}
-                    {!loading && !error && hasActions && actions.map((item) => {
-                        const typeKey = (item.item_type || '').toLowerCase();
-                        const typeClassName = ITEM_TYPE_STYLES[typeKey] || 'bg-zinc-100 text-zinc-700 border-zinc-200';
-                        return (
-                            <div key={item.id} className="rc-surface rounded-xl p-4">
-                                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                                    <div className="space-y-1.5">
-                                        <div className="flex items-center gap-2">
-                                            <span className={`inline-flex h-5 items-center rounded-full border px-2 text-[10px] font-semibold uppercase tracking-wide ${typeClassName}`}>
-                                                {item.item_type}
-                                            </span>
-                                        </div>
-                                        <h3 className="text-base font-semibold text-[var(--rc-ink)]">{item.title}</h3>
-                                        <p className="text-xs leading-5 text-[var(--rc-muted)]">{item.why}</p>
-                                    </div>
-                                    <PlanItemToggle
-                                        item={item}
-                                        onStatusChange={onStatusChange}
-                                        targetAthleteId={targetAthleteId}
-                                    />
-                                </div>
-                                {Array.isArray(item.actions) && item.actions.length > 0 && (
-                                    <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-[var(--rc-muted)]">
-                                        {item.actions.map((action, index) => (
-                                            <li key={`${item.id}-action-${index}`}>{action}</li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </div>
-                        );
-                    })}
-                </CardContent>
-            </Card>
+                {!loading && !error && !hasActions && (
+                    <div className="rounded-xl border border-gray-200 bg-white p-5 text-gray-600">
+                        No weekly plan items available yet.
+                    </div>
+                )}
 
-            {showUnlockCard && (
-                <ProgressiveDisclosureCard
-                    weeksActive={engagement?.weeksActive || 0}
-                    actionsCompleted={engagement?.actionsCompleted || 0}
-                    onUnlock={onUnlockDashboard}
-                    saving={unlockingDashboard}
-                    error={unlockError}
-                />
+                {!loading && !error && hasActions && actions.map((item) => {
+                    const itemType = (item?.item_type || '').toLowerCase()
+                    const icon = ITEM_ICONS[itemType] || '📌'
+                    const isDone = item?.status === 'done'
+                    const isSaving = Boolean(savingById[item.id])
+
+                    return (
+                        <article key={item.id} className="rounded-xl border border-[#E5E7EB] bg-white p-6 transition-shadow hover:shadow-sm">
+                            <h2 className="text-lg font-semibold text-gray-900">
+                                <span className="mr-2 inline-block text-2xl align-middle">{icon}</span>
+                                <span className="align-middle">{resolveCardTitle(item)}</span>
+                            </h2>
+                            <p className="mt-3 text-base text-gray-600">{resolveCardDescription(item)}</p>
+
+                            <Button
+                                type="button"
+                                className={`mt-5 h-11 w-full font-semibold ${isDone ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-purple-600 hover:bg-purple-700'}`}
+                                onClick={() => handleMarkComplete(item)}
+                                disabled={isDone || isSaving}
+                            >
+                                {isDone ? 'Completed ✓' : (isSaving ? 'Saving...' : 'Mark Complete')}
+                            </Button>
+                        </article>
+                    )
+                })}
+            </section>
+
+            <section className="rounded-xl border border-[#E9D5FF] bg-[#F5F3FF] p-6">
+                <h3 className="text-lg font-semibold text-gray-900">Want deeper insights?</h3>
+                <p className="mt-2 text-base text-gray-600">Add your metrics to unlock:</p>
+                <ul className="mt-3 space-y-1 text-sm text-gray-700">
+                    <li>• Personalized gap analysis</li>
+                    <li>• Benchmark comparisons</li>
+                    <li>• Division fit scoring</li>
+                </ul>
+
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                    <Button
+                        asChild
+                        className="h-11 flex-1 bg-purple-600 font-semibold text-white hover:bg-purple-700"
+                    >
+                        <Link to="/measurables">Add Your First Metric →</Link>
+                    </Button>
+                    <Button
+                        asChild
+                        variant="outline"
+                        className="h-11 flex-1 border-purple-300 bg-white text-purple-700 hover:bg-purple-50"
+                    >
+                        <Link to="/dashboard">See Full Dashboard →</Link>
+                    </Button>
+                </div>
+            </section>
+
+            {(engagement?.weeksActive || 0) >= 2 && (
+                <section className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                    <p className="font-medium">You&apos;ve built consistency for 2+ weeks.</p>
+                    <p className="mt-1">Your full analysis view is available now.</p>
+                </section>
             )}
         </div>
-    );
+    )
 }

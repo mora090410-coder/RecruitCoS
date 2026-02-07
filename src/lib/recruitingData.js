@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { canonicalizeMeasurableRow, getMetricKeysForSport } from '../config/sportSchema';
+import { track } from './analytics';
 
 /**
  * Fetches the most recent measurables for an athlete.
@@ -399,6 +400,17 @@ export async function deleteWeeklyPlanItemsForWeek(athleteId, weekStartDate) {
  */
 export async function updateWeeklyPlanItemStatus(itemId, status) {
     if (!itemId || !status) return null;
+    const { data: existingItem, error: existingItemError } = await supabase
+        .from('athlete_weekly_plan_items')
+        .select('id, athlete_id, status, week_start_date')
+        .eq('id', itemId)
+        .maybeSingle();
+
+    if (existingItemError) {
+        console.error('[recruitingData] Error fetching existing weekly plan item status:', existingItemError);
+        throw existingItemError;
+    }
+
     const updates = {
         status,
         completed_at: status === 'done' ? new Date().toISOString() : null
@@ -414,6 +426,66 @@ export async function updateWeeklyPlanItemStatus(itemId, status) {
     if (error) {
         console.error('[recruitingData] Error updating weekly plan item status:', error);
         throw error;
+    }
+
+    // Best-effort write for optional completion analytics table.
+    // Some environments may not have this table yet, so failures are non-fatal.
+    if (status === 'done' && data?.athlete_id && data?.week_start_date) {
+        const completionPayload = {
+            athlete_id: data.athlete_id,
+            action_id: data.id,
+            week_start_date: data.week_start_date,
+            completed_at: data.completed_at || new Date().toISOString()
+        };
+
+        const { error: completionError } = await supabase
+            .from('action_completions')
+            .upsert([completionPayload], { onConflict: 'athlete_id,action_id' });
+
+        if (completionError && completionError.code !== '42P01') {
+            console.warn('[recruitingData] Optional action_completions write failed:', completionError);
+        }
+    }
+
+    if (data?.athlete_id && existingItem) {
+        const wasDone = existingItem.status === 'done';
+        const isNowDone = status === 'done';
+        let actionDelta = 0;
+
+        if (!wasDone && isNowDone) actionDelta = 1;
+        if (wasDone && !isNowDone) actionDelta = -1;
+
+        if (actionDelta !== 0 || isNowDone) {
+            const { data: athleteRow, error: athleteFetchError } = await supabase
+                .from('athletes')
+                .select('id, actions_completed, dashboard_unlocked_at')
+                .eq('id', data.athlete_id)
+                .maybeSingle();
+
+            if (!athleteFetchError && athleteRow) {
+                const nextActionsCompleted = Math.max(0, Number(athleteRow.actions_completed || 0) + actionDelta);
+                const athleteUpdates = {
+                    actions_completed: nextActionsCompleted,
+                    last_active_at: new Date().toISOString()
+                };
+
+                if (!athleteRow.dashboard_unlocked_at && nextActionsCompleted >= 4) {
+                    athleteUpdates.dashboard_unlocked_at = new Date().toISOString();
+                    track('dashboard_unlocked', {
+                        unlock_reason: 'completed_4_actions'
+                    });
+                }
+
+                const { error: athleteUpdateError } = await supabase
+                    .from('athletes')
+                    .update(athleteUpdates)
+                    .eq('id', data.athlete_id);
+
+                if (athleteUpdateError && athleteUpdateError.code !== '42703') {
+                    console.warn('[recruitingData] Optional athletes engagement counter update failed:', athleteUpdateError);
+                }
+            }
+        }
     }
     return data;
 }
@@ -433,10 +505,16 @@ export async function getAthleteEngagement(athleteId) {
     }
 
     const [
+        { data: athleteRow, error: athleteError },
         { count: weeksActiveCount, error: weeksActiveError },
         { count: actionsCompletedCount, error: actionsCompletedError },
         { data: latestPlans, error: latestPlansError }
     ] = await Promise.all([
+        supabase
+            .from('athletes')
+            .select('id, weeks_active, actions_completed, metrics_count')
+            .eq('id', athleteId)
+            .maybeSingle(),
         supabase
             .from('athlete_weekly_plans')
             .select('id', { count: 'exact', head: true })
@@ -457,6 +535,9 @@ export async function getAthleteEngagement(athleteId) {
 
     if (weeksActiveError) {
         console.error('[recruitingData] Error fetching weeks active:', weeksActiveError);
+    }
+    if (athleteError && athleteError.code !== '42703') {
+        console.error('[recruitingData] Error fetching athlete engagement columns:', athleteError);
     }
     if (actionsCompletedError) {
         console.error('[recruitingData] Error fetching actions completed:', actionsCompletedError);
@@ -487,8 +568,9 @@ export async function getAthleteEngagement(athleteId) {
     }
 
     return {
-        weeksActive: weeksActiveCount || 0,
-        actionsCompleted: actionsCompletedCount || 0,
+        weeksActive: Number(athleteRow?.weeks_active ?? weeksActiveCount ?? 0),
+        actionsCompleted: Number(athleteRow?.actions_completed ?? actionsCompletedCount ?? 0),
+        metricsCount: Number(athleteRow?.metrics_count ?? 0),
         completionRate,
         window: 'last 2 plans'
     };

@@ -346,6 +346,40 @@ function MeasurableEntryForm({ athleteId, sport, onSave }) {
                 metric_key: metricKey,
                 value_bucket: toValueBucket(formData.value)
             });
+            track('metric_added', {
+                metric_type: metricKey,
+                from_page: 'measurables'
+            });
+
+            const { data: athleteRow, error: athleteFetchError } = await supabase
+                .from('athletes')
+                .select('id, metrics_count, dashboard_unlocked_at')
+                .eq('id', athleteId)
+                .maybeSingle();
+
+            if (!athleteFetchError && athleteRow) {
+                const nextMetricsCount = Number(athleteRow.metrics_count || 0) + 1;
+                const athleteUpdates = {
+                    metrics_count: nextMetricsCount,
+                    last_active_at: new Date().toISOString()
+                };
+
+                if (!athleteRow.dashboard_unlocked_at) {
+                    athleteUpdates.dashboard_unlocked_at = new Date().toISOString();
+                    track('dashboard_unlocked', {
+                        unlock_reason: 'added_metrics'
+                    });
+                }
+
+                const { error: athleteUpdateError } = await supabase
+                    .from('athletes')
+                    .update(athleteUpdates)
+                    .eq('id', athleteId);
+
+                if (athleteUpdateError && athleteUpdateError.code !== '42703') {
+                    console.warn('Optional athlete metrics_count update failed:', athleteUpdateError);
+                }
+            }
 
             toast.success(`${getMetricLabel(sport, formData.metric)} saved!`);
             setFormData({ ...formData, metric: '', value: '', unit: '' });

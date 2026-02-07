@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { ensureSignupTimestamp, getSignupTimestamp, identify, markSessionStart, page } from './lib/analytics'
 import { getAthletePhase } from './lib/constants'
+import { getAthleteEngagement } from './lib/getAthleteEngagement'
 
 // Pages
 import Login from './pages/Login'
@@ -68,22 +69,29 @@ function MainNavigator() {
       if (!user || !hasProfile || !isPostLoginEntryPath || !targetAthleteId) return
 
       setDestinationLoading(true)
-      const { data, error } = await supabase
-        .from('athletes')
-        .select('dashboard_unlocked_at')
-        .eq('id', targetAthleteId)
-        .maybeSingle()
+      const [engagementData, measurableCountResult] = await Promise.all([
+        getAthleteEngagement(targetAthleteId),
+        supabase
+          .from('athlete_measurables')
+          .select('id', { count: 'exact', head: true })
+          .eq('athlete_id', targetAthleteId)
+      ])
 
       if (!isMounted) return
 
-      if (error) {
-        console.error('Post-login destination check failed:', error)
+      if (measurableCountResult.error) {
+        console.error('Post-login destination check failed:', measurableCountResult.error)
         setPostLoginDestination('/weekly-plan')
         setDestinationLoading(false)
         return
       }
 
-      setPostLoginDestination(data?.dashboard_unlocked_at ? '/dashboard' : '/weekly-plan')
+      const weeksActive = engagementData?.weeksActive || 0
+      const actionsCompleted = engagementData?.actionsCompleted || 0
+      const metricsAdded = (measurableCountResult.count || 0) > 0
+      const shouldShowWeeklyPlan = weeksActive < 2 && !metricsAdded && actionsCompleted < 4
+
+      setPostLoginDestination(shouldShowWeeklyPlan ? '/weekly-plan' : '/dashboard')
       setDestinationLoading(false)
     }
 

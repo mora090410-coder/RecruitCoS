@@ -8,6 +8,8 @@ import ProfileSwitcher from './layout/ProfileSwitcher'
 export default function DashboardLayout({ children, phase }) {
     const { signOut } = useAuth()
     const location = useLocation()
+    const isWeeklyPlanRoute = location.pathname.startsWith('/weekly-plan')
+    const isDashboardRoute = location.pathname === '/' || location.pathname.startsWith('/dashboard')
 
     const navLinks = [
         { to: '/', label: 'Dashboard', match: (pathname) => pathname === '/' || pathname === '/dashboard' },
@@ -62,6 +64,15 @@ export default function DashboardLayout({ children, phase }) {
 
                     {/* Right Side Actions */}
                     <div className="flex items-center gap-4">
+                        {(isWeeklyPlanRoute || isDashboardRoute) && (
+                            <Link
+                                to={isWeeklyPlanRoute ? '/dashboard' : '/weekly-plan'}
+                                className="hidden md:inline-flex text-sm font-semibold text-[var(--purple-700)] hover:text-[var(--purple-900)]"
+                            >
+                                {isWeeklyPlanRoute ? 'Full Analysis →' : '← Weekly Plan'}
+                            </Link>
+                        )}
+
                         {/* Search Bar (Visual) */}
                         <div className="hidden md:flex items-center w-64 rounded-full border border-[var(--gray-200)] bg-[rgba(255,255,255,0.9)] px-3 py-1.5">
                             <Search className="mr-2 h-4 w-4 text-[var(--gray-500)]" />

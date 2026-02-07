@@ -506,7 +506,7 @@ export default function ProfileSetup() {
 
             toast.success('Your plan is ready.')
             // Hard redirect avoids a transient profile-context race that can bounce users back to onboarding.
-            window.location.assign('/dashboard')
+            window.location.assign('/weekly-plan')
         } catch (err) {
             const message = err?.message || 'Something went wrong while creating your account.'
             setError(message)

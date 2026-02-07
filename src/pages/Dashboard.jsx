@@ -5,7 +5,7 @@ import { useProfile } from '../hooks/useProfile'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import DashboardLayout from '../components/DashboardLayout'
-import DashboardAccessGate from '../components/DashboardAccessGate'
+import DashboardUnlockPrompt from '../components/DashboardUnlockPrompt'
 import {
     Calendar, CheckCircle, Clock, Search, SlidersHorizontal,
     Plus, ChevronRight, Share2, MoreHorizontal, Edit2,
@@ -29,6 +29,7 @@ import {
 } from '../components/ui/dropdown-menu'
 import { ReadinessScoreCard } from '../components/ReadinessScoreCard'
 import { fetchLatestReadiness } from '../lib/recruitingData'
+import { getAthleteEngagement } from '../lib/getAthleteEngagement'
 import { track } from '../lib/analytics'
 
 const logMatchCoachesDisabledOnce = () => {
@@ -88,22 +89,33 @@ export default function Dashboard() {
             }
 
             setAccessLoading(true)
-            const { data, error } = await supabase
-                .from('athletes')
-                .select('dashboard_unlocked_at')
-                .eq('id', targetAthleteId)
-                .maybeSingle()
+            const [{ data, error }, engagementData, measurableCountResult] = await Promise.all([
+                supabase
+                    .from('athletes')
+                    .select('dashboard_unlocked_at')
+                    .eq('id', targetAthleteId)
+                    .maybeSingle(),
+                getAthleteEngagement(targetAthleteId),
+                supabase
+                    .from('athlete_measurables')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('athlete_id', targetAthleteId)
+            ])
 
             if (!isMounted) return
 
-            if (error) {
-                console.error('Dashboard access check failed:', error)
+            if (error || measurableCountResult.error) {
+                console.error('Dashboard access check failed:', error || measurableCountResult.error)
                 setHasDashboardAccess(false)
                 setAccessLoading(false)
                 return
             }
 
-            setHasDashboardAccess(Boolean(data?.dashboard_unlocked_at))
+            const weeksActive = engagementData?.weeksActive || 0
+            const actionsCompleted = engagementData?.actionsCompleted || 0
+            const metricsAdded = (measurableCountResult.count || 0) > 0
+            const engagementUnlocked = weeksActive >= 2 || metricsAdded || actionsCompleted >= 4
+            setHasDashboardAccess(Boolean(data?.dashboard_unlocked_at) || engagementUnlocked)
             setAccessLoading(false)
         }
 
@@ -369,7 +381,7 @@ export default function Dashboard() {
     if (!hasDashboardAccess) {
         return (
             <DashboardLayout phase={phase}>
-                <DashboardAccessGate />
+                <DashboardUnlockPrompt />
             </DashboardLayout>
         )
     }
