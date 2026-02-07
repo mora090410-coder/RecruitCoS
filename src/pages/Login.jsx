@@ -42,7 +42,7 @@ export default function Login() {
             <nav className="lp-nav" aria-label="Authentication navigation">
                 <div className="lp-nav-container">
                     <Link to="/" className="lp-logo">RecruitCoS</Link>
-                    <Link to="/signup" className="lp-nav-link">Get Started</Link>
+                    <Link to="/profile-setup" className="lp-nav-link">Get Started</Link>
                 </div>
             </nav>
 
@@ -111,7 +111,7 @@ export default function Login() {
                     <CardFooter className="justify-center border-t border-[var(--rc-border)] pt-6">
                         <p className="text-sm rc-muted">
                             Don&apos;t have an account?{' '}
-                            <Link to="/signup" className="font-medium hover:underline">
+                            <Link to="/profile-setup" className="font-medium hover:underline">
                                 Get Started
                             </Link>
                         </p>

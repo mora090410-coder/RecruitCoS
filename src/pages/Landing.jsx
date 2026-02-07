@@ -234,7 +234,7 @@ export default function Landing() {
                             <p className="lp-text-body-lg">
                                 Know exactly what to do this week whether you are targeting Power 5, mid-major D1, D2, D3, NAIA, or JUCO.
                             </p>
-                            <Link to="/signup" className="lp-cta-primary lp-ripple" onClick={triggerRipple} aria-label="Start your free plan">
+                            <Link to="/profile-setup" className="lp-cta-primary lp-ripple" onClick={triggerRipple} aria-label="Start your free plan">
                                 Start Your Free Plan
                             </Link>
                             <p className="lp-hero-trust">Join families who stopped guessing and started planning</p>
@@ -448,7 +448,7 @@ export default function Landing() {
                     <div className="lp-final-cta-container final-cta-container">
                         <h2 id="lp-final-title" className="lp-final-cta-headline final-cta-headline" data-stagger>Ready to stop guessing?</h2>
                         <p className="lp-final-cta-subhead final-cta-subhead" data-stagger>Start your free 4-week plan today. No credit card required.</p>
-                        <Link to="/signup" className="cta-button-large" aria-label="Start free with no credit card" data-stagger>
+                        <Link to="/profile-setup" className="cta-button-large" aria-label="Start free with no credit card" data-stagger>
                             Start Free - No Credit Card
                         </Link>
                     </div>

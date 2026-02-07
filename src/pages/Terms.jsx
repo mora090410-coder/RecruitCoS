@@ -11,7 +11,7 @@ export default function Terms() {
                         <Link to="/login">
                             <Button variant="ghost" className="text-[var(--gray-700)]">Login</Button>
                         </Link>
-                        <Link to="/signup">
+                        <Link to="/profile-setup">
                             <Button>Get Started</Button>
                         </Link>
                     </div>

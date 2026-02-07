@@ -10,7 +10,6 @@ import { getAthletePhase } from './lib/constants'
 
 // Pages
 import Login from './pages/Login'
-import SignUp from './pages/SignUp'
 import Landing from './pages/Landing'
 import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
@@ -134,7 +133,8 @@ function MainNavigator() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
+        <Route path="/signup" element={<Navigate to="/profile-setup" replace />} />
+        <Route path="/profile-setup" element={<ProfileSetup />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     )
