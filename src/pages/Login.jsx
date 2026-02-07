@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
@@ -11,8 +11,7 @@ export default function Login() {
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState('')
-    const { signIn, signInWithPassword, user, loading: authLoading } = useAuth()
-    const navigate = useNavigate()
+    const { signIn, signInWithPassword } = useAuth()
 
     // Redirect logic moved to App.jsx MainNavigator
 
@@ -39,77 +38,86 @@ export default function Login() {
     }
 
     return (
-        <div className="rc-auth-shell flex min-h-screen items-center justify-center px-4">
-            <Card className="rc-auth-card w-full max-w-md">
-                <CardHeader className="text-center space-y-2">
-                    <CardTitle className="text-2xl font-bold tracking-tight">Welcome Back</CardTitle>
-                    <p className="text-sm rc-muted">Sign in to your account</p>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleLogin} className="space-y-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium rc-muted">Email</label>
-                            <Input
-                                type="email"
-                                placeholder="name@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                className="rc-input"
-                            />
-                        </div>
+        <div className="lp-landing min-h-screen">
+            <nav className="lp-nav" aria-label="Authentication navigation">
+                <div className="lp-nav-container">
+                    <Link to="/" className="lp-logo">RecruitCoS</Link>
+                    <Link to="/signup" className="lp-nav-link">Get Started</Link>
+                </div>
+            </nav>
 
-                        {method === 'password' && (
+            <main className="rc-auth-shell flex min-h-[calc(100vh-80px)] items-center justify-center px-4 py-10">
+                <Card className="rc-auth-card w-full max-w-md">
+                    <CardHeader className="text-center space-y-2">
+                        <CardTitle className="text-2xl font-bold tracking-tight">Welcome Back</CardTitle>
+                        <p className="text-sm rc-muted">Sign in to continue your weekly recruiting plan</p>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleLogin} className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium rc-muted">Password</label>
+                                <label className="text-sm font-medium rc-muted">Email</label>
                                 <Input
-                                    type="password"
-                                    placeholder="••••••••"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    type="email"
+                                    placeholder="name@example.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     required
                                     className="rc-input"
                                 />
                             </div>
-                        )}
 
-                        <Button
-                            type="submit"
-                            className="rc-btn-primary w-full"
-                            disabled={loading}
-                        >
-                            {loading ? 'Processing...' : (method === 'password' ? 'Sign In' : 'Send Magic Link')}
-                        </Button>
+                            {method === 'password' && (
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium rc-muted">Password</label>
+                                    <Input
+                                        type="password"
+                                        placeholder="••••••••"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        className="rc-input"
+                                    />
+                                </div>
+                            )}
 
-                        {message && (
-                            <div className={`rc-alert text-center ${message.includes('Error') ? 'rc-alert-error' : 'rc-alert-success'}`}>
-                                {message}
-                            </div>
-                        )}
-                    </form>
+                            <Button
+                                type="submit"
+                                className="rc-btn-primary w-full"
+                                disabled={loading}
+                            >
+                                {loading ? 'Processing...' : (method === 'password' ? 'Sign In' : 'Send Magic Link')}
+                            </Button>
 
-                    <div className="mt-6 text-center">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setMethod(method === 'password' ? 'magic' : 'password')
-                                setMessage('')
-                            }}
-                            className="text-sm rc-muted transition-colors hover:text-[var(--rc-cardinal)]"
-                        >
-                            {method === 'password' ? 'Use a Magic Link instead' : 'Sign in with Password'}
-                        </button>
-                    </div>
-                </CardContent>
-                <CardFooter className="justify-center border-t border-[var(--rc-border)] pt-6">
-                    <p className="text-sm rc-muted">
-                        Don't have an account?{' '}
-                        <Link to="/signup" className="font-medium hover:underline">
-                            Get Started
-                        </Link>
-                    </p>
-                </CardFooter>
-            </Card>
+                            {message && (
+                                <div className={`rc-alert text-center ${message.includes('Error') ? 'rc-alert-error' : 'rc-alert-success'}`}>
+                                    {message}
+                                </div>
+                            )}
+                        </form>
+
+                        <div className="mt-6 text-center">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setMethod(method === 'password' ? 'magic' : 'password')
+                                    setMessage('')
+                                }}
+                                className="text-sm rc-muted transition-colors hover:text-[var(--rc-cardinal)]"
+                            >
+                                {method === 'password' ? 'Use a Magic Link instead' : 'Sign in with Password'}
+                            </button>
+                        </div>
+                    </CardContent>
+                    <CardFooter className="justify-center border-t border-[var(--rc-border)] pt-6">
+                        <p className="text-sm rc-muted">
+                            Don&apos;t have an account?{' '}
+                            <Link to="/signup" className="font-medium hover:underline">
+                                Get Started
+                            </Link>
+                        </p>
+                    </CardFooter>
+                </Card>
+            </main>
         </div>
     )
 }

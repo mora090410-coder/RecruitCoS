@@ -14,27 +14,27 @@
 }
 
 :root {
-    --rc-bg: #f7f4ef;
-    --rc-surface: #fffdf9;
-    --rc-ink: #1b1612;
-    --rc-muted: #6e655e;
-    --rc-border: #e7ddd2;
+    --rc-bg: #f7f7ff;
+    --rc-surface: #ffffff;
+    --rc-ink: #111827;
+    --rc-muted: #4b5563;
+    --rc-border: #e5e7eb;
     --rc-card-border: rgba(0, 0, 0, 0.05);
-    --rc-cardinal: #990000;
-    --rc-gold: #ffcc00;
-    --rc-link: #990000;
-    --rc-link-hover: #7a0000;
-    --rc-btn-primary-bg: #990000;
-    --rc-btn-primary-hover: #a30000;
+    --rc-cardinal: #6c2eb9;
+    --rc-gold: #8b5fd8;
+    --rc-link: #6c2eb9;
+    --rc-link-hover: #5b21b6;
+    --rc-btn-primary-bg: #6c2eb9;
+    --rc-btn-primary-hover: #5b21b6;
     --rc-btn-primary-fg: #ffffff;
     --rc-btn-secondary-bg: rgba(255, 255, 255, 0.92);
-    --rc-btn-secondary-fg: #990000;
-    --rc-btn-secondary-border: rgba(153, 0, 0, 0.55);
+    --rc-btn-secondary-fg: #6c2eb9;
+    --rc-btn-secondary-border: rgba(108, 46, 185, 0.42);
     --radius: 12px;
     --radius-internal: 4px;
-    --rc-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03), 0 10px 22px -18px rgba(0, 0, 0, 0.1);
-    --rc-shadow-md: 0 2px 6px rgba(0, 0, 0, 0.04), 0 14px 28px -22px rgba(0, 0, 0, 0.12);
-    --rc-shadow-hover: 0 4px 12px -8px rgba(0, 0, 0, 0.14);
+    --rc-shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.05), 0 10px 24px -20px rgba(108, 46, 185, 0.28);
+    --rc-shadow-md: 0 2px 8px rgba(17, 24, 39, 0.06), 0 16px 30px -24px rgba(108, 46, 185, 0.32);
+    --rc-shadow-hover: 0 8px 20px -12px rgba(108, 46, 185, 0.36);
     --rc-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
     --rc-transition-fast: 220ms;
     --rc-transition-reveal: 300ms;
@@ -42,7 +42,7 @@
 
 body {
     font-family: var(--font-sans);
-    background: var(--rc-bg);
+    background: linear-gradient(135deg, #ffffff 0%, #fafaff 45%, #f8f7ff 100%);
     color: var(--rc-ink);
 }
 
@@ -62,8 +62,8 @@ a:hover {
     position: relative;
     color: var(--rc-ink);
     background:
-        radial-gradient(1100px 600px at 6% -6%, rgba(255, 255, 255, 0.7), transparent 50%),
-        radial-gradient(900px 500px at 96% 2%, rgba(255, 249, 235, 0.75), transparent 45%),
+        radial-gradient(1400px 620px at 0% -20%, rgba(108, 46, 185, 0.08), transparent 60%),
+        radial-gradient(900px 500px at 95% 8%, rgba(139, 95, 216, 0.12), transparent 58%),
         var(--rc-bg);
 }
 
@@ -494,7 +494,7 @@ a:hover {
     background: var(--rc-btn-primary-hover) !important;
     border-color: var(--rc-btn-primary-hover) !important;
     transform: translateY(-2px);
-    box-shadow: 0 16px 28px -18px rgba(11, 11, 11, 0.38) !important;
+    box-shadow: 0 16px 28px -18px rgba(108, 46, 185, 0.42) !important;
 }
 
 .rc-hero-cta {
@@ -503,7 +503,7 @@ a:hover {
 
 .rc-hero-cta:hover {
     transform: translateY(-2px);
-    box-shadow: 0 16px 28px -18px rgba(11, 11, 11, 0.38) !important;
+    box-shadow: 0 16px 28px -18px rgba(108, 46, 185, 0.42) !important;
 }
 
 .rc-hero-cta:active {
@@ -608,9 +608,9 @@ a:hover {
 .rc-onboard-shell {
     min-height: 100vh;
     background:
-        radial-gradient(1000px 550px at 10% -5%, rgba(255, 255, 255, 0.75), transparent 50%),
-        radial-gradient(800px 450px at 92% 0%, rgba(255, 248, 232, 0.78), transparent 45%),
-        var(--rc-bg);
+        radial-gradient(1400px 620px at 0% -20%, rgba(108, 46, 185, 0.08), transparent 60%),
+        radial-gradient(900px 500px at 95% 8%, rgba(139, 95, 216, 0.12), transparent 58%),
+        linear-gradient(135deg, #ffffff 0%, #fafaff 45%, #f8f7ff 100%);
     color: var(--rc-ink);
 }
 
@@ -657,8 +657,8 @@ a:hover {
 
 .rc-onboard-shell .bg-green-500,
 .rc-onboard-shell .hover\:bg-green-600:hover {
-    background: var(--rc-cardinal) !important;
-    border-color: var(--rc-cardinal) !important;
+    background: linear-gradient(135deg, #6c2eb9 0%, #8b5fd8 100%) !important;
+    border-color: #6c2eb9 !important;
     color: #fff !important;
 }
 
@@ -690,7 +690,7 @@ a:hover {
 
 .rc-onboard-stepper-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--rc-cardinal), var(--rc-gold));
+    background: linear-gradient(90deg, #6c2eb9, #8b5fd8);
     transition: width 400ms ease;
 }
 
