@@ -14,6 +14,8 @@ import SignUp from './pages/SignUp'
 import Landing from './pages/Landing'
 import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
+import Contact from './pages/Contact'
+import Blog from './pages/Blog'
 import Dashboard from './pages/Dashboard'
 import EventLogger from './pages/EventLogger'
 import ProfileSetup from './pages/ProfileSetup'
@@ -129,6 +131,8 @@ function MainNavigator() {
         <Route path="/" element={<Landing />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/blog" element={<Blog />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="*" element={<Navigate to="/" replace />} />
@@ -153,6 +157,8 @@ function MainNavigator() {
       <Route path="/" element={destinationLoading ? <AppLoading /> : <Navigate to={postLoginDestination} replace />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/blog" element={<Blog />} />
       <Route path="/login" element={destinationLoading ? <AppLoading /> : <Navigate to={postLoginDestination} replace />} />
       <Route path="/signup" element={destinationLoading ? <AppLoading /> : <Navigate to={postLoginDestination} replace />} />
       <Route path="/profile-setup" element={destinationLoading ? <AppLoading /> : <Navigate to={postLoginDestination} replace />} />

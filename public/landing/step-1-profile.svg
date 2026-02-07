@@ -1,16 +1,27 @@
 <svg width="960" height="640" viewBox="0 0 960 640" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="960" height="640" rx="28" fill="#F7F5FE"/>
   <rect x="72" y="56" width="816" height="528" rx="24" fill="white" stroke="#D9C9F2"/>
-  <rect x="112" y="108" width="240" height="24" rx="8" fill="#6C2EB9"/>
-  <rect x="112" y="162" width="736" height="64" rx="14" fill="#F6F2FD" stroke="#D9C9F2"/>
-  <rect x="112" y="246" width="356" height="64" rx="14" fill="#F6F2FD" stroke="#D9C9F2"/>
-  <rect x="492" y="246" width="356" height="64" rx="14" fill="#F6F2FD" stroke="#D9C9F2"/>
-  <rect x="112" y="330" width="736" height="64" rx="14" fill="#F6F2FD" stroke="#D9C9F2"/>
-  <rect x="112" y="414" width="736" height="64" rx="14" fill="#F6F2FD" stroke="#D9C9F2"/>
-  <rect x="672" y="502" width="176" height="50" rx="12" fill="#6C2EB9"/>
-  <rect x="132" y="179" width="180" height="18" rx="6" fill="#CDB3F1"/>
-  <rect x="132" y="263" width="150" height="18" rx="6" fill="#CDB3F1"/>
-  <rect x="512" y="263" width="150" height="18" rx="6" fill="#CDB3F1"/>
-  <rect x="132" y="347" width="150" height="18" rx="6" fill="#CDB3F1"/>
-  <rect x="132" y="431" width="150" height="18" rx="6" fill="#CDB3F1"/>
+  <rect x="112" y="96" width="260" height="20" rx="8" fill="#6C2EB9"/>
+
+  <text x="112" y="152" fill="#4B5563" font-size="18" font-family="Inter, Arial, sans-serif">Sport</text>
+  <rect x="112" y="166" width="736" height="64" rx="12" fill="#F8F4FE" stroke="#D9C9F2"/>
+  <text x="136" y="206" fill="#6B7280" font-size="20" font-family="Inter, Arial, sans-serif">Baseball</text>
+  <text x="814" y="206" fill="#6B7280" font-size="20" font-family="Inter, Arial, sans-serif">v</text>
+
+  <text x="112" y="274" fill="#4B5563" font-size="18" font-family="Inter, Arial, sans-serif">Position</text>
+  <rect x="112" y="288" width="356" height="64" rx="12" fill="#F8F4FE" stroke="#D9C9F2"/>
+  <text x="136" y="328" fill="#6B7280" font-size="20" font-family="Inter, Arial, sans-serif">Outfield</text>
+  <text x="434" y="328" fill="#6B7280" font-size="20" font-family="Inter, Arial, sans-serif">v</text>
+
+  <text x="492" y="274" fill="#4B5563" font-size="18" font-family="Inter, Arial, sans-serif">Grad Year</text>
+  <rect x="492" y="288" width="356" height="64" rx="12" fill="#F8F4FE" stroke="#D9C9F2"/>
+  <text x="516" y="328" fill="#6B7280" font-size="20" font-family="Inter, Arial, sans-serif">2028</text>
+  <text x="814" y="328" fill="#6B7280" font-size="20" font-family="Inter, Arial, sans-serif">v</text>
+
+  <text x="112" y="396" fill="#4B5563" font-size="18" font-family="Inter, Arial, sans-serif">Current 60-yard time</text>
+  <rect x="112" y="410" width="736" height="64" rx="12" fill="#F8F4FE" stroke="#D9C9F2"/>
+  <text x="136" y="450" fill="#6B7280" font-size="20" font-family="Inter, Arial, sans-serif">7.20 sec</text>
+
+  <rect x="672" y="506" width="176" height="52" rx="12" fill="#6C2EB9"/>
+  <text x="727" y="538" fill="white" font-size="18" font-weight="700" font-family="Inter, Arial, sans-serif">Continue</text>
 </svg>

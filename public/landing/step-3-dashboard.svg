@@ -1,17 +1,25 @@
 <svg width="960" height="640" viewBox="0 0 960 640" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="960" height="640" rx="28" fill="#F7F5FE"/>
   <rect x="72" y="56" width="816" height="528" rx="24" fill="white" stroke="#D9C9F2"/>
-  <rect x="112" y="108" width="320" height="24" rx="8" fill="#6C2EB9"/>
-  <rect x="112" y="164" width="356" height="172" rx="18" fill="#F8F4FE" stroke="#D9C9F2"/>
-  <rect x="492" y="164" width="356" height="172" rx="18" fill="#F8F4FE" stroke="#D9C9F2"/>
-  <rect x="112" y="360" width="736" height="168" rx="18" fill="#F8F4FE" stroke="#D9C9F2"/>
-  <rect x="140" y="196" width="170" height="18" rx="6" fill="#CDB3F1"/>
-  <rect x="140" y="226" width="120" height="56" rx="10" fill="#6C2EB9"/>
-  <rect x="520" y="196" width="170" height="18" rx="6" fill="#CDB3F1"/>
-  <rect x="520" y="228" width="300" height="10" rx="5" fill="#DAC6F4"/>
-  <rect x="520" y="246" width="230" height="10" rx="5" fill="#DAC6F4"/>
-  <rect x="520" y="264" width="280" height="10" rx="5" fill="#DAC6F4"/>
-  <rect x="140" y="388" width="200" height="18" rx="6" fill="#CDB3F1"/>
-  <rect x="140" y="428" width="680" height="18" rx="8" fill="#E8DDF9"/>
-  <rect x="140" y="464" width="520" height="18" rx="8" fill="#E8DDF9"/>
+  <rect x="112" y="96" width="300" height="20" rx="8" fill="#6C2EB9"/>
+  <text x="112" y="148" fill="#4B5563" font-size="18" font-family="Inter, Arial, sans-serif">Dashboard Preview</text>
+
+  <rect x="112" y="170" width="360" height="180" rx="16" fill="#F8F4FE" stroke="#D9C9F2"/>
+  <text x="136" y="214" fill="#6B7280" font-size="14" font-family="Inter, Arial, sans-serif">TOTAL RECRUITING SPEND</text>
+  <text x="136" y="266" fill="#111827" font-size="56" font-weight="800" font-family="Inter, Arial, sans-serif">$1,245</text>
+  <rect x="136" y="286" width="300" height="12" rx="6" fill="#E5E7EB"/>
+  <rect x="136" y="286" width="204" height="12" rx="6" fill="#6C2EB9"/>
+  <text x="136" y="322" fill="#4B5563" font-size="16" font-family="Inter, Arial, sans-serif">72% of month budget used</text>
+
+  <rect x="492" y="170" width="356" height="180" rx="16" fill="#F8F4FE" stroke="#D9C9F2"/>
+  <text x="516" y="214" fill="#6B7280" font-size="14" font-family="Inter, Arial, sans-serif">WEEKLY STREAK</text>
+  <text x="516" y="266" fill="#111827" font-size="48" font-weight="800" font-family="Inter, Arial, sans-serif">5 weeks</text>
+  <polyline points="520,324 570,302 620,308 670,278 720,286 770,250 820,258" fill="none" stroke="#6C2EB9" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="112" y="370" width="736" height="164" rx="16" fill="#F8F4FE" stroke="#D9C9F2"/>
+  <text x="136" y="414" fill="#6B7280" font-size="14" font-family="Inter, Arial, sans-serif">PHASE PROGRESS</text>
+  <rect x="136" y="432" width="688" height="14" rx="7" fill="#E5E7EB"/>
+  <rect x="136" y="432" width="432" height="14" rx="7" fill="#6C2EB9"/>
+  <text x="136" y="472" fill="#374151" font-size="18" font-family="Inter, Arial, sans-serif">Evaluation - Outreach - Commitment</text>
+  <text x="136" y="506" fill="#4B5563" font-size="16" font-family="Inter, Arial, sans-serif">Upgrade unlocks full expense benchmarks and division comparisons.</text>
 </svg>

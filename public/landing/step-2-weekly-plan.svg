@@ -1,18 +1,24 @@
 <svg width="960" height="640" viewBox="0 0 960 640" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="960" height="640" rx="28" fill="#F7F5FE"/>
   <rect x="72" y="56" width="816" height="528" rx="24" fill="white" stroke="#D9C9F2"/>
-  <rect x="112" y="108" width="300" height="24" rx="8" fill="#6C2EB9"/>
-  <rect x="738" y="104" width="110" height="32" rx="16" fill="#EFE7FB"/>
-  <rect x="112" y="164" width="736" height="108" rx="16" fill="#F8F4FE" stroke="#D9C9F2"/>
-  <rect x="132" y="186" width="340" height="18" rx="6" fill="#CDB3F1"/>
-  <rect x="132" y="214" width="540" height="14" rx="6" fill="#E4D7F8"/>
-  <rect x="132" y="236" width="420" height="14" rx="6" fill="#E4D7F8"/>
-  <rect x="112" y="292" width="736" height="108" rx="16" fill="#F8F4FE" stroke="#D9C9F2"/>
-  <rect x="132" y="314" width="340" height="18" rx="6" fill="#CDB3F1"/>
-  <rect x="132" y="342" width="540" height="14" rx="6" fill="#E4D7F8"/>
-  <rect x="132" y="364" width="420" height="14" rx="6" fill="#E4D7F8"/>
-  <rect x="112" y="420" width="736" height="108" rx="16" fill="#F8F4FE" stroke="#D9C9F2"/>
-  <rect x="132" y="442" width="340" height="18" rx="6" fill="#CDB3F1"/>
-  <rect x="132" y="470" width="540" height="14" rx="6" fill="#E4D7F8"/>
-  <rect x="132" y="492" width="420" height="14" rx="6" fill="#E4D7F8"/>
+  <rect x="112" y="96" width="320" height="20" rx="8" fill="#6C2EB9"/>
+  <text x="112" y="148" fill="#4B5563" font-size="18" font-family="Inter, Arial, sans-serif">This Week: 3 Priority Actions</text>
+
+  <rect x="112" y="166" width="736" height="96" rx="14" fill="#F8F4FE" stroke="#D9C9F2"/>
+  <text x="136" y="205" fill="#6C2EB9" font-size="24" font-weight="700" font-family="Inter, Arial, sans-serif">[ ]</text>
+  <text x="186" y="206" fill="#374151" font-size="22" font-family="Inter, Arial, sans-serif">Action 1: Speed session...</text>
+  <rect x="186" y="220" width="520" height="10" rx="5" fill="#DAC6F4"/>
+
+  <rect x="112" y="282" width="736" height="96" rx="14" fill="#F8F4FE" stroke="#D9C9F2"/>
+  <text x="136" y="321" fill="#6C2EB9" font-size="24" font-weight="700" font-family="Inter, Arial, sans-serif">[x]</text>
+  <text x="186" y="322" fill="#374151" font-size="22" font-family="Inter, Arial, sans-serif">Action 2: Coach updates...</text>
+  <rect x="186" y="336" width="500" height="10" rx="5" fill="#DAC6F4"/>
+
+  <rect x="112" y="398" width="736" height="96" rx="14" fill="#F8F4FE" stroke="#D9C9F2"/>
+  <text x="136" y="437" fill="#6C2EB9" font-size="24" font-weight="700" font-family="Inter, Arial, sans-serif">[ ]</text>
+  <text x="186" y="438" fill="#374151" font-size="22" font-family="Inter, Arial, sans-serif">Action 3: New film clip...</text>
+  <rect x="186" y="452" width="510" height="10" rx="5" fill="#DAC6F4"/>
+
+  <rect x="656" y="514" width="192" height="44" rx="10" fill="#6C2EB9"/>
+  <text x="690" y="542" fill="white" font-size="18" font-weight="700" font-family="Inter, Arial, sans-serif">Mark Complete</text>
 </svg>
