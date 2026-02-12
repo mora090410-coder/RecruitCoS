@@ -89,7 +89,7 @@ export default function SimpleWeeklyView({
     const maybeShowUnlockScreen = async () => {
         if (isCheckingUnlock) return
         if (!targetAthleteId || !weekStartDate || !unlockSeenStorageKey) return
-        if (completedActionNumber !== 3 || completedCount !== 3 || !isFirstWeekAthlete) return
+        if (completedActionNumber !== 3 || !isFirstWeekAthlete) return
 
         try {
             if (window.localStorage.getItem(unlockSeenStorageKey) === 'true') {
