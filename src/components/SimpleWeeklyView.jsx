@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from './ui/button'
 import { resolveActionHref } from '../lib/actionRouting'
+import CelebrationModal from './CelebrationModal'
 
 const ITEM_ICONS = {
     gap: '⚡',
@@ -45,13 +46,31 @@ export default function SimpleWeeklyView({
     weekStartDate
 }) {
     const navigate = useNavigate()
+    const location = useLocation()
+    const [searchParams] = useSearchParams()
     const subtitle = formatAthleteMeta(athlete)
     const hasActions = Array.isArray(actions) && actions.length > 0
-
     const completedCount = useMemo(() => {
         if (!hasActions) return 0
         return actions.filter((item) => item?.status === 'done').length
     }, [actions, hasActions])
+    const totalActions = hasActions ? actions.length : 0
+    const completionRate = totalActions > 0 ? Math.round((completedCount / totalActions) * 100) : 0
+    const streakWeeks = Math.max(0, Number(engagement?.weeksActive || 0))
+    const completedParam = searchParams.get('completed')
+    const actionParam = Number.parseInt(searchParams.get('action') || '', 10)
+    const completedActionNumber = (
+        completedParam === 'true'
+        && Number.isInteger(actionParam)
+        && actionParam >= 1
+        && actionParam <= 3
+    )
+        ? actionParam
+        : null
+
+    const closeCelebrationModal = () => {
+        navigate(location.pathname, { replace: true })
+    }
 
     const handleOpenAction = (item) => {
         if (!item?.id || item.status === 'done') return
@@ -121,16 +140,49 @@ export default function SimpleWeeklyView({
 
                             <Button
                                 type="button"
-                                className={`mt-5 h-11 w-full font-semibold ${isDone ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-purple-600 hover:bg-purple-700'}`}
+                                className={`mt-5 h-11 w-full font-semibold ${isDone ? 'cursor-not-allowed border border-gray-200 bg-gray-100 text-gray-500 hover:bg-gray-100' : 'bg-purple-600 text-white hover:bg-purple-700'}`}
                                 onClick={() => handleOpenAction(item)}
                                 disabled={isDone}
                             >
-                                {isDone ? 'Completed ✓' : 'Mark Complete'}
+                                {isDone ? 'Completed' : 'Start This Action'}
                             </Button>
                         </article>
                     )
                 })}
             </section>
+
+            {!loading && !error && hasActions && (
+                <section className="rounded-xl border-2 border-[#E5E7EB] bg-white p-6">
+                    <div className="flex items-center justify-between gap-3">
+                        <h3 className="text-lg font-semibold text-gray-900">Progress This Week</h3>
+                        <span className="rounded-full bg-[#F3ECFF] px-3 py-1 text-xs font-semibold text-[#6C2EB9]">
+                            {completedCount}/{totalActions} Complete
+                        </span>
+                    </div>
+
+                    <div className="mt-4 h-3 overflow-hidden rounded-full bg-gray-100">
+                        <div
+                            className="h-full rounded-full bg-gradient-to-r from-[#6C2EB9] to-[#8B5FD8] transition-all duration-300"
+                            style={{ width: `${completionRate}%` }}
+                        />
+                    </div>
+
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Completion</p>
+                            <p className="mt-1 text-xl font-semibold text-gray-900">{completionRate}%</p>
+                        </div>
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Current Streak</p>
+                            <p className="mt-1 text-xl font-semibold text-gray-900">{streakWeeks} week{streakWeeks === 1 ? '' : 's'}</p>
+                        </div>
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Total Actions</p>
+                            <p className="mt-1 text-xl font-semibold text-gray-900">{engagement?.actionsCompleted || 0}</p>
+                        </div>
+                    </div>
+                </section>
+            )}
 
             <section className="rounded-xl border border-[#E9D5FF] bg-[#F5F3FF] p-6">
                 <h3 className="text-lg font-semibold text-gray-900">Want deeper insights?</h3>
@@ -163,6 +215,13 @@ export default function SimpleWeeklyView({
                     <p className="font-medium">You&apos;ve built consistency for 2+ weeks.</p>
                     <p className="mt-1">Your full analysis view is available now.</p>
                 </section>
+            )}
+
+            {completedActionNumber && (
+                <CelebrationModal
+                    actionNumber={completedActionNumber}
+                    onClose={closeCelebrationModal}
+                />
             )}
         </div>
     )

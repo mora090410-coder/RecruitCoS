@@ -58,6 +58,21 @@ a:hover {
     text-underline-offset: 3px;
 }
 
+@keyframes rc-slide-up {
+    0% {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.rc-slide-up {
+    animation: rc-slide-up 220ms ease-out;
+}
+
 .rc-landing {
     position: relative;
     color: var(--rc-ink);
