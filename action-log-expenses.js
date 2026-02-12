@@ -206,7 +206,7 @@ const ExpenseTracker = {
     this.markActionComplete();
 
     // Redirect with success parameter
-    window.location.href = 'weekly-plan.html?action=3&completed=true';
+    window.location.href = '/weekly-plan?action=3&completed=true';
   },
 
   markActionComplete() {

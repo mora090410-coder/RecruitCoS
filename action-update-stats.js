@@ -38,7 +38,7 @@ const StatsForm = {
     this.markActionComplete();
 
     // Redirect with success parameter
-    window.location.href = 'weekly-plan.html?action=1&completed=true';
+    window.location.href = '/weekly-plan?action=1&completed=true';
   },
 
   getFormData() {

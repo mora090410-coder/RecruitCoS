@@ -200,7 +200,7 @@ const SchoolResearch = {
     this.markActionComplete();
 
     // Redirect with success parameter
-    window.location.href = 'weekly-plan.html?action=2&completed=true';
+    window.location.href = '/weekly-plan?action=2&completed=true';
   },
 
   markActionComplete() {
