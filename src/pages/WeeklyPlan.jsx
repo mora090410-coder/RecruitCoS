@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import SimpleWeeklyView from '../components/SimpleWeeklyView';
+import WeekOnePlanView from '../components/WeekOnePlanView';
 import { useProfile } from '../hooks/useProfile';
 import { getSimpleWeeklyPlan } from '../lib/weeklyPlan/getSimpleWeeklyPlan';
-import { getAthleteEngagement } from '../lib/getAthleteEngagement';
 import { track } from '../lib/analytics';
 
 export default function WeeklyPlan() {
     const { profile, activeAthlete, isImpersonating } = useProfile();
     const [simplePlan, setSimplePlan] = useState(null);
-    const [engagement, setEngagement] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [reloadNonce, setReloadNonce] = useState(0);
@@ -34,22 +32,16 @@ export default function WeeklyPlan() {
 
                 if (!targetAthleteId) {
                     setSimplePlan(null);
-                    setEngagement(null);
                     return;
                 }
 
-                const [plan, engagementData] = await Promise.all([
-                    getSimpleWeeklyPlan(targetAthleteId),
-                    getAthleteEngagement(targetAthleteId)
-                ]);
+                const plan = await getSimpleWeeklyPlan(targetAthleteId);
                 if (!active) return;
                 setSimplePlan(plan);
-                setEngagement(engagementData);
             } catch (err) {
                 if (!active) return;
                 setError(err?.message || 'Failed to load weekly plan.');
                 setSimplePlan(null);
-                setEngagement(null);
             } finally {
                 if (active) setLoading(false);
             }
@@ -81,14 +73,12 @@ export default function WeeklyPlan() {
 
     return (
         <DashboardLayout phase={simplePlan?.phaseLabel}>
-            <SimpleWeeklyView
+            <WeekOnePlanView
                 athlete={simplePlan?.athlete}
-                phaseLabel={simplePlan?.phaseLabel}
                 actions={simplePlan?.actions || []}
                 loading={loading}
                 error={error}
                 targetAthleteId={targetAthleteId}
-                engagement={engagement}
                 onRetry={handleRetryLoad}
                 weekStartDate={simplePlan?.weekStartDate}
             />

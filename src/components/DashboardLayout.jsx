@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from './ui/button'
 import { Bell, Search, User } from 'lucide-react'
@@ -8,11 +8,12 @@ import ProfileSwitcher from './layout/ProfileSwitcher'
 export default function DashboardLayout({ children, phase }) {
     const { signOut } = useAuth()
     const location = useLocation()
+    const navigate = useNavigate()
     const isWeeklyPlanRoute = location.pathname.startsWith('/weekly-plan')
-    const isDashboardRoute = location.pathname === '/' || location.pathname.startsWith('/dashboard')
+    const isDashboardRoute = location.pathname.startsWith('/dashboard')
 
     const navLinks = [
-        { to: '/', label: 'Dashboard', match: (pathname) => pathname === '/' || pathname === '/dashboard' },
+        { to: '/dashboard', label: 'Dashboard', match: (pathname) => pathname.startsWith('/dashboard') },
         { to: '/compass', label: 'Recruiting Compass', match: (pathname) => pathname.startsWith('/compass') },
         { to: '/measurables', label: 'Measurables', match: (pathname) => pathname.startsWith('/measurables') },
         { to: '/weekly-plan', label: 'Weekly Plan', match: (pathname) => pathname.startsWith('/weekly-plan') },
@@ -26,7 +27,7 @@ export default function DashboardLayout({ children, phase }) {
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                     {/* Logo & Brand */}
                     <div className="flex items-center gap-8">
-                        <Link to="/" className="flex items-center gap-2 font-serif text-xl font-bold text-[var(--purple-700)]">
+                        <Link to="/dashboard" className="flex items-center gap-2 font-serif text-xl font-bold text-[var(--purple-700)]">
                             <div className="flex h-8 w-8 items-center justify-center rounded-md border border-[rgba(108,46,185,0.28)] bg-[rgba(255,255,255,0.94)] text-[var(--purple-700)] font-sans">R</div>
                             RecruitCoS
                         </Link>
@@ -47,6 +48,12 @@ export default function DashboardLayout({ children, phase }) {
                                     <Link
                                         key={link.to}
                                         to={link.to}
+                                        onClick={(link.label === 'Dashboard' || link.label === 'Weekly Plan')
+                                            ? (event) => {
+                                                event.preventDefault()
+                                                navigate(link.label === 'Dashboard' ? '/dashboard' : '/weekly-plan')
+                                            }
+                                            : undefined}
                                         className={`relative pb-1 transition-colors ${active ? 'text-[var(--purple-700)]' : 'text-[var(--gray-600)] hover:text-[var(--gray-900)]'}`}
                                     >
                                         {link.label}

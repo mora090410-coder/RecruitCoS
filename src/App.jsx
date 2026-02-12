@@ -1,13 +1,10 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ProfileProvider, useProfile } from './hooks/useProfile'
-import AppLoading from './components/AppLoading'
 import { Toaster } from 'sonner'
-import { useEffect, useMemo, useState } from 'react'
-import { supabase } from './lib/supabase'
+import { useEffect } from 'react'
 import { ensureSignupTimestamp, getSignupTimestamp, identify, markSessionStart, page } from './lib/analytics'
 import { getAthletePhase } from './lib/constants'
-import { getAthleteEngagement } from './lib/getAthleteEngagement'
 
 // Pages
 import Login from './pages/Login'
@@ -36,12 +33,6 @@ function MainNavigator() {
   const { user, loading: authLoading } = useAuth()
   const { hasProfile, isProfileLoading, isInitialized, error: profileError, profile, activeAthlete, isImpersonating } = useProfile()
   const location = useLocation()
-  const [destinationLoading, setDestinationLoading] = useState(false)
-  const [postLoginDestination, setPostLoginDestination] = useState('/weekly-plan')
-  const targetAthleteId = isImpersonating ? activeAthlete?.id : profile?.id
-  const isPostLoginEntryPath = useMemo(() => (
-    ['/', '/login', '/signup', '/profile-setup'].includes(location.pathname)
-  ), [location.pathname])
 
   useEffect(() => {
     page(location.pathname, { route: location.pathname })
@@ -64,45 +55,6 @@ function MainNavigator() {
       target_level: profile?.target_divisions?.[0] || null
     })
   }, [user?.id, user?.email, user?.created_at, profile?.grad_year, profile?.position, profile?.primary_position_display, profile?.sport, profile?.target_divisions])
-
-  useEffect(() => {
-    let isMounted = true
-
-    async function resolvePostLoginDestination() {
-      if (!user || !hasProfile || !isPostLoginEntryPath || !targetAthleteId) return
-
-      setDestinationLoading(true)
-      const [engagementData, measurableCountResult] = await Promise.all([
-        getAthleteEngagement(targetAthleteId),
-        supabase
-          .from('athlete_measurables')
-          .select('id', { count: 'exact', head: true })
-          .eq('athlete_id', targetAthleteId)
-      ])
-
-      if (!isMounted) return
-
-      if (measurableCountResult.error) {
-        console.error('Post-login destination check failed:', measurableCountResult.error)
-        setPostLoginDestination('/weekly-plan')
-        setDestinationLoading(false)
-        return
-      }
-
-      const weeksActive = engagementData?.weeksActive || 0
-      const actionsCompleted = engagementData?.actionsCompleted || 0
-      const metricsAdded = (measurableCountResult.count || 0) > 0
-      const shouldShowWeeklyPlan = weeksActive < 2 && !metricsAdded && actionsCompleted < 4
-
-      setPostLoginDestination(shouldShowWeeklyPlan ? '/weekly-plan' : '/dashboard')
-      setDestinationLoading(false)
-    }
-
-    resolvePostLoginDestination()
-    return () => {
-      isMounted = false
-    }
-  }, [user, hasProfile, isPostLoginEntryPath, targetAthleteId])
 
   // 0. FATAL ERROR SHIELD
   if (profileError) {
@@ -164,15 +116,15 @@ function MainNavigator() {
   // 4. STATE C: LOGGED IN + HAS PROFILE
   return (
     <Routes>
-      {/* Redirect Public & Setup Routes to Access-Aware Destination */}
-      <Route path="/" element={destinationLoading ? <AppLoading /> : <Navigate to={postLoginDestination} replace />} />
+      {/* Redirect Public & Setup Routes */}
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/blog" element={<Blog />} />
-      <Route path="/login" element={destinationLoading ? <AppLoading /> : <Navigate to={postLoginDestination} replace />} />
-      <Route path="/signup" element={destinationLoading ? <AppLoading /> : <Navigate to={postLoginDestination} replace />} />
-      <Route path="/profile-setup" element={destinationLoading ? <AppLoading /> : <Navigate to={postLoginDestination} replace />} />
+      <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/signup" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/profile-setup" element={<Navigate to="/dashboard" replace />} />
 
       {/* Protected App Routes */}
       <Route path="/dashboard" element={<Dashboard />} />
