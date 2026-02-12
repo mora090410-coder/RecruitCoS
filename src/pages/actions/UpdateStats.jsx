@@ -4,6 +4,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { Button } from '../../components/ui/button';
 import { useProfile } from '../../hooks/useProfile';
 import { supabase } from '../../lib/supabase';
+import { getFeatureRebuildMessage, isMissingTableError } from '../../lib/dbResilience';
 import {
     resolveActionNumberFromSearch,
     resolveItemIdFromSearch,
@@ -89,6 +90,10 @@ export default function UpdateStats() {
             });
             navigate(`/weekly-plan?action=${actionNumber}&skipped=true`);
         } catch (skipError) {
+            if (isMissingTableError(skipError)) {
+                navigate(`/weekly-plan?action=${actionNumber}&skipped=true`);
+                return;
+            }
             setError(skipError?.message || 'Unable to skip this action right now.');
         } finally {
             setIsSkipping(false);
@@ -160,7 +165,11 @@ export default function UpdateStats() {
 
             navigate(`/weekly-plan?action=${actionNumber}&completed=true`);
         } catch (saveError) {
-            setError(saveError?.message || 'Unable to save stats right now.');
+            if (isMissingTableError(saveError)) {
+                setError(getFeatureRebuildMessage('Stats logging'));
+            } else {
+                setError(saveError?.message || 'Unable to save stats right now.');
+            }
         } finally {
             setIsSaving(false);
         }

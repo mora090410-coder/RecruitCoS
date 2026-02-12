@@ -6,6 +6,13 @@ const ProfileContext = createContext({})
 
 export const useProfile = () => useContext(ProfileContext)
 
+const isMissingTableError = (error) => {
+    if (!error) return false
+    if (error.code === '42P01') return true
+    const message = String(error.message || '').toLowerCase()
+    return message.includes('relation') && message.includes('does not exist')
+}
+
 export const ProfileProvider = ({ children }) => {
     const { user, loading: authLoading } = useAuth()
 
@@ -67,11 +74,18 @@ export const ProfileProvider = ({ children }) => {
             ])
 
             if (profileResult.error) throw profileResult.error
-            if (accessResult.error) throw accessResult.error
+
+            const accessRows = accessResult.error
+                ? (isMissingTableError(accessResult.error) ? [] : (() => { throw accessResult.error })())
+                : (accessResult.data || [])
+
+            if (accessResult.error && isMissingTableError(accessResult.error) && import.meta.env.DEV) {
+                console.warn('Profile: profile_access table missing; continuing without delegated athlete access.')
+            }
 
             // Update State
             setAthleteProfile(profileResult.data)
-            setAccessibleAthletes(accessResult.data || [])
+            setAccessibleAthletes(accessRows)
 
             if (import.meta.env.DEV) console.log("Profile: Load complete", { hasProfile: !!profileResult.data })
 

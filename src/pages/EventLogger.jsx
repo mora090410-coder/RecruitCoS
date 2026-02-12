@@ -10,6 +10,7 @@ import { Input } from '../components/ui/input'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
 import { Mic, Check, Twitter, Calendar, Rocket, Sparkles } from 'lucide-react'
 import { track } from '../lib/analytics'
+import { getFeatureRebuildMessage, isMissingTableError } from '../lib/dbResilience'
 
 import CoachSelector from '../components/CoachSelector'
 
@@ -119,10 +120,18 @@ export default function EventLogger() {
             setSearchingPriority(true)
             try {
                 // 1. Get saved schools
-                const { data: savedSchools } = await supabase
+                const { data: savedSchools, error: savedSchoolsError } = await supabase
                     .from('athlete_saved_schools')
                     .select('school_name')
                     .eq('athlete_id', user.id)
+
+                if (savedSchoolsError) {
+                    if (isMissingTableError(savedSchoolsError)) {
+                        setPriorityCoaches([])
+                        return
+                    }
+                    throw savedSchoolsError
+                }
 
                 if (!savedSchools || savedSchools.length === 0) {
                     setPriorityCoaches([])
@@ -132,12 +141,20 @@ export default function EventLogger() {
                 const schoolNames = savedSchools.map(s => s.school_name)
 
                 // 2. Find coaches in the selected region from those schools
-                const { data: regionalCoaches } = await supabase
+                const { data: regionalCoaches, error: regionalCoachesError } = await supabase
                     .from('coaches')
                     .select('*')
                     .in('school', schoolNames)
                     .eq('region', formData.tournament_region)
                     .limit(5)
+
+                if (regionalCoachesError) {
+                    if (isMissingTableError(regionalCoachesError)) {
+                        setPriorityCoaches([])
+                        return
+                    }
+                    throw regionalCoachesError
+                }
 
                 setPriorityCoaches(regionalCoaches || [])
             } catch (err) {
@@ -204,6 +221,11 @@ export default function EventLogger() {
         ]).select().single()
 
         if (error) {
+            if (isMissingTableError(error)) {
+                alert(getFeatureRebuildMessage('Event logging'))
+                setLoading(false)
+                return
+            }
             console.error('Error logging event:', error)
             alert('Failed to log event: ' + error.message)
             setLoading(false)
@@ -260,7 +282,13 @@ export default function EventLogger() {
                 }
             ])
 
-            if (error) throw error
+            if (error) {
+                if (isMissingTableError(error)) {
+                    navigate('/')
+                    return
+                }
+                throw error
+            }
 
             navigate('/')
         } catch (err) {

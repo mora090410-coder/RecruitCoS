@@ -9,6 +9,7 @@ import { getRetryStatusMessage } from '../lib/aiUtils'
 import { calculateDistance } from '../lib/utils'
 import { sanitizeInput } from '../lib/security'
 import { getSchoolHeat } from '../lib/signalEngine'
+import { getFeatureRebuildMessage, isMissingTableError } from '../lib/dbResilience'
 
 // Screen Components
 import CompassSearch from '../components/compass/CompassSearch'
@@ -50,6 +51,7 @@ export default function RecruitingCompass() {
     const [profileLoading, setProfileLoading] = useState(true)
     const [searchError, setSearchError] = useState(null)
     const [lastSearchTime, setLastSearchTime] = useState(0)
+    const [isDataLayerRebuilding, setIsDataLayerRebuilding] = useState(false)
 
     // Toast state
     const [showToast, setShowToast] = useState(false)
@@ -104,10 +106,14 @@ export default function RecruitingCompass() {
             }
 
             // Load saved schools
-            const { data: saved } = await supabase
+            const { data: saved, error: savedError } = await supabase
                 .from('athlete_saved_schools')
                 .select('*, interactions:athlete_interactions(*)')
                 .eq('athlete_id', user.id)
+
+            if (savedError && isMissingTableError(savedError)) {
+                setIsDataLayerRebuilding(true)
+            }
 
             if (saved) {
                 const schoolsWithHeat = saved.map(school => ({
@@ -212,12 +218,16 @@ export default function RecruitingCompass() {
             })}`.replace(/\s+/g, '_').toLowerCase()
 
             if (user?.id) {
-                const { data: cached } = await supabase
+                const { data: cached, error: cacheLookupError } = await supabase
                     .from('search_cache')
                     .select('results, expires_at')
                     .eq('user_id', user.id)
                     .eq('query_key', queryKey)
                     .single()
+
+                if (cacheLookupError && isMissingTableError(cacheLookupError)) {
+                    setIsDataLayerRebuilding(true)
+                }
 
                 if (cached && new Date(cached.expires_at) > new Date()) {
                     if (import.meta.env.DEV) console.log('Using CACHED results for:', searchSchool)
@@ -351,6 +361,9 @@ If the objective is close to 'Playing Time' (100), prioritize schools where the 
                         results: grouped
                     })
                 if (cacheError) {
+                    if (isMissingTableError(cacheError)) {
+                        setIsDataLayerRebuilding(true)
+                    }
                     if (import.meta.env.DEV) console.warn("Failed to cache results:", cacheError)
                 }
             }
@@ -441,6 +454,16 @@ If the objective is close to 'Playing Time' (100), prioritize schools where the 
                     setShowToast(true)
                     return
                 }
+                if (isMissingTableError(error)) {
+                    setIsDataLayerRebuilding(true)
+                    setToastConfig({
+                        message: getFeatureRebuildMessage('Saved school list'),
+                        actionLabel: 'Back',
+                        onAction: () => setView('overview')
+                    })
+                    setShowToast(true)
+                    return
+                }
                 throw error
             }
 
@@ -490,7 +513,19 @@ If the objective is close to 'Playing Time' (100), prioritize schools where the 
                 .eq('athlete_id', targetAthleteId)
                 .eq('school_name', school.school_name)
 
-            if (error) throw error
+            if (error) {
+                if (isMissingTableError(error)) {
+                    setIsDataLayerRebuilding(true)
+                    setToastConfig({
+                        message: getFeatureRebuildMessage('Saved school list'),
+                        actionLabel: 'OK',
+                        onAction: () => setShowToast(false)
+                    })
+                    setShowToast(true)
+                    return
+                }
+                throw error
+            }
 
             // Update local state
             setSavedSchools(prev => ({
@@ -621,7 +656,14 @@ If the objective is close to 'Playing Time' (100), prioritize schools where the 
                         </div>
                     </div>
                 ) : (
-                    renderView()
+                    <>
+                        {isDataLayerRebuilding && (
+                            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                                Some list and cache features are in rebuild mode while database tables are being recreated.
+                            </div>
+                        )}
+                        {renderView()}
+                    </>
                 )}
 
                 {/* Custom Toast Notification */}

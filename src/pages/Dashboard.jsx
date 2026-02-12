@@ -9,6 +9,7 @@ import { useProfile } from '../hooks/useProfile'
 import { supabase } from '../lib/supabase'
 import { getAthleteEngagement } from '../lib/getAthleteEngagement'
 import { track } from '../lib/analytics'
+import { isMissingTableError } from '../lib/dbResilience'
 
 const DASHBOARD_WRAPPER_CLASS = 'mx-auto w-full max-w-[1200px] space-y-6'
 const DASHBOARD_BACKGROUND_CLASS = 'rounded-2xl border border-[#E5E7EB] bg-gradient-to-r from-white to-[#F9F5FF] p-6 sm:p-8'
@@ -139,6 +140,7 @@ export default function Dashboard() {
 
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [isRebuildMode, setIsRebuildMode] = useState(false)
     const [dashboardData, setDashboardData] = useState({
         stats: {
             sixty_yard_dash: null,
@@ -217,20 +219,43 @@ export default function Dashboard() {
 
             if (!active) return
 
-            if (measurablesResult.error || expensesResult.error || schoolsResult.error || weeklyResult.error || athleteDivisionResult.error) {
+            const hardError = [
+                measurablesResult.error,
+                expensesResult.error,
+                schoolsResult.error,
+                weeklyResult.error,
+                athleteDivisionResult.error
+            ].find((queryError) => queryError && !isMissingTableError(queryError))
+
+            if (hardError) {
                 setError('Unable to load your dashboard preview right now. Please retry.')
                 setLoading(false)
                 return
             }
 
-            const stats = getLatestStatsFromMeasurables(measurablesResult.data || [])
-            const expenses = summarizeExpenses(expensesResult.data || [])
-            const schools = (schoolsResult.data || []).slice(0, 3)
+            const hasMissingTable = [
+                measurablesResult.error,
+                expensesResult.error,
+                schoolsResult.error,
+                weeklyResult.error
+            ].some((queryError) => isMissingTableError(queryError))
+            setIsRebuildMode(hasMissingTable)
+
+            const stats = getLatestStatsFromMeasurables(
+                isMissingTableError(measurablesResult.error) ? [] : (measurablesResult.data || [])
+            )
+            const expenses = summarizeExpenses(
+                isMissingTableError(expensesResult.error) ? [] : (expensesResult.data || [])
+            )
+            const schools = (isMissingTableError(schoolsResult.error) ? [] : (schoolsResult.data || [])).slice(0, 3)
             const primaryDivision = athleteDivisionResult.data?.target_divisions?.[0]
                 || schools[0]?.division
                 || 'D3'
 
-            const progress = summarizeWeekProgress(weeklyResult.data || [], engagement)
+            const progress = summarizeWeekProgress(
+                isMissingTableError(weeklyResult.error) ? [] : (weeklyResult.data || []),
+                engagement
+            )
 
             setDashboardData({
                 stats,
@@ -302,35 +327,42 @@ export default function Dashboard() {
                 )}
 
                 {!loading && !error && (
-                    <section className="grid grid-cols-1 gap-6 lg:grid-cols-2 2xl:grid-cols-3">
-                        <ReadinessScoreCard
-                            stats={dashboardData.stats}
-                            onUpgrade={() => handleUpgradeClick('readiness_full_analysis')}
-                        />
-
-                        <ExpenseBreakdownCard
-                            expenses={dashboardData.expenses}
-                            division={dashboardData.divisionKey}
-                            monthLabel={dashboardData.monthLabel}
-                            onUpgrade={() => handleUpgradeClick('expense_roi_analysis')}
-                        />
-
-                        <div className="lg:col-span-1 2xl:col-span-2">
-                            <SchoolFitCard
-                                schools={dashboardData.schools}
-                                athleteStats={dashboardData.stats}
-                                onUpgradeSchools={() => handleUpgradeClick('add_more_schools')}
-                                onUpgradeContacts={() => handleUpgradeClick('coach_contacts')}
+                    <>
+                        {isRebuildMode && (
+                            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                                Dashboard data features are in rebuild mode while database tables are being recreated.
+                            </div>
+                        )}
+                        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2 2xl:grid-cols-3">
+                            <ReadinessScoreCard
+                                stats={dashboardData.stats}
+                                onUpgrade={() => handleUpgradeClick('readiness_full_analysis')}
                             />
-                        </div>
 
-                        <WeekProgressCard
-                            currentWeek={dashboardData.progress.currentWeek}
-                            completedActions={dashboardData.progress.completedActions}
-                            weekStartDate={dashboardData.progress.weekStartDate}
-                            onUpgrade={() => handleUpgradeClick('pricing')}
-                        />
-                    </section>
+                            <ExpenseBreakdownCard
+                                expenses={dashboardData.expenses}
+                                division={dashboardData.divisionKey}
+                                monthLabel={dashboardData.monthLabel}
+                                onUpgrade={() => handleUpgradeClick('expense_roi_analysis')}
+                            />
+
+                            <div className="lg:col-span-1 2xl:col-span-2">
+                                <SchoolFitCard
+                                    schools={dashboardData.schools}
+                                    athleteStats={dashboardData.stats}
+                                    onUpgradeSchools={() => handleUpgradeClick('add_more_schools')}
+                                    onUpgradeContacts={() => handleUpgradeClick('coach_contacts')}
+                                />
+                            </div>
+
+                            <WeekProgressCard
+                                currentWeek={dashboardData.progress.currentWeek}
+                                completedActions={dashboardData.progress.completedActions}
+                                weekStartDate={dashboardData.progress.weekStartDate}
+                                onUpgrade={() => handleUpgradeClick('pricing')}
+                            />
+                        </section>
+                    </>
                 )}
             </div>
         </DashboardLayout>

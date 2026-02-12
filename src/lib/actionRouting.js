@@ -1,6 +1,7 @@
 import { format, startOfWeek } from 'date-fns';
 import { supabase } from './supabase';
 import { updateWeeklyPlanItemStatus } from './recruitingData';
+import { isMissingTableError } from './dbResilience';
 
 export const ACTION_NUMBER_TO_ROUTE = {
     1: '/actions/update-stats',
@@ -77,7 +78,10 @@ async function findActionItemId({ athleteId, actionNumber, weekStartDate }) {
         .limit(1)
         .maybeSingle();
 
-    if (currentWeekError) throw currentWeekError;
+    if (currentWeekError) {
+        if (isMissingTableError(currentWeekError)) return null;
+        throw currentWeekError;
+    }
     if (currentWeekItem?.id) return currentWeekItem.id;
 
     const { data: latestItem, error: latestError } = await supabase
@@ -90,7 +94,10 @@ async function findActionItemId({ athleteId, actionNumber, weekStartDate }) {
         .limit(1)
         .maybeSingle();
 
-    if (latestError) throw latestError;
+    if (latestError) {
+        if (isMissingTableError(latestError)) return null;
+        throw latestError;
+    }
     return latestItem?.id || null;
 }
 
@@ -117,9 +124,12 @@ export async function setWeeklyActionStatus({
         });
     }
 
-    if (!resolvedItemId) {
-        throw new Error('No weekly action item found to update.');
-    }
+    if (!resolvedItemId) return null;
 
-    return updateWeeklyPlanItemStatus(resolvedItemId, status);
+    try {
+        return await updateWeeklyPlanItemStatus(resolvedItemId, status);
+    } catch (error) {
+        if (isMissingTableError(error)) return null;
+        throw error;
+    }
 }

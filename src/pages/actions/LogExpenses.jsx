@@ -4,6 +4,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { Button } from '../../components/ui/button';
 import { useProfile } from '../../hooks/useProfile';
 import { supabase } from '../../lib/supabase';
+import { getFeatureRebuildMessage, isMissingTableError } from '../../lib/dbResilience';
 import {
     resolveActionNumberFromSearch,
     resolveItemIdFromSearch,
@@ -101,6 +102,10 @@ export default function LogExpenses() {
             });
             navigate(`/weekly-plan?action=${actionNumber}&skipped=true`);
         } catch (skipError) {
+            if (isMissingTableError(skipError)) {
+                navigate(`/weekly-plan?action=${actionNumber}&skipped=true`);
+                return;
+            }
             setError(skipError?.message || 'Unable to skip this action right now.');
         } finally {
             setIsSkipping(false);
@@ -143,7 +148,11 @@ export default function LogExpenses() {
 
             navigate(`/weekly-plan?action=${actionNumber}&completed=true`);
         } catch (saveError) {
-            setError(saveError?.message || 'Unable to save expenses right now.');
+            if (isMissingTableError(saveError)) {
+                setError(getFeatureRebuildMessage('Expense logging'));
+            } else {
+                setError(saveError?.message || 'Unable to save expenses right now.');
+            }
         } finally {
             setIsSaving(false);
         }

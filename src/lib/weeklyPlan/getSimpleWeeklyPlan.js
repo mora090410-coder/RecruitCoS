@@ -12,6 +12,7 @@ import { buildAthleteProfile } from '../../services/buildAthleteProfile';
 import { computeGap } from '../../services/engines/gapEngine';
 import { generateWeeklyPlan } from '../../services/engines/weeklyPlanEngine';
 import { generateAndPersistWeeklyPlan, getCurrentWeekStartDate } from '../../services/weeklyPlanService';
+import { isMissingTableError } from '../dbResilience';
 
 const PHASE_KEY_TO_LABEL = {
     foundation: RECRUITING_PHASES.FOUNDATION,
@@ -120,6 +121,7 @@ const fetchLatestGapDetails = async (athleteId) => {
         .maybeSingle();
 
     if (error) {
+        if (isMissingTableError(error)) return null;
         console.error('[getSimpleWeeklyPlan] Error fetching gap results:', error);
         return null;
     }
@@ -135,6 +137,7 @@ const fetchMeasurableCount = async (athleteId) => {
         .eq('athlete_id', athleteId);
 
     if (error) {
+        if (isMissingTableError(error)) return 0;
         console.error('[getSimpleWeeklyPlan] Error fetching measurable count:', error);
         return 0;
     }
@@ -204,6 +207,7 @@ const fetchWeeklyPlanItemsForWeek = async (athleteId, weekStartDate) => {
         .order('id', { ascending: true });
 
     if (error) {
+        if (isMissingTableError(error)) return [];
         console.error('[getSimpleWeeklyPlan] Error fetching weekly plan items:', error);
         return [];
     }
@@ -236,8 +240,12 @@ export async function getSimpleWeeklyPlan(userId) {
             gapDetails
         });
     } catch (bootstrapError) {
-        console.error('[getSimpleWeeklyPlan] Failed to bootstrap weekly plan:', bootstrapError);
-        throw new Error('Unable to prepare your weekly plan. Please retry.');
+        if (isMissingTableError(bootstrapError)) {
+            // Rebuild mode: keep rendering a minimal weekly-plan shell.
+        } else {
+            console.error('[getSimpleWeeklyPlan] Failed to bootstrap weekly plan:', bootstrapError);
+            throw new Error('Unable to prepare your weekly plan. Please retry.');
+        }
     }
 
     planHeader = await fetchLatestWeeklyPlan(userId);
