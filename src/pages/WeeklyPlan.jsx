@@ -4,9 +4,6 @@ import SimpleWeeklyView from '../components/SimpleWeeklyView';
 import { useProfile } from '../hooks/useProfile';
 import { getSimpleWeeklyPlan } from '../lib/weeklyPlan/getSimpleWeeklyPlan';
 import { getAthleteEngagement } from '../lib/getAthleteEngagement';
-import {
-    updateWeeklyPlanItemStatus
-} from '../lib/recruitingData';
 import { track } from '../lib/analytics';
 
 export default function WeeklyPlan() {
@@ -68,45 +65,6 @@ export default function WeeklyPlan() {
         setReloadNonce((prev) => prev + 1);
     };
 
-    const handleStatusChange = async (item, nextStatus) => {
-        if (!item?.id || !targetAthleteId) return null;
-        const fromStatus = item.status || 'open';
-        const normalizedStatus = nextStatus === 'todo' ? 'open' : nextStatus;
-        if (!normalizedStatus) return null;
-        if (item.status === normalizedStatus) return item;
-        if (item.athlete_id && item.athlete_id !== targetAthleteId) {
-            throw new Error('Not authorized to update this plan item.');
-        }
-
-        const updated = await updateWeeklyPlanItemStatus(item.id, normalizedStatus);
-        if (!updated) return null;
-
-        track('weekly_action_status_changed', {
-            week_start: simplePlan?.weekStartDate || null,
-            action_id: item.id,
-            action_type: item.item_type || null,
-            from_status: fromStatus,
-            to_status: normalizedStatus
-        });
-
-        if (normalizedStatus === 'done') {
-            track('action_completed', {
-                action_type: item.item_type || null,
-                week_start: simplePlan?.weekStartDate || null
-            });
-        }
-
-        setSimplePlan((prev) => {
-            if (!prev?.actions) return prev;
-            return {
-                ...prev,
-                actions: prev.actions.map((entry) => (entry.id === updated.id ? updated : entry))
-            };
-        });
-
-        return updated;
-    };
-
     useEffect(() => {
         if (!simplePlan || loading || hasTrackedPlanView) return;
         track('weekly_plan_viewed', {
@@ -129,10 +87,10 @@ export default function WeeklyPlan() {
                 actions={simplePlan?.actions || []}
                 loading={loading}
                 error={error}
-                onStatusChange={handleStatusChange}
                 targetAthleteId={targetAthleteId}
                 engagement={engagement}
                 onRetry={handleRetryLoad}
+                weekStartDate={simplePlan?.weekStartDate}
             />
         </DashboardLayout>
     );

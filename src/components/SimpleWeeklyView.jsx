@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useMemo } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from './ui/button'
+import { resolveActionHref } from '../lib/actionRouting'
 
 const ITEM_ICONS = {
     gap: '⚡',
@@ -38,30 +39,25 @@ export default function SimpleWeeklyView({
     actions,
     loading,
     error,
-    onStatusChange,
     targetAthleteId,
     engagement,
-    onRetry
+    onRetry,
+    weekStartDate
 }) {
+    const navigate = useNavigate()
     const subtitle = formatAthleteMeta(athlete)
     const hasActions = Array.isArray(actions) && actions.length > 0
-    const [savingById, setSavingById] = useState({})
 
     const completedCount = useMemo(() => {
         if (!hasActions) return 0
         return actions.filter((item) => item?.status === 'done').length
     }, [actions, hasActions])
 
-    const handleMarkComplete = async (item) => {
-        if (!item?.id || !onStatusChange || item.status === 'done') return
+    const handleOpenAction = (item) => {
+        if (!item?.id || item.status === 'done') return
         if (item.athlete_id && targetAthleteId && item.athlete_id !== targetAthleteId) return
 
-        setSavingById((prev) => ({ ...prev, [item.id]: true }))
-        try {
-            await onStatusChange(item, 'done')
-        } finally {
-            setSavingById((prev) => ({ ...prev, [item.id]: false }))
-        }
+        navigate(resolveActionHref(item, weekStartDate))
     }
 
     return (
@@ -114,7 +110,6 @@ export default function SimpleWeeklyView({
                     const itemType = (item?.item_type || '').toLowerCase()
                     const icon = ITEM_ICONS[itemType] || '📌'
                     const isDone = item?.status === 'done'
-                    const isSaving = Boolean(savingById[item.id])
 
                     return (
                         <article key={item.id} className="rounded-xl border border-[#E5E7EB] bg-white p-6 transition-shadow hover:shadow-sm">
@@ -127,10 +122,10 @@ export default function SimpleWeeklyView({
                             <Button
                                 type="button"
                                 className={`mt-5 h-11 w-full font-semibold ${isDone ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-purple-600 hover:bg-purple-700'}`}
-                                onClick={() => handleMarkComplete(item)}
-                                disabled={isDone || isSaving}
+                                onClick={() => handleOpenAction(item)}
+                                disabled={isDone}
                             >
-                                {isDone ? 'Completed ✓' : (isSaving ? 'Saving...' : 'Mark Complete')}
+                                {isDone ? 'Completed ✓' : 'Mark Complete'}
                             </Button>
                         </article>
                     )

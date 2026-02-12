@@ -27,6 +27,9 @@ import Measurables from './pages/Measurables'
 import WeeklyPlanDebug from './pages/TestWeeklyPlan'
 import WeeklyPlan from './pages/WeeklyPlan'
 import Upgrade from './pages/Upgrade'
+import UpdateStats from './pages/actions/UpdateStats'
+import ResearchSchools from './pages/actions/ResearchSchools'
+import LogExpenses from './pages/actions/LogExpenses'
 
 // --- TRAFFIC CONTROLLER ---
 function MainNavigator() {
@@ -180,6 +183,9 @@ function MainNavigator() {
       <Route path="/log-event" element={<EventLogger />} />
       <Route path="/strategy" element={<StrategyEdit />} />
       <Route path="/weekly-plan" element={<WeeklyPlan />} />
+      <Route path="/actions/update-stats" element={<UpdateStats />} />
+      <Route path="/actions/research-schools" element={<ResearchSchools />} />
+      <Route path="/actions/log-expenses" element={<LogExpenses />} />
       <Route path="/upgrade" element={<Upgrade />} />
       {import.meta.env.DEV ? (
         <>
