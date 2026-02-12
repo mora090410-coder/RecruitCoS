@@ -22,9 +22,9 @@ const StatsForm = {
 
   handleSubmit(e) {
     e.preventDefault();
-
+    
     const formData = this.getFormData();
-
+    
     // Validate at least one field is filled
     if (!this.validateForm(formData)) {
       alert('Please enter at least one stat to continue.');
@@ -33,12 +33,12 @@ const StatsForm = {
 
     // Save to localStorage
     this.saveFormData(formData);
-
+    
     // Mark action as complete
     this.markActionComplete();
-
+    
     // Redirect with success parameter
-    window.location.href = '/weekly-plan?action=1&completed=true';
+    window.location.href = 'weekly-plan.html?action=1&completed=true';
   },
 
   getFormData() {
@@ -63,7 +63,7 @@ const StatsForm = {
     const saved = localStorage.getItem('action1_stats');
     if (saved) {
       const data = JSON.parse(saved);
-
+      
       if (data.dashTime) {
         document.getElementById('dashTime').value = data.dashTime;
       }
@@ -85,7 +85,7 @@ const StatsForm = {
   markActionComplete() {
     // Update weekly plan state
     const planState = JSON.parse(localStorage.getItem('weeklyPlanState') || '{}');
-
+    
     if (!planState.actions) {
       planState.actions = [
         { id: 1, completed: false },

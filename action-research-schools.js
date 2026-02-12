@@ -30,7 +30,7 @@ const SchoolResearch = {
     this.selectedContainer = document.getElementById('selectedSchools');
     this.selectedCount = document.getElementById('selectedCount');
     this.completeButton = document.getElementById('completeButton');
-
+    
     this.attachEventListeners();
     this.loadSavedData();
     this.updateUI();
@@ -73,14 +73,14 @@ const SchoolResearch = {
     // Filter by search query
     if (query) {
       const lowerQuery = query.toLowerCase();
-      results = results.filter(school =>
+      results = results.filter(school => 
         school.name.toLowerCase().includes(lowerQuery) ||
         school.location.toLowerCase().includes(lowerQuery)
       );
     }
 
     // Exclude already selected schools
-    results = results.filter(school =>
+    results = results.filter(school => 
       !this.selectedSchools.find(s => s.id === school.id)
     );
 
@@ -103,8 +103,8 @@ const SchoolResearch = {
             ${school.location} • ${school.conference}
           </div>
         </div>
-        <button
-          class="add-button"
+        <button 
+          class="add-button" 
           onclick="SchoolResearch.addSchool(${school.id})"
           ${this.selectedSchools.length >= this.maxSchools ? 'disabled' : ''}
         >
@@ -128,7 +128,7 @@ const SchoolResearch = {
       this.selectedSchools.push(school);
       this.updateUI();
       this.saveData();
-
+      
       // Refresh search results to remove the added school
       this.handleSearch(this.searchInput.value);
     }
@@ -138,7 +138,7 @@ const SchoolResearch = {
     this.selectedSchools = this.selectedSchools.filter(s => s.id !== schoolId);
     this.updateUI();
     this.saveData();
-
+    
     // Refresh search results
     this.handleSearch(this.searchInput.value);
   },
@@ -171,7 +171,7 @@ const SchoolResearch = {
           </button>
         </div>
       `).join('');
-
+      
       this.selectedContainer.innerHTML = html;
     }
 
@@ -198,14 +198,14 @@ const SchoolResearch = {
 
     // Mark action as complete
     this.markActionComplete();
-
+    
     // Redirect with success parameter
-    window.location.href = '/weekly-plan?action=2&completed=true';
+    window.location.href = 'weekly-plan.html?action=2&completed=true';
   },
 
   markActionComplete() {
     const planState = JSON.parse(localStorage.getItem('weeklyPlanState') || '{}');
-
+    
     if (!planState.actions) {
       planState.actions = [
         { id: 1, completed: false },

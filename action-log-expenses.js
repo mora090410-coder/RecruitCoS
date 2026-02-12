@@ -12,10 +12,10 @@ const ExpenseTracker = {
     this.expenseCount = document.getElementById('expenseCount');
     this.addButton = document.getElementById('addExpenseButton');
     this.completeButton = document.getElementById('completeButton');
-
+    
     this.attachEventListeners();
     this.loadSavedData();
-
+    
     // Add first expense if none exist
     if (this.expenses.length === 0) {
       this.addExpense();
@@ -66,12 +66,12 @@ const ExpenseTracker = {
           </button>
         ` : ''}
       </div>
-
+      
       <div class="expense-fields">
         <div class="expense-field">
           <label class="expense-label">Category</label>
-          <select
-            class="expense-select"
+          <select 
+            class="expense-select" 
             data-field="category"
             onchange="ExpenseTracker.updateExpenseField(${expense.id}, 'category', this.value)"
           >
@@ -87,9 +87,9 @@ const ExpenseTracker = {
 
         <div class="expense-field">
           <label class="expense-label">Amount</label>
-          <input
-            type="number"
-            class="expense-input"
+          <input 
+            type="number" 
+            class="expense-input" 
             placeholder="0.00"
             step="0.01"
             min="0"
@@ -101,8 +101,8 @@ const ExpenseTracker = {
 
         <div class="expense-field">
           <label class="expense-label">Date</label>
-          <input
-            type="date"
+          <input 
+            type="date" 
             class="expense-input"
             value="${expense.date}"
             data-field="date"
@@ -112,7 +112,7 @@ const ExpenseTracker = {
 
         <div class="expense-field field-full-width">
           <label class="expense-label">Notes (Optional)</label>
-          <textarea
+          <textarea 
             class="expense-textarea"
             placeholder="E.g., Perfect Game showcase in Atlanta"
             data-field="notes"
@@ -136,11 +136,11 @@ const ExpenseTracker = {
 
   removeExpense(expenseId) {
     this.expenses = this.expenses.filter(e => e.id !== expenseId);
-
+    
     // Re-render all expenses to update numbering
     this.expensesContainer.innerHTML = '';
     this.expenses.forEach(expense => this.renderExpense(expense));
-
+    
     this.updateUI();
     this.saveData();
   },
@@ -170,7 +170,7 @@ const ExpenseTracker = {
     }
 
     // Enable/disable complete button
-    const hasValidExpense = this.expenses.some(e =>
+    const hasValidExpense = this.expenses.some(e => 
       e.category && e.amount && parseFloat(e.amount) > 0
     );
     this.completeButton.disabled = !hasValidExpense;
@@ -184,7 +184,7 @@ const ExpenseTracker = {
     const saved = localStorage.getItem('action3_expenses');
     if (saved) {
       this.expenses = JSON.parse(saved);
-
+      
       // Update nextId to be higher than any existing ID
       if (this.expenses.length > 0) {
         this.nextId = Math.max(...this.expenses.map(e => e.id)) + 1;
@@ -193,7 +193,7 @@ const ExpenseTracker = {
   },
 
   handleComplete() {
-    const hasValidExpense = this.expenses.some(e =>
+    const hasValidExpense = this.expenses.some(e => 
       e.category && e.amount && parseFloat(e.amount) > 0
     );
 
@@ -204,14 +204,14 @@ const ExpenseTracker = {
 
     // Mark action as complete
     this.markActionComplete();
-
+    
     // Redirect with success parameter
-    window.location.href = '/weekly-plan?action=3&completed=true';
+    window.location.href = 'weekly-plan.html?action=3&completed=true';
   },
 
   markActionComplete() {
     const planState = JSON.parse(localStorage.getItem('weeklyPlanState') || '{}');
-
+    
     if (!planState.actions) {
       planState.actions = [
         { id: 1, completed: false },
