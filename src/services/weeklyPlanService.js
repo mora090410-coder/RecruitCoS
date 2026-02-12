@@ -10,6 +10,7 @@ import {
 } from '../lib/recruitingData';
 import { getMetricKeysForSport, getMetricLabel } from '../config/sportSchema';
 import { track } from '../lib/analytics';
+import { isMissingTableError } from '../lib/dbResilience';
 
 const DEFAULT_WEEK_START = 1;
 
@@ -191,36 +192,44 @@ const buildWeeklyPlanItems = async (athleteId, weekStartDate, options = {}) => {
 export async function generateAndPersistWeeklyPlan(athleteId, options = {}) {
     if (!athleteId) return [];
 
-    const weekStartDate = resolveWeekStartDate();
-    const [currentWeekItems, latestMeasurableDate] = await Promise.all([
-        fetchWeeklyPlanItems(athleteId, weekStartDate),
-        fetchLatestMeasurableDateThisWeek(athleteId, weekStartDate)
-    ]);
+    try {
+        const weekStartDate = resolveWeekStartDate();
+        const [currentWeekItems, latestMeasurableDate] = await Promise.all([
+            fetchWeeklyPlanItems(athleteId, weekStartDate),
+            fetchLatestMeasurableDateThisWeek(athleteId, weekStartDate)
+        ]);
 
-    const refreshPlan = shouldRefreshCurrentWeek(latestMeasurableDate, currentWeekItems);
+        const refreshPlan = shouldRefreshCurrentWeek(latestMeasurableDate, currentWeekItems);
 
-    if (currentWeekItems.length > 0 && !refreshPlan) {
-        return currentWeekItems;
-    }
+        if (currentWeekItems.length > 0 && !refreshPlan) {
+            return currentWeekItems;
+        }
 
-    const { items } = await buildWeeklyPlanItems(athleteId, weekStartDate, {
-        existingItems: refreshPlan ? currentWeekItems : [],
-        latestMeasurableDate
-    });
-
-    if (currentWeekItems.length > 0) {
-        await deleteWeeklyPlanItemsForWeek(athleteId, weekStartDate);
-    }
-
-    const inserted = await insertWeeklyPlanItems(items);
-    if (inserted.length > 0) {
-        const generatedReason = options.reason || (refreshPlan ? 'regen' : 'bootstrap');
-        track('weekly_plan_generated', {
-            week_start: weekStartDate,
-            generated_reason: generatedReason
+        const { items } = await buildWeeklyPlanItems(athleteId, weekStartDate, {
+            existingItems: refreshPlan ? currentWeekItems : [],
+            latestMeasurableDate
         });
+
+        if (currentWeekItems.length > 0) {
+            await deleteWeeklyPlanItemsForWeek(athleteId, weekStartDate);
+        }
+
+        const inserted = await insertWeeklyPlanItems(items);
+        if (inserted.length > 0) {
+            const generatedReason = options.reason || (refreshPlan ? 'regen' : 'bootstrap');
+            track('weekly_plan_generated', {
+                week_start: weekStartDate,
+                generated_reason: generatedReason
+            });
+        }
+        return inserted;
+    } catch (error) {
+        if (isMissingTableError(error)) {
+            console.warn('[weeklyPlanService] Weekly plan tables missing; skipping persistence in rebuild mode.');
+            return [];
+        }
+        throw error;
     }
-    return inserted;
 }
 
 export async function getWeeklyPlanDebugSnapshot(athleteId) {

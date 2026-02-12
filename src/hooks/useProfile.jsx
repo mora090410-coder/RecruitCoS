@@ -1,17 +1,11 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { isMissingTableError } from '../lib/dbResilience'
 
 const ProfileContext = createContext({})
 
 export const useProfile = () => useContext(ProfileContext)
-
-const isMissingTableError = (error) => {
-    if (!error) return false
-    if (error.code === '42P01') return true
-    const message = String(error.message || '').toLowerCase()
-    return message.includes('relation') && message.includes('does not exist')
-}
 
 export const ProfileProvider = ({ children }) => {
     const { user, loading: authLoading } = useAuth()

@@ -3,6 +3,7 @@ import { canonicalizeMetricKeyForGroup, getMetricKeysForSport, getSportSchema } 
 import { getAthletePhase } from '../lib/constants';
 import { calculateSchoolSignal } from '../lib/signalEngine';
 import { fetchBenchmarks } from '../lib/recruitingData';
+import { isMissingTableError } from '../lib/dbResilience';
 import {
     mapCanonicalToGroup,
     mapPositionToCanonical,
@@ -11,12 +12,6 @@ import {
 } from '../lib/normalize';
 
 const CLOSED_STATUSES = new Set(['closed', 'inactive', 'rejected', 'archived']);
-
-const isMissingTableError = (error) => {
-    if (!error) return false;
-    if (error.code === '42P01') return true;
-    return typeof error.message === 'string' && error.message.toLowerCase().includes('relation') && error.message.toLowerCase().includes('does not exist');
-};
 
 const safeSelect = async (table, builder) => {
     try {
