@@ -36,6 +36,19 @@ const SAMPLE_SCHOOLS = [
 
 const CARD_CLASS = 'rounded-[12px] border-2 border-[#E5E7EB] bg-white p-6 md:p-8';
 
+function resolvePreferredDivision(profile, selectedDivisions) {
+    if (Array.isArray(selectedDivisions) && selectedDivisions.length > 0) {
+        return selectedDivisions[0];
+    }
+
+    const profileDivision = profile?.target_divisions?.[0];
+    if (typeof profileDivision === 'string' && profileDivision.trim()) {
+        return profileDivision.trim().toUpperCase();
+    }
+
+    return 'D3';
+}
+
 export default function ResearchSchools() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -72,6 +85,25 @@ export default function ResearchSchools() {
             );
         }).filter((school) => !selectedSchools.some((selected) => selected.id === school.id));
     }, [searchQuery, selectedDivisions, selectedSchools]);
+
+    const customSchoolOption = useMemo(() => {
+        const trimmed = searchQuery.trim();
+        if (!trimmed) return null;
+        if (selectedSchools.length >= 3) return null;
+
+        const normalized = trimmed.toLowerCase();
+        const existsInSample = SAMPLE_SCHOOLS.some((school) => school.name.toLowerCase() === normalized);
+        const existsInSelection = selectedSchools.some((school) => school.name.toLowerCase() === normalized);
+        if (existsInSample || existsInSelection) return null;
+
+        return {
+            id: `custom-${normalized.replace(/[^a-z0-9]+/g, '-')}`,
+            name: trimmed,
+            location: 'Custom',
+            division: resolvePreferredDivision(profile, selectedDivisions),
+            conference: 'TBD'
+        };
+    }, [profile, searchQuery, selectedDivisions, selectedSchools]);
 
     const handleToggleDivision = (division) => {
         setSelectedDivisions((previous) => (
@@ -222,6 +254,29 @@ export default function ResearchSchools() {
                         <div className="space-y-3">
                             <h2 className="text-sm font-semibold text-gray-900">Search Results</h2>
                             <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+                                {customSchoolOption && (
+                                    <div className="rounded-[12px] border-2 border-dashed border-[#D8B4FE] bg-white p-3">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p className="text-sm font-semibold text-gray-900">{customSchoolOption.name}</p>
+                                                <p className="text-xs text-gray-600">Custom entry</p>
+                                                <p className="mt-1 text-[11px] font-semibold uppercase text-[#6C2EB9]">
+                                                    {customSchoolOption.division}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                className="h-8 rounded-[10px] bg-[#6C2EB9] px-3 text-xs font-semibold text-white hover:bg-[#5B25A0]"
+                                                disabled={selectedSchools.length >= 3}
+                                                onClick={() => handleAddSchool(customSchoolOption)}
+                                                aria-label={`Add custom school ${customSchoolOption.name}`}
+                                            >
+                                                Add Custom
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
                                 {filteredSchools.map((school) => (
                                     <div key={school.id} className="rounded-[12px] border-2 border-[#E5E7EB] bg-white p-3">
                                         <div className="flex items-start justify-between gap-3">
@@ -243,7 +298,7 @@ export default function ResearchSchools() {
                                         </div>
                                     </div>
                                 ))}
-                                {filteredSchools.length === 0 && (
+                                {filteredSchools.length === 0 && !customSchoolOption && (
                                     <div className="rounded-[12px] border-2 border-dashed border-[#D1D5DB] bg-white p-4 text-sm text-gray-500">
                                         No schools match this search.
                                     </div>
