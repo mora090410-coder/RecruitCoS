@@ -1,13 +1,24 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from './ui/button'
 import { resolveActionHref } from '../lib/actionRouting'
 import CelebrationModal from './CelebrationModal'
+import UnlockScreen from './UnlockScreen'
+import { supabase } from '../lib/supabase'
+import { unlockDashboard } from '../lib/recruitingData'
+import { track } from '../lib/analytics'
 
 const ITEM_ICONS = {
     gap: '⚡',
     strength: '🎯',
     phase: '📹'
+}
+
+const WEEK_1_NUMBER = 1
+
+function buildUnlockSeenStorageKey(athleteId, weekStartDate) {
+    if (!athleteId || !weekStartDate) return null
+    return `rc_week1_unlock_seen:${athleteId}:${weekStartDate}`
 }
 
 const formatAthleteMeta = (athlete) => {
@@ -48,6 +59,8 @@ export default function SimpleWeeklyView({
     const navigate = useNavigate()
     const location = useLocation()
     const [searchParams] = useSearchParams()
+    const [showUnlockScreen, setShowUnlockScreen] = useState(false)
+    const [isCheckingUnlock, setIsCheckingUnlock] = useState(false)
     const subtitle = formatAthleteMeta(athlete)
     const hasActions = Array.isArray(actions) && actions.length > 0
     const completedCount = useMemo(() => {
@@ -67,9 +80,79 @@ export default function SimpleWeeklyView({
     )
         ? actionParam
         : null
+    const unlockSeenStorageKey = useMemo(
+        () => buildUnlockSeenStorageKey(targetAthleteId, weekStartDate),
+        [targetAthleteId, weekStartDate]
+    )
+    const isFirstWeekAthlete = (engagement?.weeksActive || 0) <= 1
+
+    const maybeShowUnlockScreen = async () => {
+        if (isCheckingUnlock) return
+        if (!targetAthleteId || !weekStartDate || !unlockSeenStorageKey) return
+        if (completedActionNumber !== 3 || completedCount !== 3 || !isFirstWeekAthlete) return
+
+        try {
+            if (window.localStorage.getItem(unlockSeenStorageKey) === 'true') {
+                return
+            }
+        } catch {
+            // no-op
+        }
+
+        setIsCheckingUnlock(true)
+        try {
+            const { data, error } = await supabase
+                .from('athlete_weekly_plan_items')
+                .select('status')
+                .eq('athlete_id', targetAthleteId)
+                .eq('week_start_date', weekStartDate)
+                .order('priority_rank', { ascending: true })
+                .limit(3)
+
+            if (error) return
+
+            const hasAllActionsDone = Array.isArray(data)
+                && data.length === 3
+                && data.every((item) => item.status === 'done')
+
+            if (!hasAllActionsDone) return
+
+            try {
+                window.localStorage.setItem(unlockSeenStorageKey, 'true')
+            } catch {
+                // no-op
+            }
+
+            let unlockedNow = false
+            try {
+                const unlockResult = await unlockDashboard(targetAthleteId)
+                unlockedNow = Boolean(unlockResult?.unlockedNow)
+            } catch (unlockError) {
+                if (import.meta.env.DEV) {
+                    console.warn('[SimpleWeeklyView] Dashboard unlock update failed:', unlockError)
+                }
+            }
+
+            track('dashboard_unlocked', {
+                week_number: WEEK_1_NUMBER,
+                completed_actions: 3,
+                unlock_reason: 'completed_week_1',
+                unlocked_now: unlockedNow
+            })
+
+            setShowUnlockScreen(true)
+        } finally {
+            setIsCheckingUnlock(false)
+        }
+    }
 
     const closeCelebrationModal = () => {
         navigate(location.pathname, { replace: true })
+        void maybeShowUnlockScreen()
+    }
+
+    const closeUnlockScreen = () => {
+        setShowUnlockScreen(false)
     }
 
     const handleOpenAction = (item) => {
@@ -221,6 +304,14 @@ export default function SimpleWeeklyView({
                 <CelebrationModal
                     actionNumber={completedActionNumber}
                     onClose={closeCelebrationModal}
+                />
+            )}
+
+            {showUnlockScreen && (
+                <UnlockScreen
+                    athleteId={targetAthleteId}
+                    weekNumber={WEEK_1_NUMBER}
+                    onClose={closeUnlockScreen}
                 />
             )}
         </div>
