@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
-import DashboardAccessGate from '../components/DashboardAccessGate'
 import ReadinessScoreCard from '../components/dashboard/ReadinessScoreCard'
 import ExpenseBreakdownCard from '../components/dashboard/ExpenseBreakdownCard'
 import SchoolFitCard from '../components/dashboard/SchoolFitCard'
@@ -138,8 +137,6 @@ export default function Dashboard() {
     const { profile, activeAthlete, isImpersonating } = useProfile()
     const targetAthleteId = isImpersonating ? activeAthlete?.id : profile?.id
 
-    const [accessLoading, setAccessLoading] = useState(true)
-    const [hasDashboardAccess, setHasDashboardAccess] = useState(false)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [dashboardData, setDashboardData] = useState({
@@ -162,58 +159,12 @@ export default function Dashboard() {
     useEffect(() => {
         let active = true
 
-        const resolveAccess = async () => {
+        const loadDashboardData = async () => {
             if (!targetAthleteId) {
                 if (active) {
-                    setHasDashboardAccess(false)
-                    setAccessLoading(false)
+                    setError('No athlete profile selected.')
+                    setLoading(false)
                 }
-                return
-            }
-
-            setAccessLoading(true)
-
-            const [{ data: athleteRow, error: athleteError }, engagement, measurableCountResult] = await Promise.all([
-                supabase
-                    .from('athletes')
-                    .select('dashboard_unlocked_at')
-                    .eq('id', targetAthleteId)
-                    .maybeSingle(),
-                getAthleteEngagement(targetAthleteId),
-                supabase
-                    .from('athlete_measurables')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('athlete_id', targetAthleteId)
-            ])
-
-            if (!active) return
-
-            if (athleteError || measurableCountResult.error) {
-                setHasDashboardAccess(false)
-                setAccessLoading(false)
-                return
-            }
-
-            const weeksActive = Number(engagement?.weeksActive || 0)
-            const actionsCompleted = Number(engagement?.actionsCompleted || 0)
-            const hasMetrics = (measurableCountResult.count || 0) > 0
-            const engagementUnlocked = weeksActive >= 2 || hasMetrics || actionsCompleted >= 3
-            setHasDashboardAccess(Boolean(athleteRow?.dashboard_unlocked_at) || engagementUnlocked)
-            setAccessLoading(false)
-        }
-
-        resolveAccess()
-        return () => {
-            active = false
-        }
-    }, [targetAthleteId])
-
-    useEffect(() => {
-        let active = true
-
-        const loadDashboardData = async () => {
-            if (!targetAthleteId || !hasDashboardAccess) {
-                if (active) setLoading(false)
                 return
             }
 
@@ -296,9 +247,9 @@ export default function Dashboard() {
         return () => {
             active = false
         }
-    }, [hasDashboardAccess, targetAthleteId])
+    }, [targetAthleteId])
 
-    const isLoaded = !accessLoading && !loading && hasDashboardAccess && !error
+    const isLoaded = !loading && !error
 
     useEffect(() => {
         if (!isLoaded) return
@@ -328,7 +279,7 @@ export default function Dashboard() {
                     <p className="mt-2 text-base text-gray-600">{pageSubtitle}</p>
                 </section>
 
-                {accessLoading && (
+                {loading && (
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                         <LoadingCard />
                         <LoadingCard />
@@ -337,11 +288,7 @@ export default function Dashboard() {
                     </div>
                 )}
 
-                {!accessLoading && !hasDashboardAccess && (
-                    <DashboardAccessGate />
-                )}
-
-                {!accessLoading && hasDashboardAccess && error && (
+                {!loading && error && (
                     <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
                         <p>{error}</p>
                         <button
@@ -354,16 +301,7 @@ export default function Dashboard() {
                     </div>
                 )}
 
-                {!accessLoading && hasDashboardAccess && loading && (
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                        <LoadingCard />
-                        <LoadingCard />
-                        <LoadingCard />
-                        <LoadingCard />
-                    </div>
-                )}
-
-                {!accessLoading && hasDashboardAccess && !loading && !error && (
+                {!loading && !error && (
                     <section className="grid grid-cols-1 gap-6 lg:grid-cols-2 2xl:grid-cols-3">
                         <ReadinessScoreCard
                             stats={dashboardData.stats}
