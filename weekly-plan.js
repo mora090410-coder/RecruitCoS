@@ -41,6 +41,17 @@ const WeeklyPlanState = {
     }
     return false;
   },
+
+  resetAction(actionId) {
+    const action = this.actions.find(a => a.id === actionId);
+    if (action && action.completed) {
+      action.completed = false;
+      action.completedAt = null;
+      this.saveToLocalStorage();
+      return true;
+    }
+    return false;
+  },
   
   getCompletedCount() {
     return this.actions.filter(a => a.completed).length;
@@ -127,6 +138,25 @@ function attachEventListeners() {
   DOM.actionButtons.forEach((button, index) => {
     button.addEventListener('click', () => handleActionClick(index + 1));
   });
+
+  // Allow users to uncheck completed actions from the checkbox control
+  DOM.actionCards.forEach((card, index) => {
+    const actionId = index + 1;
+    const checkbox = card.querySelector('.action-checkbox');
+    if (!checkbox) return;
+
+    checkbox.setAttribute('role', 'button');
+    checkbox.setAttribute('tabindex', '0');
+    checkbox.setAttribute('aria-label', `Toggle completion for action ${actionId}`);
+
+    checkbox.addEventListener('click', () => handleActionToggle(actionId));
+    checkbox.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        handleActionToggle(actionId);
+      }
+    });
+  });
   
   // Celebration modal close
   DOM.celebrationCTA.addEventListener('click', closeCelebrationModal);
@@ -174,6 +204,34 @@ function handleActionClick(actionId) {
   }
 
   console.error(`No route configured for action ${actionId}`);
+}
+
+function handleActionToggle(actionId) {
+  const action = WeeklyPlanState.actions.find(a => a.id === actionId);
+  if (!action || !action.completed) {
+    return;
+  }
+
+  const success = WeeklyPlanState.resetAction(actionId);
+  if (!success) {
+    return;
+  }
+
+  // If this action made the week no longer complete, hide streak in this simplified model.
+  if (!WeeklyPlanState.isWeekComplete() && WeeklyPlanState.streakWeeks > 0) {
+    WeeklyPlanState.streakWeeks = 0;
+    WeeklyPlanState.saveToLocalStorage();
+  }
+
+  updateActionCard(actionId, false);
+  updateProgressSection();
+  updateStreakDisplay();
+
+  logAnalyticsEvent('action_uncompleted', {
+    action_number: actionId,
+    week_number: WeeklyPlanState.weekNumber,
+    total_completed: WeeklyPlanState.getCompletedCount()
+  });
 }
 
 function handleActionReturnFromQuery() {
