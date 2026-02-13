@@ -112,7 +112,17 @@ export async function searchSchoolsWithFallback({
             divisionFilter,
             limit
         });
-        return result.data;
+        if (Array.isArray(result.data) && result.data.length > 0) {
+            return result.data;
+        }
+
+        // API can return empty rows in local/dev setups when server-side auth context is missing.
+        // Fall back to direct client query before concluding "no results".
+        return searchSchoolsViaSupabase({
+            query: trimmedQuery,
+            divisionFilter,
+            limit
+        });
     } catch {
         return searchSchoolsViaSupabase({
             query: trimmedQuery,
@@ -127,7 +137,11 @@ export async function listSchoolsWithFallback({
 } = {}) {
     try {
         const result = await fetchSchoolCatalog({ limit });
-        return result.data;
+        if (Array.isArray(result.data) && result.data.length > 0) {
+            return result.data;
+        }
+
+        return listSchoolsViaSupabase({ limit });
     } catch {
         return listSchoolsViaSupabase({ limit });
     }
