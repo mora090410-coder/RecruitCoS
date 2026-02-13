@@ -8,7 +8,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "sync:schools": "node scripts/sync_school_catalog.js"
+    "sync:schools": "node scripts/sync_school_catalog.js",
+    "catalog:ncaa:sql": "node scripts/generate_ncaa_catalog_sql.js",
+    "catalog:full:sql": "node scripts/generate_full_school_catalog_sql.js"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.60.0",

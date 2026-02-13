@@ -41,6 +41,24 @@ For annual maintenance updates (only new/changed rows):
 npm run sync:schools -- --file /path/to/full_catalog.json --delta
 ```
 
+To bootstrap NCAA D1/D2/D3 schools into SQL for local DB import:
+
+```bash
+npm run catalog:ncaa:sql
+```
+
+To bootstrap NCAA + NAIA + NJCAA in one import:
+
+```bash
+npm run catalog:full:sql
+```
+
+Then apply it to local Supabase:
+
+```bash
+/bin/zsh -lc "{ cat supabase/snippets/import_full_school_catalog.sql; } | docker exec -i -e PGPASSWORD=postgres supabase_db_RecruitCoS psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -f -"
+```
+
 Required environment variables:
 
 - `VITE_SUPABASE_URL` (or `SUPABASE_URL`)

@@ -1,6 +1,8 @@
 import { supabase } from '../lib/supabase'
 
 const VALID_DIVISIONS = new Set(['d1', 'd2', 'd3', 'naia', 'juco'])
+const NCAA_DIVISION_SET = new Set(['d1', 'd2', 'd3'])
+const NCAA_MEMBER_LIST_URL = 'https://web3.ncaa.org/directory/api/directory/memberList?type=12'
 const CORE_SELECT_COLUMNS = ['id', 'name', 'state', 'division']
 const OPTIONAL_SELECT_COLUMNS = [
     'city',
@@ -60,6 +62,77 @@ function normalizeSportsList(...lists) {
         .map((sport) => normalizeSport(sport))
         .filter(Boolean)
     return Array.from(new Set(values)).sort((left, right) => left.localeCompare(right))
+}
+
+function buildSchoolDedupKey(name, state) {
+    return `${String(name || '').trim().toLowerCase()}|${String(state || '').trim().toUpperCase()}`
+}
+
+function mapNcaaDivision(value) {
+    const normalized = String(value || '').trim().toLowerCase()
+    if (normalized.includes('division i') && !normalized.includes('division ii') && !normalized.includes('division iii')) {
+        return 'd1'
+    }
+    if (normalized.includes('division ii')) return 'd2'
+    if (normalized.includes('division iii')) return 'd3'
+    return null
+}
+
+function canUseNcaaDirectory(divisionFilters) {
+    if (!Array.isArray(divisionFilters) || divisionFilters.length === 0) return true
+    return divisionFilters.some((division) => NCAA_DIVISION_SET.has(division))
+}
+
+function mapNcaaMemberRow(row) {
+    const division = mapNcaaDivision(row?.division)
+    if (!division) return null
+    const state = String(row?.stateAddr || row?.state || '').trim().toUpperCase()
+    return {
+        id: row?.orgId ? `ncaa:${row.orgId}` : `ncaa:${buildSchoolDedupKey(row?.nameOfficial || row?.name, state)}`,
+        name: String(row?.nameOfficial || row?.name || '').trim(),
+        city: String(row?.city || '').trim(),
+        state,
+        division,
+        conference: String(row?.conference || '').trim() || null,
+        tier: null,
+        enrollment: null,
+        cost_of_attendance: null,
+        sports: []
+    }
+}
+
+async function fetchNcaaDirectoryMatches({
+    searchQuery,
+    divisionFilters,
+    limit
+}) {
+    if (!searchQuery || searchQuery.length < 3) return []
+    if (!canUseNcaaDirectory(divisionFilters)) return []
+
+    const response = await fetch(NCAA_MEMBER_LIST_URL, {
+        headers: { Accept: 'application/json' }
+    })
+
+    if (!response.ok) {
+        throw new Error(`NCAA directory request failed (${response.status}).`)
+    }
+
+    const rows = await response.json()
+    if (!Array.isArray(rows)) return []
+
+    const searchTerm = searchQuery.toLowerCase()
+    const allowedDivisions = divisionFilters.filter((division) => NCAA_DIVISION_SET.has(division))
+
+    const mapped = rows
+        .map(mapNcaaMemberRow)
+        .filter(Boolean)
+        .filter((school) => {
+            if (allowedDivisions.length > 0 && !allowedDivisions.includes(school.division)) return false
+            return school.name.toLowerCase().includes(searchTerm)
+        })
+        .sort((left, right) => left.name.localeCompare(right.name))
+
+    return mapped.slice(0, Math.max(1, limit))
 }
 
 async function runSchoolsQuery({
@@ -295,9 +368,38 @@ async function listSchools({ req, res, supabaseClient, legacyShape = false }) {
         mappedSchools = mappedSchools.filter((school) => school.sports.includes(sportFilter))
     }
 
+    if (offset === 0 && !sportFilter) {
+        try {
+            const ncaaMatches = await fetchNcaaDirectoryMatches({
+                searchQuery,
+                divisionFilters,
+                limit
+            })
+
+            if (ncaaMatches.length > 0) {
+                const existingKeys = new Set(
+                    mappedSchools.map((school) => buildSchoolDedupKey(school.name, school.state))
+                )
+                for (const school of ncaaMatches) {
+                    const key = buildSchoolDedupKey(school.name, school.state)
+                    if (existingKeys.has(key)) continue
+                    mappedSchools.push(school)
+                    existingKeys.add(key)
+                }
+                mappedSchools = mappedSchools
+                    .sort((left, right) => left.name.localeCompare(right.name))
+                    .slice(0, limit)
+
+                warnings.push('Some results are live NCAA directory matches and may not be persisted in your local catalog yet.')
+            }
+        } catch (directoryError) {
+            warnings.push(`NCAA live lookup unavailable: ${directoryError.message}`)
+        }
+    }
+
     if (legacyShape) {
         sendJson(res, 200, {
-            count: schoolQuery.count || mappedSchools.length,
+            count: Math.max(schoolQuery.count || 0, mappedSchools.length),
             data: mappedSchools
         })
         return
@@ -308,7 +410,7 @@ async function listSchools({ req, res, supabaseClient, legacyShape = false }) {
         pagination: {
             offset,
             limit,
-            count: schoolQuery.count || mappedSchools.length
+            count: Math.max(schoolQuery.count || 0, mappedSchools.length)
         },
         filters: {
             query: searchQuery || null,
