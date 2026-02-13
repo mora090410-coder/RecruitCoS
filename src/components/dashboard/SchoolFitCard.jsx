@@ -18,6 +18,10 @@ function Stars({ count }) {
     )
 }
 
+function getSchoolLocation(school) {
+    return school.school_location || school.location || 'Location unavailable'
+}
+
 export default function SchoolFitCard({ schools, athleteStats, onUpgradeSchools, onUpgradeContacts }) {
     const cappedSchools = (schools || []).slice(0, 3)
     const fitRows = cappedSchools.map((school) => ({
@@ -51,7 +55,7 @@ export default function SchoolFitCard({ schools, athleteStats, onUpgradeSchools,
                     <article key={school.id || school.school_name} className="rounded-lg border border-[#E5E7EB] bg-white p-4">
                         <h3 className="text-base font-semibold text-gray-900">{school.school_name}</h3>
                         <p className="mt-1 text-sm text-gray-600">
-                            {(school.division || 'D3').toUpperCase()} • {school.conference || 'Location unavailable'}
+                            {(school.division || 'D3').toUpperCase()} • {getSchoolLocation(school)}
                         </p>
 
                         <div className="mt-3 flex flex-wrap items-center gap-2">

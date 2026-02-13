@@ -164,6 +164,7 @@ export default function ResearchSchools() {
             const rows = selectedSchools.map((school) => ({
                 athlete_id: targetAthleteId,
                 school_name: school.name,
+                school_location: school.location || null,
                 category: 'target',
                 conference: school.conference,
                 division: school.division

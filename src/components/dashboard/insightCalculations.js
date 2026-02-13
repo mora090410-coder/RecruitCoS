@@ -2,6 +2,19 @@
  * Calculates a readiness score from Week 1 measurable inputs.
  * Inputs are optional; missing stats keep the athlete at baseline score.
  */
+const DIVISION_BENCHMARKS = {
+    d1: { min: 3000, max: 8000, label: 'D1' },
+    d2: { min: 2000, max: 5000, label: 'D2' },
+    d3: { min: 1200, max: 2400, label: 'D3' },
+    naia: { min: 1000, max: 2000, label: 'NAIA' },
+    juco: { min: 500, max: 1500, label: 'JUCO' }
+}
+
+function normalizeDivisionKey(division) {
+    const normalized = String(division || 'd3').toLowerCase().replace(/[^a-z0-9]/g, '')
+    return DIVISION_BENCHMARKS[normalized] ? normalized : 'd3'
+}
+
 export function calculateReadinessScore(stats) {
     let score = 50
 
@@ -49,16 +62,7 @@ export function getDivisionRecommendation(score) {
  * Provides a monthly spend insight against division-level annual recruiting ranges.
  */
 export function getBenchmarkInsight(total, division) {
-    const benchmarks = {
-        d1: { min: 3000, max: 8000 },
-        d2: { min: 2000, max: 5000 },
-        d3: { min: 1200, max: 2400 },
-        naia: { min: 1000, max: 2000 },
-        juco: { min: 500, max: 1500 }
-    }
-
-    const normalizedDivision = String(division || 'd3').toLowerCase()
-    const range = benchmarks[normalizedDivision] || benchmarks.d3
+    const range = DIVISION_BENCHMARKS[normalizeDivisionKey(division)]
     const monthlyAvg = range.min / 12
 
     if (total < monthlyAvg * 0.7) {
@@ -68,7 +72,20 @@ export function getBenchmarkInsight(total, division) {
         return `You're above average. Review ROI on each expense.`
     }
 
-    return `You're on track with typical ${(division || 'D3').toUpperCase()} spending.`
+    return `You're on track with typical ${range.label} spending.`
+}
+
+/**
+ * Returns normalized annual benchmark ranges for display in expense UI.
+ */
+export function getDivisionBenchmark(division) {
+    const normalizedDivision = normalizeDivisionKey(division)
+    const range = DIVISION_BENCHMARKS[normalizedDivision]
+    return {
+        min: range.min,
+        max: range.max,
+        label: range.label
+    }
 }
 
 /**

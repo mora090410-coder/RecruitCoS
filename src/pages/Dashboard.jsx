@@ -11,7 +11,7 @@ import { getAthleteEngagement } from '../lib/getAthleteEngagement'
 import { track } from '../lib/analytics'
 import { isMissingTableError } from '../lib/dbResilience'
 
-const DASHBOARD_WRAPPER_CLASS = 'mx-auto w-full max-w-[1200px] space-y-6'
+const DASHBOARD_WRAPPER_CLASS = 'mx-auto w-full max-w-[1200px] space-y-6 rounded-2xl bg-[#F9FAFB] px-6 py-6 md:px-12 md:py-12'
 const DASHBOARD_BACKGROUND_CLASS = 'rounded-2xl border border-[#E5E7EB] bg-gradient-to-r from-white to-[#F9F5FF] p-6 sm:p-8'
 
 function getMonthRange(now = new Date()) {
@@ -200,7 +200,7 @@ export default function Dashboard() {
                     .lt('date', nextMonthStartIso),
                 supabase
                     .from('athlete_saved_schools')
-                    .select('id, school_name, division, conference, category, created_at')
+                    .select('id, school_name, school_location, division, conference, category, created_at')
                     .eq('athlete_id', targetAthleteId)
                     .order('created_at', { ascending: true }),
                 supabase
@@ -292,7 +292,7 @@ export default function Dashboard() {
 
     const handleUpgradeClick = (source) => {
         track('dashboard_pro_cta_clicked', { source })
-        navigate('/upgrade')
+        navigate('/pricing')
     }
 
     return (
@@ -333,7 +333,7 @@ export default function Dashboard() {
                                 Dashboard data features are in rebuild mode while database tables are being recreated.
                             </div>
                         )}
-                        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2 2xl:grid-cols-3">
+                        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                             <ReadinessScoreCard
                                 stats={dashboardData.stats}
                                 onUpgrade={() => handleUpgradeClick('readiness_full_analysis')}
@@ -346,14 +346,12 @@ export default function Dashboard() {
                                 onUpgrade={() => handleUpgradeClick('expense_roi_analysis')}
                             />
 
-                            <div className="lg:col-span-1 2xl:col-span-2">
-                                <SchoolFitCard
-                                    schools={dashboardData.schools}
-                                    athleteStats={dashboardData.stats}
-                                    onUpgradeSchools={() => handleUpgradeClick('add_more_schools')}
-                                    onUpgradeContacts={() => handleUpgradeClick('coach_contacts')}
-                                />
-                            </div>
+                            <SchoolFitCard
+                                schools={dashboardData.schools}
+                                athleteStats={dashboardData.stats}
+                                onUpgradeSchools={() => handleUpgradeClick('add_more_schools')}
+                                onUpgradeContacts={() => handleUpgradeClick('coach_contacts')}
+                            />
 
                             <WeekProgressCard
                                 currentWeek={dashboardData.progress.currentWeek}

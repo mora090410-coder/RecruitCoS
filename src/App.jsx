@@ -139,6 +139,7 @@ function MainNavigator() {
       <Route path="/actions/research-schools" element={<ResearchSchools />} />
       <Route path="/actions/log-expenses" element={<LogExpenses />} />
       <Route path="/upgrade" element={<Upgrade />} />
+      <Route path="/pricing" element={<Upgrade />} />
       {import.meta.env.DEV ? (
         <>
           <Route path="/test-weekly-plan/:athleteId" element={<WeeklyPlanDebug />} />

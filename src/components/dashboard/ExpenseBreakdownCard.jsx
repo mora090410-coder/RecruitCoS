@@ -1,4 +1,4 @@
-import { getBenchmarkInsight } from './insightCalculations'
+import { getBenchmarkInsight, getDivisionBenchmark } from './insightCalculations'
 
 const PRO_BUTTON_CLASS = 'mt-5 inline-flex w-full items-center justify-center rounded-lg border-2 border-[#6C2EB9] bg-white px-4 py-3 text-sm font-semibold text-[#6C2EB9] transition hover:bg-[#6C2EB9] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C2EB9] focus-visible:ring-offset-2'
 
@@ -16,6 +16,7 @@ export default function ExpenseBreakdownCard({ expenses, division, monthLabel, o
     const byCategory = expenses?.byCategory || {}
     const sortedCategories = Object.entries(byCategory).sort((a, b) => b[1] - a[1])
     const benchmarkInsight = getBenchmarkInsight(total, division)
+    const benchmark = getDivisionBenchmark(division)
 
     return (
         <article className="rounded-xl border-2 border-[#E5E7EB] bg-white p-8 transition-shadow hover:shadow-lg">
@@ -56,7 +57,7 @@ export default function ExpenseBreakdownCard({ expenses, division, monthLabel, o
             </div>
 
             <p className="mt-5 rounded-lg bg-[#F3ECFF] px-4 py-3 text-sm text-gray-800">
-                📈 Families like yours spend: $1,200-$2,400/year on D3 recruiting
+                📈 Families like yours spend: {formatCurrency(benchmark.min)}-{formatCurrency(benchmark.max)}/year on {benchmark.label} recruiting
             </p>
             <p className="mt-3 rounded-lg bg-[#F9FAFB] px-4 py-3 text-sm text-gray-700">💡 {benchmarkInsight}</p>
 
