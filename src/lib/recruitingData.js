@@ -139,7 +139,8 @@ export async function fetchLatestMeasurables(athleteId) {
         .select('*')
         .eq('athlete_id', athleteId)
         .order('metric')
-        .order('measured_at', { ascending: false });
+        .order('measured_at', { ascending: false })
+        .order('created_at', { ascending: false });
 
     if (error) {
         console.error('[recruitingData] Error fetching measurables:', error);
@@ -164,6 +165,36 @@ export async function fetchLatestMeasurables(athleteId) {
     });
 
     return Array.from(latestMap.values());
+}
+
+/**
+ * Fetches full measurable history for an athlete.
+ * Returns canonicalized metric rows sorted by metric, then newest first.
+ */
+export async function fetchMeasurableHistory(athleteId) {
+    if (!athleteId) return [];
+
+    const { data, error } = await supabase
+        .from('athlete_measurables')
+        .select('*')
+        .eq('athlete_id', athleteId)
+        .order('metric')
+        .order('measured_at', { ascending: false })
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('[recruitingData] Error fetching measurable history:', error);
+        return [];
+    }
+
+    return (data || []).map((row) => {
+        const canonicalRow = canonicalizeMeasurableRow(row.sport, row);
+        const preferredMetric = row.metric_canonical || canonicalRow.metric;
+        return {
+            ...canonicalRow,
+            metric: preferredMetric
+        };
+    });
 }
 
 /**

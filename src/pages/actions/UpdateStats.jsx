@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/button';
 import { useProfile } from '../../hooks/useProfile';
 import { supabase } from '../../lib/supabase';
 import { getFeatureRebuildMessage, isMissingTableError } from '../../lib/dbResilience';
-import { getSportSchema } from '../../config/sportSchema';
+import { derivePositionGroup, getSportSchema } from '../../config/sportSchema';
 import {
     resolveActionNumberFromSearch,
     resolveItemIdFromSearch,
@@ -61,13 +61,15 @@ const resolveMetricPlaceholder = (metric) => {
     return 'Enter value';
 };
 
-async function upsertMeasurableRow({ athleteId, sport, metric, value, unit }) {
+const getTodayDate = () => new Date().toISOString().slice(0, 10);
+
+async function upsertMeasurableRow({ athleteId, sport, metric, value, unit, measuredAt }) {
     const { data: existingRow, error: lookupError } = await supabase
         .from('athlete_measurables')
         .select('id')
         .eq('athlete_id', athleteId)
         .eq('metric', metric)
-        .order('measured_at', { ascending: false })
+        .eq('measured_at', measuredAt)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -80,7 +82,7 @@ async function upsertMeasurableRow({ athleteId, sport, metric, value, unit }) {
         metric,
         value,
         unit,
-        measured_at: new Date().toISOString().slice(0, 10),
+        measured_at: measuredAt,
         verified: false
     };
 
@@ -118,29 +120,46 @@ export default function UpdateStats() {
         (isImpersonating ? activeAthlete?.sport : profile?.sport) || 'unknown'
     ), [activeAthlete?.sport, isImpersonating, profile?.sport]);
 
+    const targetAthlete = useMemo(() => (
+        isImpersonating ? (activeAthlete || null) : (profile || null)
+    ), [activeAthlete, isImpersonating, profile]);
+
     const targetPositionGroup = useMemo(() => (
-        (isImpersonating
-            ? (activeAthlete?.primary_position_group || activeAthlete?.position_group)
-            : (profile?.primary_position_group || profile?.position_group)
-        ) || null
+        targetAthlete?.primary_position_group
+        || targetAthlete?.position_group
+        || derivePositionGroup(
+            targetSport,
+            targetAthlete?.primary_position_display || targetAthlete?.position || ''
+        )
+        || null
     ), [
-        activeAthlete?.position_group,
-        activeAthlete?.primary_position_group,
-        isImpersonating,
-        profile?.position_group,
-        profile?.primary_position_group
+        targetAthlete?.position,
+        targetAthlete?.position_group,
+        targetAthlete?.primary_position_display,
+        targetAthlete?.primary_position_group,
+        targetSport
     ]);
 
     const metricFields = useMemo(() => {
         const schema = getSportSchema(targetSport);
         if (!schema?.metrics?.length) return FALLBACK_METRICS;
-        if (!targetPositionGroup) return schema.metrics;
+        if (!targetPositionGroup) {
+            const sportKey = String(targetSport || '').trim().toLowerCase();
+            if (sportKey === 'softball') {
+                const positionPlayerMetrics = schema.metrics.filter((metric) => (
+                    metric.appliesToGroups?.includes('IF') || metric.appliesToGroups?.includes('OF')
+                ));
+                if (positionPlayerMetrics.length > 0) return positionPlayerMetrics;
+            }
+            return schema.metrics;
+        }
 
         const positionMetrics = schema.metrics.filter((metric) => metric.appliesToGroups?.includes(targetPositionGroup));
         return positionMetrics.length > 0 ? positionMetrics : schema.metrics;
     }, [targetPositionGroup, targetSport]);
 
     const [metricValues, setMetricValues] = useState({});
+    const [measuredAt, setMeasuredAt] = useState(getTodayDate());
     const [recentStats, setRecentStats] = useState('');
     const [error, setError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
@@ -183,6 +202,10 @@ export default function UpdateStats() {
     const handleSubmit = async (event) => {
         event.preventDefault();
         if (!targetAthleteId || isSaving || isSkipping) return;
+        if (!measuredAt) {
+            setError('Choose a date measured before saving.');
+            return;
+        }
 
         const trimmedRecentStats = recentStats.trim();
         const populatedMetrics = metricFields
@@ -211,7 +234,8 @@ export default function UpdateStats() {
                 sport: targetSport,
                 metric: entry.key,
                 value: entry.value,
-                unit: entry.unit
+                unit: entry.unit,
+                measuredAt
             }));
 
             if (hasRecentStats) {
@@ -221,7 +245,8 @@ export default function UpdateStats() {
                     sport: targetSport,
                     metric: 'recent_stats',
                     value: Number.isFinite(numericFromText) ? numericFromText : 0,
-                    unit: 'text'
+                    unit: 'text',
+                    measuredAt
                 }));
             }
 
@@ -293,6 +318,17 @@ export default function UpdateStats() {
                             </label>
                         ))}
                     </div>
+
+                    <label className="space-y-2">
+                        <span className="block text-sm font-medium text-gray-700">Date measured</span>
+                        <input
+                            type="date"
+                            value={measuredAt}
+                            onChange={(event) => setMeasuredAt(event.target.value)}
+                            className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
+                            aria-label="Date measured"
+                        />
+                    </label>
 
                     <label className="space-y-2">
                         <span className="block text-sm font-medium text-gray-700">Recent stats (optional)</span>

@@ -2,9 +2,9 @@ import React, { useMemo, useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useProfile } from '../hooks/useProfile';
 import { supabase } from '../lib/supabase';
-import { fetchLatestMeasurables } from '../lib/recruitingData';
+import { fetchLatestMeasurables, fetchMeasurableHistory } from '../lib/recruitingData';
 import { recomputeAll } from '../services/recomputeAll';
-import { getMetricLabel, getMetricOptionsForSport, getMetricUnit } from '../config/sportSchema';
+import { derivePositionGroup, getMetricLabel, getMetricOptionsForSport, getMetricUnit } from '../config/sportSchema';
 import { normalizeMetricKey, normalizeUnit } from '../lib/normalize';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -27,8 +27,21 @@ export default function Measurables() {
     const { profile } = useProfile();
     const [latestGap, setLatestGap] = useState(null);
     const [measurables, setMeasurables] = useState([]);
+    const [measurableHistory, setMeasurableHistory] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRecomputing, setIsRecomputing] = useState(false);
+    const resolvedPositionGroup = useMemo(() => (
+        profile?.primary_position_group
+        || profile?.position_group
+        || derivePositionGroup(profile?.sport, profile?.primary_position_display || profile?.position || '')
+        || null
+    ), [
+        profile?.position,
+        profile?.position_group,
+        profile?.primary_position_display,
+        profile?.primary_position_group,
+        profile?.sport
+    ]);
 
     useEffect(() => {
         if (profile?.id) {
@@ -51,8 +64,12 @@ export default function Measurables() {
             setLatestGap(gapData);
 
             // Fetch measurables
-            const mData = await fetchLatestMeasurables(profile.id);
+            const [mData, historyData] = await Promise.all([
+                fetchLatestMeasurables(profile.id),
+                fetchMeasurableHistory(profile.id)
+            ]);
             setMeasurables(mData);
+            setMeasurableHistory(historyData);
         } catch (error) {
             console.error('Error loading measurables:', error);
         } finally {
@@ -115,18 +132,22 @@ export default function Measurables() {
                     {/* Right: Data Entry & History */}
                     <div className="lg:col-span-2 space-y-6">
                         <Tabs defaultValue="overview" className="w-full">
-                            <TabsList className="grid w-full grid-cols-2 bg-zinc-100 p-1 rounded-xl">
+                            <TabsList className="grid w-full grid-cols-3 bg-zinc-100 p-1 rounded-xl">
                                 <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all text-xs font-semibold uppercase tracking-wider">Historical Data</TabsTrigger>
+                                <TabsTrigger value="progress" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all text-xs font-semibold uppercase tracking-wider">Progress</TabsTrigger>
                                 <TabsTrigger value="entry" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all text-xs font-semibold uppercase tracking-wider">Log New Data</TabsTrigger>
                             </TabsList>
                             <TabsContent value="overview" className="mt-6">
                                 <MeasurablesList measurables={measurables} benchmarks={latestGap?.details_json?.metricDetails} />
                             </TabsContent>
+                            <TabsContent value="progress" className="mt-6">
+                                <MeasurableProgressTimeline history={measurableHistory} />
+                            </TabsContent>
                             <TabsContent value="entry" className="mt-6">
                                 <MeasurableEntryForm
                                     athleteId={profile?.id}
                                     sport={profile?.sport}
-                                    positionGroup={profile?.primary_position_group || profile?.position_group}
+                                    positionGroup={resolvedPositionGroup}
                                     onSave={() => { loadData(); }}
                                 />
                             </TabsContent>
@@ -293,6 +314,101 @@ function MeasurablesList({ measurables, benchmarks = [] }) {
     );
 }
 
+function MeasurableProgressTimeline({ history = [] }) {
+    const metricGroups = useMemo(() => {
+        const grouped = new Map();
+
+        (history || []).forEach((row) => {
+            if (!row?.metric || row.metric === 'recent_stats') return;
+            const numericValue = Number(row.value);
+            if (Number.isNaN(numericValue)) return;
+
+            const existing = grouped.get(row.metric) || [];
+            existing.push({
+                id: row.id,
+                sport: row.sport,
+                metric: row.metric,
+                value: numericValue,
+                unit: row.unit || '',
+                measured_at: row.measured_at || null,
+                created_at: row.created_at || null
+            });
+            grouped.set(row.metric, existing);
+        });
+
+        return Array.from(grouped.entries())
+            .map(([metric, entries]) => {
+                const sorted = [...entries].sort((a, b) => {
+                    const dateA = String(a.measured_at || '');
+                    const dateB = String(b.measured_at || '');
+                    if (dateA !== dateB) return dateA.localeCompare(dateB);
+                    return String(a.created_at || '').localeCompare(String(b.created_at || ''));
+                });
+
+                return { metric, entries: sorted };
+            })
+            .sort((a, b) => a.metric.localeCompare(b.metric));
+    }, [history]);
+
+    if (metricGroups.length === 0) {
+        return (
+            <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-zinc-200">
+                <p className="text-zinc-400 text-sm">No measurable history yet.</p>
+            </div>
+        );
+    }
+
+    const formatValue = (value) => (Number.isInteger(value) ? String(value) : value.toFixed(2));
+    const formatDate = (dateValue) => {
+        if (!dateValue) return 'Unknown date';
+        const parsed = new Date(`${dateValue}T00:00:00`);
+        if (Number.isNaN(parsed.getTime())) return String(dateValue);
+        return parsed.toLocaleDateString();
+    };
+
+    return (
+        <div className="space-y-4">
+            {metricGroups.map(({ metric, entries }) => {
+                const first = entries[0];
+                const latest = entries[entries.length - 1];
+                const delta = latest.value - first.value;
+                const deltaPrefix = delta > 0 ? '+' : '';
+                const recentFirst = [...entries].reverse().slice(0, 8);
+
+                return (
+                    <Card key={metric} className="border-zinc-200">
+                        <CardHeader className="pb-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <CardTitle className="text-sm font-semibold text-zinc-900">
+                                    {getMetricLabel(latest.sport, metric)}
+                                </CardTitle>
+                                <div className="text-xs text-zinc-500">
+                                    Net change: {deltaPrefix}{formatValue(delta)} {latest.unit || ''}
+                                </div>
+                            </div>
+                            <CardDescription className="text-xs">
+                                {entries.length} entries from {formatDate(first.measured_at)} to {formatDate(latest.measured_at)}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-2">
+                                {recentFirst.map((entry) => (
+                                    <div key={entry.id} className="flex items-center justify-between rounded-md border border-zinc-100 bg-zinc-50 px-3 py-2">
+                                        <span className="text-xs text-zinc-600">{formatDate(entry.measured_at)}</span>
+                                        <span className="text-sm font-semibold text-zinc-900">
+                                            {formatValue(entry.value)} {entry.unit || ''}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                );
+            })}
+        </div>
+    );
+}
+
 function MeasurableEntryForm({ athleteId, sport, positionGroup, onSave }) {
     const [formData, setFormData] = useState({
         metric: '',
@@ -304,7 +420,16 @@ function MeasurableEntryForm({ athleteId, sport, positionGroup, onSave }) {
     const [isSaving, setIsSaving] = useState(false);
     const metricOptions = useMemo(() => {
         const options = getMetricOptionsForSport(sport);
-        if (!positionGroup) return options;
+        if (!positionGroup) {
+            const sportKey = String(sport || '').trim().toLowerCase();
+            if (sportKey === 'softball') {
+                const positionPlayerMetrics = options.filter((metric) => (
+                    metric.appliesToGroups?.includes('IF') || metric.appliesToGroups?.includes('OF')
+                ));
+                if (positionPlayerMetrics.length > 0) return positionPlayerMetrics;
+            }
+            return options;
+        }
 
         const filtered = options.filter((metric) => metric.appliesToGroups?.includes(positionGroup));
         return filtered.length > 0 ? filtered : options;

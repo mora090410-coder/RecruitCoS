@@ -61,7 +61,11 @@ export const ProfileProvider = ({ children }) => {
                             id,
                             name,
                             sport,
-                            grad_year
+                            grad_year,
+                            position,
+                            position_group,
+                            primary_position_display,
+                            primary_position_group
                         )
                     `)
                     .eq('manager_id', user.id)
