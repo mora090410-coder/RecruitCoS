@@ -32,6 +32,9 @@ import CoachInteraction from './pages/actions/CoachInteraction'
 import RefineSchoolList from './pages/actions/RefineSchoolList'
 import AnalyzeExpenses from './pages/actions/AnalyzeExpenses'
 import ExpandSchoolList from './pages/actions/ExpandSchoolList'
+import RecruitingRoadmap from './pages/actions/RecruitingRoadmap'
+import ProjectCosts from './pages/actions/ProjectCosts'
+import FinalizeSchoolList from './pages/actions/FinalizeSchoolList'
 
 // --- TRAFFIC CONTROLLER ---
 function MainNavigator() {
@@ -148,6 +151,9 @@ function MainNavigator() {
       <Route path="/actions/refine-school-list" element={<RefineSchoolList />} />
       <Route path="/actions/analyze-expenses" element={<AnalyzeExpenses />} />
       <Route path="/actions/expand-school-list" element={<ExpandSchoolList />} />
+      <Route path="/actions/recruiting-roadmap" element={<RecruitingRoadmap />} />
+      <Route path="/actions/project-costs" element={<ProjectCosts />} />
+      <Route path="/actions/finalize-school-list" element={<FinalizeSchoolList />} />
       <Route path="/upgrade" element={<Upgrade />} />
       <Route path="/pricing" element={<Upgrade />} />
       {import.meta.env.DEV ? (

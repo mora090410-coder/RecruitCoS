@@ -17,7 +17,10 @@ export const ACTION_TYPE_TO_ROUTE = {
     coach_interaction: '/actions/coach-interaction',
     refine_school_list: '/actions/refine-school-list',
     analyze_expenses: '/actions/analyze-expenses',
-    expand_school_list: '/actions/expand-school-list'
+    expand_school_list: '/actions/expand-school-list',
+    recruiting_roadmap: '/actions/recruiting-roadmap',
+    project_costs: '/actions/project-costs',
+    finalize_school_list: '/actions/finalize-school-list'
 };
 
 const ACTION_TYPE_TO_NUMBER = {
@@ -37,7 +40,13 @@ const ACTION_TYPE_TO_NUMBER = {
     expansion: 3,
     refine_school_list: 1,
     analyze_expenses: 2,
-    expand_school_list: 3
+    expand_school_list: 3,
+    roadmap: 1,
+    projection: 2,
+    finalization: 3,
+    recruiting_roadmap: 1,
+    project_costs: 2,
+    finalize_school_list: 3
 };
 
 export function resolveActionNumberFromItem(item, fallback = 1) {

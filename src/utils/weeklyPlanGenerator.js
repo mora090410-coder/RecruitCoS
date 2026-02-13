@@ -91,6 +91,35 @@ export const WEEKLY_ACTIONS = {
             route: '/actions/expand-school-list',
             estimated_minutes: 12
         }
+    ],
+    week4: [
+        {
+            action_number: 1,
+            title: 'Create your recruiting roadmap',
+            description: 'Build your multi-year quarter-by-quarter plan through commitment with milestone targets.',
+            action_type: 'recruiting_roadmap',
+            item_type: 'roadmap',
+            route: '/actions/recruiting-roadmap',
+            estimated_minutes: 12
+        },
+        {
+            action_number: 2,
+            title: 'Project your total recruiting costs',
+            description: 'Forecast your spend through commitment and compare against division benchmarks.',
+            action_type: 'project_costs',
+            item_type: 'projection',
+            route: '/actions/project-costs',
+            estimated_minutes: 10
+        },
+        {
+            action_number: 3,
+            title: 'Finalize your school list',
+            description: 'Review Dream/Target/Safety balance and lock your list before Week 5.',
+            action_type: 'finalize_school_list',
+            item_type: 'finalization',
+            route: '/actions/finalize-school-list',
+            estimated_minutes: 12
+        }
     ]
 };
 

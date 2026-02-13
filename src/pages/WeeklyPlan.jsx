@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
 import WeekOnePlanView from '../components/WeekOnePlanView';
 import { useProfile } from '../hooks/useProfile';
 import { supabase } from '../lib/supabase';
 import { track } from '../lib/analytics';
+import { isMissingTableError } from '../lib/dbResilience';
 import { generateWeeklyPlan } from '../utils/weeklyPlanGenerator';
 
-const MAX_TRIAL_WEEK = 3;
+const MAX_TRIAL_WEEK = 4;
 
 const WEEK_UNLOCK_COPY = {
     2: {
@@ -25,6 +27,15 @@ const WEEK_UNLOCK_COPY = {
             '🤖 Get AI-powered school recommendations',
             '📈 See recruiting spend ROI insights',
             '🧭 Expand to a balanced 10-school list'
+        ]
+    },
+    4: {
+        title: 'Week 4 Unlocked!',
+        subtitle: 'Final free week: build your long-term game plan before Week 5 paywall:',
+        bullets: [
+            '🗺️ Build your multi-year recruiting roadmap',
+            '💵 Project total costs through commitment',
+            '✅ Finalize your school list for outreach'
         ]
     }
 };
@@ -69,7 +80,69 @@ function buildWeekUnlockStorageKey(athleteId, weekNumber) {
     return `rc_week_unlock_seen:${athleteId}:${weekNumber}`;
 }
 
+function buildWeek5PaywallStorageKey(athleteId) {
+    if (!athleteId) return null;
+    return `rc_week5_paywall_seen:${athleteId}`;
+}
+
+function getSafeCount(result) {
+    if (!result?.error) return Number(result?.count || 0);
+    if (isMissingTableError(result.error)) return 0;
+    throw result.error;
+}
+
+async function fetchWeek5PaywallSummary(athleteId) {
+    if (!athleteId) {
+        return {
+            schoolCount: 0,
+            totalExpenses: 0,
+            coachContacts: 0,
+            roadmapCreated: false
+        };
+    }
+
+    const [schoolCountResult, coachContactsResult, expensesResult, roadmapResult] = await Promise.all([
+        supabase
+            .from('athlete_saved_schools')
+            .select('id', { count: 'exact', head: true })
+            .eq('athlete_id', athleteId),
+        supabase
+            .from('coach_interactions')
+            .select('id', { count: 'exact', head: true })
+            .eq('athlete_id', athleteId),
+        supabase
+            .from('expenses')
+            .select('amount')
+            .eq('athlete_id', athleteId),
+        supabase
+            .from('recruiting_roadmap')
+            .select('id', { count: 'exact', head: true })
+            .eq('athlete_id', athleteId)
+    ]);
+
+    const schoolCount = getSafeCount(schoolCountResult);
+    const coachContacts = getSafeCount(coachContactsResult);
+    const roadmapCount = getSafeCount(roadmapResult);
+
+    if (expensesResult.error && !isMissingTableError(expensesResult.error)) {
+        throw expensesResult.error;
+    }
+
+    const totalExpenses = (expensesResult.data || []).reduce((sum, expense) => {
+        const amount = Number.parseFloat(expense.amount);
+        return Number.isFinite(amount) ? sum + amount : sum;
+    }, 0);
+
+    return {
+        schoolCount,
+        totalExpenses: Number(totalExpenses.toFixed(2)),
+        coachContacts,
+        roadmapCreated: roadmapCount > 0
+    };
+}
+
 export default function WeeklyPlan() {
+    const navigate = useNavigate();
     const { profile, activeAthlete, isImpersonating } = useProfile();
     const [simplePlan, setSimplePlan] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -79,6 +152,13 @@ export default function WeeklyPlan() {
     const [currentWeekNumber, setCurrentWeekNumber] = useState(1);
     const [showWeekUnlockMessage, setShowWeekUnlockMessage] = useState(false);
     const [unlockedWeekNumber, setUnlockedWeekNumber] = useState(null);
+    const [showWeek5Paywall, setShowWeek5Paywall] = useState(false);
+    const [week5Summary, setWeek5Summary] = useState({
+        schoolCount: 0,
+        totalExpenses: 0,
+        coachContacts: 0,
+        roadmapCreated: false
+    });
 
     const targetAthleteId = useMemo(() => {
         if (isImpersonating) return activeAthlete?.id || null;
@@ -96,6 +176,13 @@ export default function WeeklyPlan() {
     useEffect(() => {
         setShowWeekUnlockMessage(false);
         setUnlockedWeekNumber(null);
+        setShowWeek5Paywall(false);
+        setWeek5Summary({
+            schoolCount: 0,
+            totalExpenses: 0,
+            coachContacts: 0,
+            roadmapCreated: false
+        });
     }, [targetAthleteId]);
 
     useEffect(() => {
@@ -137,6 +224,12 @@ export default function WeeklyPlan() {
 
                 const selectedWeekActions = await fetchWeekActions(targetAthleteId, resolvedWeekNumber);
                 const weekStartDate = selectedWeekActions[0]?.week_start_date || null;
+                const weekFourComplete = resolvedWeekNumber === MAX_TRIAL_WEEK && isWeekComplete(selectedWeekActions);
+                let paywallSummary = null;
+
+                if (weekFourComplete) {
+                    paywallSummary = await fetchWeek5PaywallSummary(targetAthleteId);
+                }
 
                 if (!active) return;
 
@@ -162,6 +255,26 @@ export default function WeeklyPlan() {
                             // no-op
                         }
                     }
+                }
+
+                if (weekFourComplete) {
+                    if (paywallSummary) {
+                        setWeek5Summary(paywallSummary);
+                    }
+
+                    const storageKey = buildWeek5PaywallStorageKey(targetAthleteId);
+                    let alreadySeen = false;
+                    try {
+                        alreadySeen = storageKey ? window.localStorage.getItem(storageKey) === 'true' : false;
+                    } catch {
+                        alreadySeen = false;
+                    }
+
+                    if (!alreadySeen) {
+                        setShowWeek5Paywall(true);
+                    }
+                } else {
+                    setShowWeek5Paywall(false);
                 }
 
                 setSimplePlan({
@@ -199,6 +312,33 @@ export default function WeeklyPlan() {
 
     const handleSelectWeek = (weekNumber) => {
         setCurrentWeekNumber(weekNumber);
+    };
+
+    const handleDismissWeek5Paywall = () => {
+        const storageKey = buildWeek5PaywallStorageKey(targetAthleteId);
+        try {
+            if (storageKey) window.localStorage.setItem(storageKey, 'true');
+        } catch {
+            // no-op
+        }
+        setShowWeek5Paywall(false);
+    };
+
+    const handleWeek5Upgrade = () => {
+        const storageKey = buildWeek5PaywallStorageKey(targetAthleteId);
+        try {
+            if (storageKey) window.localStorage.setItem(storageKey, 'true');
+        } catch {
+            // no-op
+        }
+        setShowWeek5Paywall(false);
+        track('week5_paywall_upgrade_clicked', {
+            week_number: simplePlan?.weekNumber || null,
+            school_count: week5Summary.schoolCount || 0,
+            coach_contacts: week5Summary.coachContacts || 0,
+            total_expenses: week5Summary.totalExpenses || 0
+        });
+        navigate('/upgrade');
     };
 
     useEffect(() => {
@@ -254,6 +394,61 @@ export default function WeeklyPlan() {
                             className="mt-6 h-11 w-full rounded-xl bg-[#6C2EB9] px-5 text-sm font-semibold text-white transition hover:bg-[#5B25A0]"
                         >
                             Start Week {unlockedWeekNumber || 2}
+                        </button>
+                    </section>
+                </div>
+            )}
+
+            {showWeek5Paywall && (
+                <div className="fixed inset-0 z-[75] flex items-center justify-center bg-[rgba(15,23,42,0.55)] p-4 backdrop-blur-sm">
+                    <section className="w-full max-w-[620px] rounded-2xl border border-[rgba(108,46,185,0.3)] bg-white p-6 shadow-2xl sm:p-8">
+                        <div className="text-center">
+                            <div className="text-5xl leading-none" aria-hidden="true">🎉</div>
+                            <h2 className="mt-3 text-2xl font-bold text-gray-900">You Completed Your Free Trial</h2>
+                            <p className="mt-2 text-sm text-gray-600">
+                                Four weeks of recruiting progress are now in place. Keep momentum going with Pro.
+                            </p>
+                        </div>
+
+                        <div className="mt-5 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-4">
+                            <h3 className="text-sm font-semibold text-gray-900">Your 4-week outcomes</h3>
+                            <ul className="mt-3 space-y-1.5 text-sm text-gray-800">
+                                <li>✓ {week5Summary.schoolCount} schools researched</li>
+                                <li>✓ ${week5Summary.totalExpenses.toLocaleString(undefined, { maximumFractionDigits: 2 })} in expenses tracked</li>
+                                <li>✓ {week5Summary.coachContacts} coach interactions logged</li>
+                                <li>✓ {week5Summary.roadmapCreated ? 'Recruiting roadmap created' : 'Roadmap framework generated'}</li>
+                            </ul>
+                        </div>
+
+                        <div className="mt-4 rounded-xl border border-[rgba(108,46,185,0.22)] bg-[rgba(108,46,185,0.05)] p-4">
+                            <h3 className="text-base font-semibold text-gray-900">Continue with Pro</h3>
+                            <ul className="mt-2 space-y-1 text-sm text-gray-700">
+                                <li>Weekly recruiting action plans every week</li>
+                                <li>Coach contact database access</li>
+                                <li>Advanced AI school fit recommendations</li>
+                                <li>Financial optimization and budget alerts</li>
+                                <li>Unlimited school tracking and outreach prep</li>
+                            </ul>
+                        </div>
+
+                        <div className="mt-5 rounded-xl border border-[#E5E7EB] p-4 text-center">
+                            <p className="text-3xl font-bold text-gray-900">$25/mo</p>
+                            <p className="mt-1 text-sm font-medium text-gray-600">Individual Plan</p>
+                            <button
+                                type="button"
+                                onClick={handleWeek5Upgrade}
+                                className="mt-4 h-11 w-full rounded-xl bg-[#6C2EB9] px-5 text-sm font-semibold text-white transition hover:bg-[#5B25A0]"
+                            >
+                                Upgrade Now
+                            </button>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleDismissWeek5Paywall}
+                            className="mt-4 w-full text-center text-sm font-semibold text-[#6C2EB9] underline-offset-2 hover:underline"
+                        >
+                            I&apos;ll decide later
                         </button>
                     </section>
                 </div>

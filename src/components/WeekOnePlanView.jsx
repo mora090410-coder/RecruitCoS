@@ -12,7 +12,10 @@ const WEEK_ICON_BY_TYPE = {
     coach_interaction: '📞',
     refine_school_list: '🤖',
     analyze_expenses: '📈',
-    expand_school_list: '🧭'
+    expand_school_list: '🧭',
+    recruiting_roadmap: '🗺️',
+    project_costs: '💵',
+    finalize_school_list: '✅'
 }
 
 function getActionNumber(item) {
@@ -31,7 +34,10 @@ function getActionNumber(item) {
         budget: 3,
         recommendations: 1,
         roi: 2,
-        expansion: 3
+        expansion: 3,
+        roadmap: 1,
+        projection: 2,
+        finalization: 3
     }
     const byType = typeMap[String(item?.item_type || '').toLowerCase()]
     return byType || null
@@ -220,7 +226,11 @@ export default function WeekOnePlanView({
                     <div className="mb-2 text-3xl" aria-hidden="true">📊</div>
                     <h3 className="text-lg font-bold text-gray-900">Your Progress</h3>
                     <p className="mt-1 text-base text-gray-700">Week {weekNumber} of 4 • <span className="font-semibold">{completedCount}/3</span> actions completed</p>
-                    <p className="mt-2 text-sm text-gray-600">Finish all 3 actions to unlock next steps</p>
+                    <p className="mt-2 text-sm text-gray-600">
+                        {Number(weekNumber) < 4
+                            ? 'Finish all 3 actions to unlock next steps'
+                            : 'Finish all 3 actions to complete your free trial'}
+                    </p>
                 </section>
             )}
 
