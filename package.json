@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "sync:schools": "node scripts/sync_school_catalog.js",
     "catalog:ncaa:sql": "node scripts/generate_ncaa_catalog_sql.js",
-    "catalog:full:sql": "node scripts/generate_full_school_catalog_sql.js"
+    "catalog:full:sql": "node scripts/generate_full_school_catalog_sql.js",
+    "catalog:ncaa:sports:sql": "node scripts/generate_ncaa_school_sports_sql.js",
+    "catalog:naia-njcaa:sports:sql": "node scripts/generate_naia_njcaa_school_sports_sql.js"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.60.0",

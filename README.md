@@ -53,10 +53,46 @@ To bootstrap NCAA + NAIA + NJCAA in one import:
 npm run catalog:full:sql
 ```
 
+To enrich NCAA school sport offerings (updates `school_sports` and `schools.sports_offered`):
+
+```bash
+npm run catalog:ncaa:sports:sql
+```
+
+To enrich NAIA + NJCAA school sport offerings from official stats pages:
+
+```bash
+npm run catalog:naia-njcaa:sports:sql
+```
+
+Alias-based school-name overrides are loaded from:
+
+```bash
+scripts/data/school_name_aliases.naia_njcaa.json
+```
+
+Optional: generate SQL with a custom alias map path:
+
+```bash
+npm run catalog:naia-njcaa:sports:sql -- --alias-map /path/to/aliases.json
+```
+
 Then apply it to local Supabase:
 
 ```bash
 /bin/zsh -lc "{ cat supabase/snippets/import_full_school_catalog.sql; } | docker exec -i -e PGPASSWORD=postgres supabase_db_RecruitCoS psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -f -"
+```
+
+Then apply NCAA sport enrichment:
+
+```bash
+/bin/zsh -lc "{ cat supabase/snippets/import_ncaa_school_sports.sql; } | docker exec -i -e PGPASSWORD=postgres supabase_db_RecruitCoS psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -f -"
+```
+
+Then apply NAIA + NJCAA sport enrichment:
+
+```bash
+/bin/zsh -lc "{ cat supabase/snippets/import_naia_njcaa_school_sports.sql; } | docker exec -i -e PGPASSWORD=postgres supabase_db_RecruitCoS psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -f -"
 ```
 
 Required environment variables:

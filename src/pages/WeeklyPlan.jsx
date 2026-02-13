@@ -143,7 +143,7 @@ async function fetchWeek5PaywallSummary(athleteId) {
 
 export default function WeeklyPlan() {
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const requestedWeekParam = searchParams.get('week') || '';
     const { profile, activeAthlete, isImpersonating } = useProfile();
     const [simplePlan, setSimplePlan] = useState(null);
@@ -309,15 +309,27 @@ export default function WeeklyPlan() {
         setReloadNonce((prev) => prev + 1);
     };
 
+    const handleSelectWeek = (weekNumber) => {
+        const normalizedWeekNumber = Number.parseInt(weekNumber, 10);
+        if (!Number.isInteger(normalizedWeekNumber) || normalizedWeekNumber < 1) return;
+
+        setCurrentWeekNumber(normalizedWeekNumber);
+
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set('week', String(normalizedWeekNumber));
+        nextParams.delete('completed');
+        nextParams.delete('skipped');
+        nextParams.delete('action');
+        nextParams.delete('itemId');
+
+        setSearchParams(nextParams, { replace: true });
+    };
+
     const handleStartUnlockedWeek = () => {
         setShowWeekUnlockMessage(false);
         if (unlockedWeekNumber) {
-            setCurrentWeekNumber(unlockedWeekNumber);
+            handleSelectWeek(unlockedWeekNumber);
         }
-    };
-
-    const handleSelectWeek = (weekNumber) => {
-        setCurrentWeekNumber(weekNumber);
     };
 
     const handleDismissWeek5Paywall = () => {

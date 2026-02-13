@@ -86,6 +86,10 @@ export default function ExpandSchoolList() {
         () => (isImpersonating ? activeAthlete?.id || null : profile?.id || null),
         [activeAthlete?.id, isImpersonating, profile?.id]
     );
+    const athleteSport = useMemo(
+        () => String(isImpersonating ? activeAthlete?.sport || '' : profile?.sport || '').trim().toLowerCase(),
+        [activeAthlete?.sport, isImpersonating, profile?.sport]
+    );
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -206,7 +210,8 @@ export default function ExpandSchoolList() {
                 const schools = await searchSchoolsWithFallback({
                     query: trimmedQuery,
                     divisionFilter,
-                    limit: SEARCH_LIMIT
+                    limit: SEARCH_LIMIT,
+                    sport: athleteSport
                 });
                 if (!active) return;
 
@@ -228,7 +233,7 @@ export default function ExpandSchoolList() {
             active = false;
             window.clearTimeout(timeoutId);
         };
-    }, [divisionFilter, selectedSchoolNames, trimmedSearchQuery]);
+    }, [athleteSport, divisionFilter, selectedSchoolNames, trimmedSearchQuery]);
 
     const addSchool = useCallback(async (school, category = 'target') => {
         if (!athleteId || (!school?.school_name && !school?.name) || saving) return;

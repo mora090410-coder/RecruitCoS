@@ -1,0 +1,290 @@
+[
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "Minnesota North College - Hibbing",
+    "canonical": "Hibbing Community College"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "Minnesota North College - Itasca",
+    "canonical": "Itasca Community College"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "Minnesota North College - Mesabi Range",
+    "canonical": "Mesabi Range College"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "Minnesota North College - Rainy River",
+    "canonical": "Rainy River Community College"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "Minnesota North College - Vermilion",
+    "canonical": "Vermilion Community College"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "USC Lancaster",
+    "canonical": "University of South Carolina Lancaster"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "USC Salkehatchie",
+    "canonical": "University of South Carolina Salkehatchie"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "USC Sumter",
+    "canonical": "University of South Carolina Sumter"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "Indiana East",
+    "canonical": "Indiana University East"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "Indiana Kokomo",
+    "canonical": "Indiana University Kokomo"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "Indiana Northwest",
+    "canonical": "Indiana University Northwest"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "Indiana South Bend",
+    "canonical": "Indiana University South Bend"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "Indiana Southeast",
+    "canonical": "Indiana University Southeast"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "IU East",
+    "canonical": "Indiana University East"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "IU Kokomo",
+    "canonical": "Indiana University Kokomo"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "IU Northwest",
+    "canonical": "Indiana University Northwest"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "IU South Bend",
+    "canonical": "Indiana University South Bend"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "IU Southeast",
+    "canonical": "Indiana University Southeast"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "Central Christian",
+    "canonical": "Central Christian College of Kansas"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "Brewton-Parker",
+    "canonical": "Brewton–Parker Christian University"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "Indiana Tech",
+    "canonical": "Indiana Institute of Technology"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "Science and Arts",
+    "canonical": "University of Science and Arts of Oklahoma"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "Oregon Tech",
+    "canonical": "Oregon Institute of Technology"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "Abraham Baldwin",
+    "canonical": "Abraham Baldwin Agricultural College"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "Lawrence Tech",
+    "canonical": "Lawrence Technological University"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "IU Columbus",
+    "canonical": "Indiana University Columbus"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "Montana Tech",
+    "canonical": "Montana Technological University"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "LSU Alexandria",
+    "canonical": "Louisiana State University at Alexandria"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "LSU Shreveport",
+    "canonical": "Louisiana State University in Shreveport"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "Calumet",
+    "canonical": "Calumet College of St. Joseph"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "SCAD Savannah",
+    "canonical": "Savannah College of Art and Design"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "SCAD Atlanta",
+    "canonical": "Savannah College of Art and Design–Atlanta"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "UNT Dallas",
+    "canonical": "University of North Texas at Dallas"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "Loyola",
+    "canonical": "Loyola University New Orleans"
+  },
+  {
+    "source": "naia",
+    "division": "naia",
+    "alias": "Embry-Riddle",
+    "canonical": "Embry–Riddle Aeronautical University, Prescott"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "Northeastern Oklahoma AM College",
+    "canonical": "Northeastern Oklahoma A&M College"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "Fayetteville Technical CC",
+    "canonical": "Fayetteville Technical Community College"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "Marshalltown CC",
+    "canonical": "Marshalltown Community College"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "Westmoreland County CC",
+    "canonical": "Westmoreland County Community College"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "CC of Allegheny County",
+    "canonical": "Community College of Allegheny County"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "CC of Allegheny County-Allegheny",
+    "canonical": "Community College of Allegheny County"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "Suffolk CC",
+    "canonical": "Suffolk County Community College"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "Coastal Alabama - North",
+    "canonical": "Coastal Alabama Community College"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "Coastal Alabama - South",
+    "canonical": "Coastal Alabama Community College"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "Coastal Alabama-South",
+    "canonical": "Coastal Alabama Community College"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "San Jacinto College-North",
+    "canonical": "San Jacinto College-Central"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "San Jacinto College-South",
+    "canonical": "San Jacinto College-Central"
+  },
+  {
+    "source": "njcaa",
+    "division": "juco",
+    "alias": "Black Hawk College",
+    "canonical": "Black Hawk College-Moline"
+  }
+]
