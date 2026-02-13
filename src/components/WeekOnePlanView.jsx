@@ -186,6 +186,11 @@ export default function WeekOnePlanView({
                     const item = actionByNumber.get(actionNumber)
                     const isDone = item?.status === 'done'
                     const content = resolveActionContent(weekNumber, actionNumber, item)
+                    const buttonLabel = isDone ? 'Edit This Action' : 'Start This Action'
+                    const buttonClassName = `mt-5 h-12 w-full rounded-lg px-6 text-sm font-semibold transition ${isDone
+                        ? 'border-2 border-[#D1D5DB] bg-white text-gray-700 hover:border-[#6C2EB9] hover:text-[#6C2EB9]'
+                        : 'bg-[#6C2EB9] text-white hover:bg-[#5B25A0] hover:shadow-md active:scale-[0.99]'
+                    }`
 
                     return (
                         <article
@@ -210,14 +215,10 @@ export default function WeekOnePlanView({
 
                             <button
                                 type="button"
-                                className={`mt-5 h-12 w-full rounded-lg px-6 text-sm font-semibold transition ${isDone
-                                    ? 'cursor-not-allowed bg-gray-300 text-gray-600'
-                                    : 'bg-[#6C2EB9] text-white hover:bg-[#5B25A0] hover:shadow-md active:scale-[0.99]'
-                                }`}
+                                className={buttonClassName}
                                 onClick={() => navigate(resolveActionLink(weekNumber, actionNumber, item, weekStartDate || item?.week_start_date || null))}
-                                disabled={isDone}
                             >
-                                {isDone ? 'Completed' : 'Start This Action'}
+                                {buttonLabel}
                             </button>
                         </article>
                     )
