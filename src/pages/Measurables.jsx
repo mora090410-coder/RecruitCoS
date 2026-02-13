@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useProfile } from '../hooks/useProfile';
 import { supabase } from '../lib/supabase';
 import { fetchLatestMeasurables } from '../lib/recruitingData';
-import { recomputeGap } from '../services/recomputeScores';
 import { recomputeAll } from '../services/recomputeAll';
 import { getMetricLabel, getMetricOptionsForSport, getMetricUnit } from '../config/sportSchema';
 import { normalizeMetricKey, normalizeUnit } from '../lib/normalize';
@@ -77,7 +76,7 @@ export default function Measurables() {
             }
             toast.success(result.summary);
             loadData();
-        } catch (error) {
+        } catch {
             toast.error("Failed to recompute scores.");
         } finally {
             setIsRecomputing(false);
@@ -124,7 +123,12 @@ export default function Measurables() {
                                 <MeasurablesList measurables={measurables} benchmarks={latestGap?.details_json?.metricDetails} />
                             </TabsContent>
                             <TabsContent value="entry" className="mt-6">
-                                <MeasurableEntryForm athleteId={profile?.id} sport={profile?.sport} onSave={() => { loadData(); }} />
+                                <MeasurableEntryForm
+                                    athleteId={profile?.id}
+                                    sport={profile?.sport}
+                                    positionGroup={profile?.primary_position_group || profile?.position_group}
+                                    onSave={() => { loadData(); }}
+                                />
                             </TabsContent>
                         </Tabs>
                     </div>
@@ -289,7 +293,7 @@ function MeasurablesList({ measurables, benchmarks = [] }) {
     );
 }
 
-function MeasurableEntryForm({ athleteId, sport, onSave }) {
+function MeasurableEntryForm({ athleteId, sport, positionGroup, onSave }) {
     const [formData, setFormData] = useState({
         metric: '',
         value: '',
@@ -298,7 +302,13 @@ function MeasurableEntryForm({ athleteId, sport, onSave }) {
         measured_at: new Date().toISOString().split('T')[0]
     });
     const [isSaving, setIsSaving] = useState(false);
-    const metricOptions = getMetricOptionsForSport(sport);
+    const metricOptions = useMemo(() => {
+        const options = getMetricOptionsForSport(sport);
+        if (!positionGroup) return options;
+
+        const filtered = options.filter((metric) => metric.appliesToGroups?.includes(positionGroup));
+        return filtered.length > 0 ? filtered : options;
+    }, [sport, positionGroup]);
 
     const handleMetricChange = (value) => {
         const expectedUnit = getMetricUnit(sport, value);
@@ -384,7 +394,7 @@ function MeasurableEntryForm({ athleteId, sport, onSave }) {
             toast.success(`${getMetricLabel(sport, formData.metric)} saved!`);
             setFormData({ ...formData, metric: '', value: '', unit: '' });
             onSave();
-        } catch (error) {
+        } catch {
             toast.error("Error saving data point.");
         } finally {
             setIsSaving(false);
@@ -409,8 +419,8 @@ function MeasurableEntryForm({ athleteId, sport, onSave }) {
                         >
                             <option value="" disabled>{sport ? 'Select a metric' : 'Select sport first'}</option>
                             {metricOptions.map(option => (
-                                <option key={option.canonical_key} value={option.canonical_key}>
-                                    {option.display_label}
+                                <option key={option.key} value={option.key}>
+                                    {option.label}
                                 </option>
                             ))}
                         </select>

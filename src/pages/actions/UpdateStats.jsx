@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
 import { Button } from '../../components/ui/button';
 import { useProfile } from '../../hooks/useProfile';
 import { supabase } from '../../lib/supabase';
 import { getFeatureRebuildMessage, isMissingTableError } from '../../lib/dbResilience';
+import { getSportSchema } from '../../config/sportSchema';
 import {
     resolveActionNumberFromSearch,
     resolveItemIdFromSearch,
@@ -15,6 +16,50 @@ import {
 } from '../../lib/actionRouting';
 
 const CARD_CLASS = 'rounded-[12px] border-2 border-[#E5E7EB] bg-white p-6 md:p-8';
+
+const FALLBACK_METRICS = [
+    {
+        key: 'sixty_yard_dash',
+        label: '60-yard dash',
+        unit: 'seconds',
+        input: { min: 0, max: 20, step: 0.01 }
+    },
+    {
+        key: 'vertical_jump',
+        label: 'Vertical jump',
+        unit: 'inches',
+        input: { min: 0, max: 60, step: 0.1 }
+    }
+];
+
+const UNIT_LABELS = {
+    sec: 'seconds',
+    in: 'inches',
+    cm: 'cm',
+    mph: 'mph',
+    rpm: 'rpm',
+    reps: 'reps',
+    level: 'level',
+    percent: '%',
+    yd: 'yards',
+    text: 'text'
+};
+
+const resolveUnitLabel = (unit) => UNIT_LABELS[unit] || unit || '';
+
+const resolveMetricPlaceholder = (metric) => {
+    const lowerBetter = metric?.direction === 'lower_better';
+    const unit = resolveUnitLabel(metric?.unit);
+    if (unit === '%') return 'e.g. 65';
+    if (unit === 'seconds') return lowerBetter ? 'e.g. 2.88' : 'e.g. 4.20';
+    if (unit === 'inches') return 'e.g. 28.5';
+    if (unit === 'cm') return 'e.g. 72';
+    if (unit === 'mph') return 'e.g. 63';
+    if (unit === 'rpm') return 'e.g. 2100';
+    if (unit === 'reps') return 'e.g. 12';
+    if (unit === 'yards') return 'e.g. 55';
+    return 'Enter value';
+};
 
 async function upsertMeasurableRow({ athleteId, sport, metric, value, unit }) {
     const { data: existingRow, error: lookupError } = await supabase
@@ -73,12 +118,43 @@ export default function UpdateStats() {
         (isImpersonating ? activeAthlete?.sport : profile?.sport) || 'unknown'
     ), [activeAthlete?.sport, isImpersonating, profile?.sport]);
 
-    const [dashTime, setDashTime] = useState('');
-    const [verticalJump, setVerticalJump] = useState('');
+    const targetPositionGroup = useMemo(() => (
+        (isImpersonating
+            ? (activeAthlete?.primary_position_group || activeAthlete?.position_group)
+            : (profile?.primary_position_group || profile?.position_group)
+        ) || null
+    ), [
+        activeAthlete?.position_group,
+        activeAthlete?.primary_position_group,
+        isImpersonating,
+        profile?.position_group,
+        profile?.primary_position_group
+    ]);
+
+    const metricFields = useMemo(() => {
+        const schema = getSportSchema(targetSport);
+        if (!schema?.metrics?.length) return FALLBACK_METRICS;
+        if (!targetPositionGroup) return schema.metrics;
+
+        const positionMetrics = schema.metrics.filter((metric) => metric.appliesToGroups?.includes(targetPositionGroup));
+        return positionMetrics.length > 0 ? positionMetrics : schema.metrics;
+    }, [targetPositionGroup, targetSport]);
+
+    const [metricValues, setMetricValues] = useState({});
     const [recentStats, setRecentStats] = useState('');
     const [error, setError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [isSkipping, setIsSkipping] = useState(false);
+
+    useEffect(() => {
+        setMetricValues((previous) => {
+            const next = {};
+            metricFields.forEach((metric) => {
+                next[metric.key] = previous[metric.key] ?? '';
+            });
+            return next;
+        });
+    }, [metricFields]);
 
     const handleSkip = async () => {
         if (!targetAthleteId || isSaving || isSkipping) return;
@@ -109,14 +185,19 @@ export default function UpdateStats() {
         if (!targetAthleteId || isSaving || isSkipping) return;
 
         const trimmedRecentStats = recentStats.trim();
-        const numericDash = dashTime === '' ? null : Number.parseFloat(dashTime);
-        const numericVertical = verticalJump === '' ? null : Number.parseFloat(verticalJump);
-
-        const hasDash = Number.isFinite(numericDash);
-        const hasVertical = Number.isFinite(numericVertical);
+        const populatedMetrics = metricFields
+            .map((metric) => {
+                const parsedValue = Number.parseFloat(metricValues[metric.key]);
+                return {
+                    key: metric.key,
+                    unit: metric.unit || '',
+                    value: Number.isFinite(parsedValue) ? parsedValue : null
+                };
+            })
+            .filter((entry) => entry.value !== null);
         const hasRecentStats = trimmedRecentStats.length > 0;
 
-        if (!hasDash && !hasVertical && !hasRecentStats) {
+        if (populatedMetrics.length === 0 && !hasRecentStats) {
             setError('Add at least one stat before saving.');
             return;
         }
@@ -125,26 +206,13 @@ export default function UpdateStats() {
         setIsSaving(true);
 
         try {
-            const writes = [];
-            if (hasDash) {
-                writes.push(upsertMeasurableRow({
-                    athleteId: targetAthleteId,
-                    sport: targetSport,
-                    metric: 'sixty_yard_dash',
-                    value: numericDash,
-                    unit: 'seconds'
-                }));
-            }
-
-            if (hasVertical) {
-                writes.push(upsertMeasurableRow({
-                    athleteId: targetAthleteId,
-                    sport: targetSport,
-                    metric: 'vertical_jump',
-                    value: numericVertical,
-                    unit: 'inches'
-                }));
-            }
+            const writes = populatedMetrics.map((entry) => upsertMeasurableRow({
+                athleteId: targetAthleteId,
+                sport: targetSport,
+                metric: entry.key,
+                value: entry.value,
+                unit: entry.unit
+            }));
 
             if (hasRecentStats) {
                 const numericFromText = Number.parseFloat((trimmedRecentStats.match(/-?\d+(\.\d+)?/) || [])[0] || '0');
@@ -195,38 +263,35 @@ export default function UpdateStats() {
                     <header className="space-y-2">
                         <h1 className="text-2xl font-semibold text-gray-900">Update Athlete Stats</h1>
                         <p className="text-sm text-gray-600">
-                            Capture fresh measurables and notes, then mark this weekly action complete.
+                            Capture fresh {targetSport} measurables and notes, then mark this weekly action complete.
                         </p>
                     </header>
 
                     <div className="grid gap-5 md:grid-cols-2">
-                        <label className="space-y-2">
-                            <span className="block text-sm font-medium text-gray-700">60-yard dash (seconds)</span>
-                            <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={dashTime}
-                                onChange={(event) => setDashTime(event.target.value)}
-                                className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
-                                placeholder="e.g. 7.12"
-                                aria-label="60-yard dash time in seconds"
-                            />
-                        </label>
-
-                        <label className="space-y-2">
-                            <span className="block text-sm font-medium text-gray-700">Vertical jump (inches)</span>
-                            <input
-                                type="number"
-                                step="0.1"
-                                min="0"
-                                value={verticalJump}
-                                onChange={(event) => setVerticalJump(event.target.value)}
-                                className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
-                                placeholder="e.g. 28.5"
-                                aria-label="Vertical jump in inches"
-                            />
-                        </label>
+                        {metricFields.map((metric) => (
+                            <label key={metric.key} className="space-y-2">
+                                <span className="block text-sm font-medium text-gray-700">
+                                    {metric.label} ({resolveUnitLabel(metric.unit)})
+                                </span>
+                                <input
+                                    type="number"
+                                    step={metric.input?.step ?? 0.01}
+                                    min={metric.input?.min ?? 0}
+                                    max={metric.input?.max}
+                                    value={metricValues[metric.key] ?? ''}
+                                    onChange={(event) => {
+                                        const nextValue = event.target.value;
+                                        setMetricValues((previous) => ({
+                                            ...previous,
+                                            [metric.key]: nextValue
+                                        }));
+                                    }}
+                                    className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
+                                    placeholder={resolveMetricPlaceholder(metric)}
+                                    aria-label={`${metric.label} in ${resolveUnitLabel(metric.unit)}`}
+                                />
+                            </label>
+                        ))}
                     </div>
 
                     <label className="space-y-2">
