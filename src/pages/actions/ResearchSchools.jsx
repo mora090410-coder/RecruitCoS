@@ -8,6 +8,8 @@ import {
     resolveActionNumberFromSearch,
     resolveItemIdFromSearch,
     resolveWeekStartFromSearch,
+    resolveWeekNumberFromSearch,
+    resolveWeeklyPlanHref,
     setWeeklyActionStatus
 } from '../../lib/actionRouting';
 import './research-schools.css';
@@ -206,6 +208,8 @@ export default function ResearchSchools() {
     const actionNumber = resolveActionNumberFromSearch(searchParams, 2);
     const actionItemId = resolveItemIdFromSearch(searchParams);
     const weekStartDate = resolveWeekStartFromSearch(searchParams);
+    const weekNumber = resolveWeekNumberFromSearch(searchParams, 1);
+    const weeklyPlanHref = resolveWeeklyPlanHref({ actionNumber, weekNumber });
 
     const athleteId = useMemo(
         () => (isImpersonating ? activeAthlete?.id || null : profile?.id || null),
@@ -437,17 +441,17 @@ export default function ResearchSchools() {
                 weekStartDate,
                 status: 'skipped'
             });
-            navigate(`/weekly-plan?action=${actionNumber}&skipped=true`);
+            navigate(resolveWeeklyPlanHref({ actionNumber, weekNumber, skipped: true }));
         } catch (skipError) {
             if (isMissingTableError(skipError)) {
-                navigate(`/weekly-plan?action=${actionNumber}&skipped=true`);
+                navigate(resolveWeeklyPlanHref({ actionNumber, weekNumber, skipped: true }));
             } else {
                 setError(skipError.message || 'Unable to skip this action right now.');
             }
         } finally {
             setSkipping(false);
         }
-    }, [actionItemId, actionNumber, athleteId, navigate, saving, skipping, weekStartDate]);
+    }, [actionItemId, actionNumber, athleteId, navigate, saving, skipping, weekNumber, weekStartDate]);
 
     const handleComplete = useCallback(async () => {
         if (!athleteId || saving || skipping) return;
@@ -468,17 +472,17 @@ export default function ResearchSchools() {
                 weekStartDate,
                 status: 'done'
             });
-            navigate(`/weekly-plan?action=${actionNumber}&completed=true`);
+            navigate(resolveWeeklyPlanHref({ actionNumber, weekNumber, completed: true }));
         } catch (completeError) {
             if (isMissingTableError(completeError)) {
-                navigate(`/weekly-plan?action=${actionNumber}&completed=true`);
+                navigate(resolveWeeklyPlanHref({ actionNumber, weekNumber, completed: true }));
             } else {
                 setError(completeError.message || 'Unable to complete this action right now.');
             }
         } finally {
             setSaving(false);
         }
-    }, [actionItemId, actionNumber, athleteId, navigate, saving, selectedSchools.length, skipping, weekStartDate]);
+    }, [actionItemId, actionNumber, athleteId, navigate, saving, selectedSchools.length, skipping, weekNumber, weekStartDate]);
 
     const counts = useMemo(() => ({
         dream: selectedSchools.filter((school) => normalizeCategory(school.category) === 'dream').length,
@@ -490,7 +494,7 @@ export default function ResearchSchools() {
         <DashboardLayout>
             <div className="rs-page">
                 <div className="rs-top-row">
-                    <Link to="/weekly-plan" className="rs-back-link">Back to Plan</Link>
+                    <Link to={weeklyPlanHref} className="rs-back-link">Back to Plan</Link>
                     <span className="rs-action-pill">Action {actionNumber} of 3</span>
                 </div>
 

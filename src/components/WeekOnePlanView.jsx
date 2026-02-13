@@ -50,12 +50,15 @@ function resolveActionTemplate(weekNumber, actionNumber) {
 }
 
 function resolveActionLink(weekNumber, actionNumber, actionItem, weekStartDate) {
-    if (actionItem) return resolveActionHref(actionItem, weekStartDate)
+    if (actionItem) return resolveActionHref(actionItem, weekStartDate, weekNumber)
 
     const template = resolveActionTemplate(weekNumber, actionNumber)
     const baseRoute = template?.route || '/weekly-plan'
     const params = new URLSearchParams({ action: String(actionNumber) })
     if (weekStartDate) params.set('weekStart', weekStartDate)
+    if (Number.isInteger(Number(weekNumber)) && Number(weekNumber) >= 1) {
+        params.set('week', String(weekNumber))
+    }
     return `${baseRoute}?${params.toString()}`
 }
 

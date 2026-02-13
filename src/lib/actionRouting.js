@@ -77,6 +77,14 @@ export function resolveActionNumberFromSearch(searchParams, fallback = 1) {
     return fallback;
 }
 
+export function resolveWeekNumberFromSearch(searchParams, fallback = 1) {
+    const weekFromQuery = Number.parseInt(searchParams.get('week') || '', 10);
+    if (Number.isInteger(weekFromQuery) && weekFromQuery >= 1) {
+        return weekFromQuery;
+    }
+    return fallback;
+}
+
 export function resolveItemIdFromSearch(searchParams) {
     const itemId = searchParams.get('itemId');
     return itemId && itemId.trim().length > 0 ? itemId.trim() : null;
@@ -90,7 +98,30 @@ export function resolveWeekStartFromSearch(searchParams) {
     return weekStart;
 }
 
-export function resolveActionHref(item, weekStartDate) {
+export function resolveWeeklyPlanHref({
+    actionNumber,
+    weekNumber,
+    completed = false,
+    skipped = false
+} = {}) {
+    const params = new URLSearchParams();
+    const normalizedActionNumber = Number.parseInt(actionNumber, 10);
+    const normalizedWeekNumber = Number.parseInt(weekNumber, 10);
+
+    if (Number.isInteger(normalizedActionNumber) && normalizedActionNumber >= 1 && normalizedActionNumber <= 3) {
+        params.set('action', String(normalizedActionNumber));
+    }
+    if (Number.isInteger(normalizedWeekNumber) && normalizedWeekNumber >= 1) {
+        params.set('week', String(normalizedWeekNumber));
+    }
+    if (completed) params.set('completed', 'true');
+    if (skipped) params.set('skipped', 'true');
+
+    const query = params.toString();
+    return query ? `/weekly-plan?${query}` : '/weekly-plan';
+}
+
+export function resolveActionHref(item, weekStartDate, weekNumber) {
     const actionNumber = resolveActionNumberFromItem(item);
     const actionTypeRoute = ACTION_TYPE_TO_ROUTE[String(item?.action_type || '').toLowerCase()];
     const baseRoute = actionTypeRoute || ACTION_NUMBER_TO_ROUTE[actionNumber] || ACTION_NUMBER_TO_ROUTE[1];
@@ -100,6 +131,10 @@ export function resolveActionHref(item, weekStartDate) {
 
     if (item?.id) params.set('itemId', item.id);
     if (weekStartDate) params.set('weekStart', weekStartDate);
+    const normalizedWeekNumber = Number.parseInt(weekNumber || item?.week_number, 10);
+    if (Number.isInteger(normalizedWeekNumber) && normalizedWeekNumber >= 1) {
+        params.set('week', String(normalizedWeekNumber));
+    }
 
     return `${baseRoute}?${params.toString()}`;
 }

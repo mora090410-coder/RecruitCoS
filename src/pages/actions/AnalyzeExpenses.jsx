@@ -9,6 +9,8 @@ import {
     resolveActionNumberFromSearch,
     resolveItemIdFromSearch,
     resolveWeekStartFromSearch,
+    resolveWeekNumberFromSearch,
+    resolveWeeklyPlanHref,
     setWeeklyActionStatus
 } from '../../lib/actionRouting';
 import './week3-actions.css';
@@ -107,6 +109,8 @@ export default function AnalyzeExpenses() {
     const actionNumber = resolveActionNumberFromSearch(searchParams, 2);
     const actionItemId = resolveItemIdFromSearch(searchParams);
     const weekStartDate = resolveWeekStartFromSearch(searchParams);
+    const weekNumber = resolveWeekNumberFromSearch(searchParams, 3);
+    const weeklyPlanHref = resolveWeeklyPlanHref({ actionNumber, weekNumber });
 
     const athleteId = useMemo(
         () => (isImpersonating ? activeAthlete?.id || null : profile?.id || null),
@@ -285,17 +289,17 @@ export default function AnalyzeExpenses() {
                 weekStartDate,
                 status: 'skipped'
             });
-            navigate(`/weekly-plan?action=${actionNumber}&skipped=true`);
+            navigate(resolveWeeklyPlanHref({ actionNumber, weekNumber, skipped: true }));
         } catch (skipError) {
             if (isMissingTableError(skipError)) {
-                navigate(`/weekly-plan?action=${actionNumber}&skipped=true`);
+                navigate(resolveWeeklyPlanHref({ actionNumber, weekNumber, skipped: true }));
             } else {
                 setError(skipError?.message || 'Unable to skip this action right now.');
             }
         } finally {
             setIsSkipping(false);
         }
-    }, [actionItemId, actionNumber, athleteId, isCompleting, isSkipping, navigate, weekStartDate]);
+    }, [actionItemId, actionNumber, athleteId, isCompleting, isSkipping, navigate, weekNumber, weekStartDate]);
 
     const handleComplete = useCallback(async () => {
         if (!athleteId || isCompleting || isSkipping) return;
@@ -314,23 +318,23 @@ export default function AnalyzeExpenses() {
                 weekStartDate,
                 status: 'done'
             });
-            navigate(`/weekly-plan?action=${actionNumber}&completed=true`);
+            navigate(resolveWeeklyPlanHref({ actionNumber, weekNumber, completed: true }));
         } catch (completeError) {
             if (isMissingTableError(completeError)) {
-                navigate(`/weekly-plan?action=${actionNumber}&completed=true`);
+                navigate(resolveWeeklyPlanHref({ actionNumber, weekNumber, completed: true }));
             } else {
                 setError(completeError?.message || 'Unable to complete this action right now.');
             }
         } finally {
             setIsCompleting(false);
         }
-    }, [actionItemId, actionNumber, analysis, athleteId, isCompleting, isSkipping, navigate, weekStartDate]);
+    }, [actionItemId, actionNumber, analysis, athleteId, isCompleting, isSkipping, navigate, weekNumber, weekStartDate]);
 
     return (
         <DashboardLayout>
             <div className="w3-page">
                 <div className="w3-top-row">
-                    <Link to="/weekly-plan" className="w3-back-link">Back to Plan</Link>
+                    <Link to={weeklyPlanHref} className="w3-back-link">Back to Plan</Link>
                     <span className="w3-action-pill">Action {actionNumber} of 3</span>
                 </div>
 

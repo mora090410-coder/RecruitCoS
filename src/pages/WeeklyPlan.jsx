@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
 import WeekOnePlanView from '../components/WeekOnePlanView';
 import { useProfile } from '../hooks/useProfile';
@@ -143,6 +143,8 @@ async function fetchWeek5PaywallSummary(athleteId) {
 
 export default function WeeklyPlan() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const requestedWeekParam = searchParams.get('week') || '';
     const { profile, activeAthlete, isImpersonating } = useProfile();
     const [simplePlan, setSimplePlan] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -218,8 +220,12 @@ export default function WeeklyPlan() {
 
                 const safeWeeks = existingWeeks.length > 0 ? existingWeeks : [1];
                 const highestWeek = Math.max(...safeWeeks);
-                const resolvedWeekNumber = safeWeeks.includes(currentWeekNumber)
-                    ? currentWeekNumber
+                const requestedWeekNumber = Number.parseInt(requestedWeekParam, 10);
+                const preferredWeekNumber = (
+                    Number.isInteger(requestedWeekNumber) && requestedWeekNumber >= 1
+                ) ? requestedWeekNumber : currentWeekNumber;
+                const resolvedWeekNumber = safeWeeks.includes(preferredWeekNumber)
+                    ? preferredWeekNumber
                     : highestWeek;
 
                 const selectedWeekActions = await fetchWeekActions(targetAthleteId, resolvedWeekNumber);
@@ -297,7 +303,7 @@ export default function WeeklyPlan() {
         return () => {
             active = false;
         };
-    }, [athleteContext, currentWeekNumber, reloadNonce, targetAthleteId]);
+    }, [athleteContext, currentWeekNumber, reloadNonce, requestedWeekParam, targetAthleteId]);
 
     const handleRetryLoad = () => {
         setReloadNonce((prev) => prev + 1);

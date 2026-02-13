@@ -9,6 +9,8 @@ import {
     resolveActionNumberFromSearch,
     resolveItemIdFromSearch,
     resolveWeekStartFromSearch,
+    resolveWeekNumberFromSearch,
+    resolveWeeklyPlanHref,
     setWeeklyActionStatus
 } from '../../lib/actionRouting';
 
@@ -43,6 +45,8 @@ export default function LogExpenses() {
     const actionNumber = resolveActionNumberFromSearch(searchParams, 3);
     const actionItemId = resolveItemIdFromSearch(searchParams);
     const weekStartDate = resolveWeekStartFromSearch(searchParams);
+    const weekNumber = resolveWeekNumberFromSearch(searchParams, 1);
+    const weeklyPlanHref = resolveWeeklyPlanHref({ actionNumber, weekNumber });
 
     const targetAthleteId = useMemo(() => (
         isImpersonating ? activeAthlete?.id || null : profile?.id || null
@@ -100,10 +104,10 @@ export default function LogExpenses() {
                 weekStartDate,
                 status: 'skipped'
             });
-            navigate(`/weekly-plan?action=${actionNumber}&skipped=true`);
+            navigate(resolveWeeklyPlanHref({ actionNumber, weekNumber, skipped: true }));
         } catch (skipError) {
             if (isMissingTableError(skipError)) {
-                navigate(`/weekly-plan?action=${actionNumber}&skipped=true`);
+                navigate(resolveWeeklyPlanHref({ actionNumber, weekNumber, skipped: true }));
                 return;
             }
             setError(skipError?.message || 'Unable to skip this action right now.');
@@ -146,7 +150,7 @@ export default function LogExpenses() {
                 status: 'done'
             });
 
-            navigate(`/weekly-plan?action=${actionNumber}&completed=true`);
+            navigate(resolveWeeklyPlanHref({ actionNumber, weekNumber, completed: true }));
         } catch (saveError) {
             if (isMissingTableError(saveError)) {
                 setError(getFeatureRebuildMessage('Expense logging'));
@@ -162,7 +166,7 @@ export default function LogExpenses() {
         <DashboardLayout>
             <div className="mx-auto max-w-4xl space-y-4">
                 <div className="flex items-center justify-between">
-                    <Link to="/weekly-plan" className="text-sm font-semibold text-[#6C2EB9] hover:underline">
+                    <Link to={weeklyPlanHref} className="text-sm font-semibold text-[#6C2EB9] hover:underline">
                         Back to Plan
                     </Link>
                     <span className="rounded-full bg-[#F3ECFF] px-3 py-1 text-xs font-semibold text-[#6C2EB9]">
