@@ -66,6 +66,6 @@ VALUES
     ('Kankakee Community College', 'Kankakee', 'IL', 'juco', 'NJCAA'),
     ('Lincoln Trail College', 'Robinson', 'IL', 'juco', 'NJCAA'),
     ('Lake Land College', 'Mattoon', 'IL', 'juco', 'NJCAA')
-ON CONFLICT (name) DO NOTHING;
+ON CONFLICT (name, state) DO NOTHING;
 
 COMMIT;

@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/button';
 import { useProfile } from '../../hooks/useProfile';
 import { supabase } from '../../lib/supabase';
 import { getFeatureRebuildMessage, isMissingTableError } from '../../lib/dbResilience';
+import { listSchoolsWithFallback } from '../../lib/schoolCatalogClient';
 import {
     resolveActionNumberFromSearch,
     resolveItemIdFromSearch,
@@ -245,13 +246,10 @@ export default function RefineSchoolList() {
             .filter(Boolean);
         const athleteState = String(athleteRow?.state || '').trim().toUpperCase();
 
-        const { data: schoolCandidates, error: schoolsError } = await supabase
-            .from('schools')
-            .select('id, name, city, state, division, conference')
-            .order('name', { ascending: true })
-            .limit(250);
-
-        if (schoolsError) {
+        let schoolCandidates = [];
+        try {
+            schoolCandidates = await listSchoolsWithFallback({ limit: 250 });
+        } catch (schoolsError) {
             setError(schoolsError.message || 'Unable to generate recommendations right now.');
             setLoading(false);
             return;

@@ -1,0 +1,48 @@
+{
+  "schools": [
+    {
+      "name": "Appalachian State University",
+      "city": "Boone",
+      "state": "NC",
+      "division": "d1",
+      "conference": "Sun Belt",
+      "tier": "d1_mid_major",
+      "enrollment": 20800,
+      "cost_of_attendance": 25600,
+      "sports": ["football", "baseball", "softball", "basketball"]
+    },
+    {
+      "name": "University of North Carolina at Pembroke",
+      "city": "Pembroke",
+      "state": "NC",
+      "division": "d2",
+      "conference": "Conference Carolinas",
+      "tier": "d2_high",
+      "enrollment": 8800,
+      "cost_of_attendance": 19600,
+      "sports": ["football", "baseball", "softball", "basketball"]
+    },
+    {
+      "name": "Centre College",
+      "city": "Danville",
+      "state": "KY",
+      "division": "d3",
+      "conference": "SAA",
+      "tier": "d3",
+      "enrollment": 1450,
+      "cost_of_attendance": 57200,
+      "sports": ["football", "baseball", "basketball"]
+    },
+    {
+      "name": "Iowa Western Community College",
+      "city": "Council Bluffs",
+      "state": "IA",
+      "division": "juco",
+      "conference": "NJCAA",
+      "tier": "juco",
+      "enrollment": 5600,
+      "cost_of_attendance": 11800,
+      "sports": ["football", "baseball", "softball", "basketball"]
+    }
+  ]
+}

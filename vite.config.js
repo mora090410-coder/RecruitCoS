@@ -11,6 +11,29 @@ export default defineConfig({
       name: 'internal-test-route',
       configureServer(server) {
         server.middlewares.use(async (req, res, next) => {
+          if (
+            req.method === 'GET'
+            && (
+              req.url.startsWith('/v1/schools')
+              || req.url.startsWith('/v1/sports')
+              || req.url.startsWith('/api/schools')
+            )
+          ) {
+            try {
+              const { handleSchoolCatalogRequest } = await server.ssrLoadModule('/src/server/schoolCatalogApi.js');
+              await handleSchoolCatalogRequest({ req, res });
+            } catch (err) {
+              console.error('[SCHOOL_CATALOG_API] Unhandled failure:', err);
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({
+                error: 'SCHOOL_CATALOG_API_ERROR',
+                message: err.message
+              }));
+            }
+            return;
+          }
+
           if (req.method === 'GET' && req.url.startsWith('/api/internal/test-weekly-plan/')) {
             const urlParts = req.url.split('/');
             const athleteId = urlParts[urlParts.length - 1].split('?')[0];

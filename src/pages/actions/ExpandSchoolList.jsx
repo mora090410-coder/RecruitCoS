@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/button';
 import { useProfile } from '../../hooks/useProfile';
 import { supabase } from '../../lib/supabase';
 import { getFeatureRebuildMessage, isMissingTableError } from '../../lib/dbResilience';
+import { searchSchoolsWithFallback } from '../../lib/schoolCatalogClient';
 import {
     resolveActionNumberFromSearch,
     resolveItemIdFromSearch,
@@ -48,6 +49,10 @@ function normalizeCategory(value) {
     return CATEGORY_NORMALIZATION[normalized] || 'target';
 }
 
+function normalizeSchoolNameInput(value) {
+    return String(value || '').trim().replace(/\s+/g, ' ');
+}
+
 function normalizeSavedSchool(row) {
     return {
         ...row,
@@ -87,16 +92,36 @@ export default function ExpandSchoolList() {
     const [isCompleting, setIsCompleting] = useState(false);
     const [isSkipping, setIsSkipping] = useState(false);
     const [error, setError] = useState('');
+    const [searching, setSearching] = useState(false);
     const [divisionFilter, setDivisionFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [selectedSchools, setSelectedSchools] = useState([]);
     const [recommendationPicks, setRecommendationPicks] = useState([]);
 
+    const trimmedSearchQuery = useMemo(
+        () => normalizeSchoolNameInput(searchQuery),
+        [searchQuery]
+    );
+
     const selectedSchoolNames = useMemo(
         () => new Set(selectedSchools.map((school) => String(school.school_name || '').toLowerCase())),
         [selectedSchools]
     );
+
+    const customSchoolCandidate = useMemo(() => {
+        if (trimmedSearchQuery.length < SEARCH_MIN_LENGTH) return null;
+        if (searching) return null;
+        if (searchResults.length > 0) return null;
+        if (selectedSchoolNames.has(trimmedSearchQuery.toLowerCase())) return null;
+        return {
+            name: trimmedSearchQuery,
+            city: '',
+            state: '',
+            division: divisionFilter === 'all' ? null : divisionFilter,
+            conference: null
+        };
+    }, [divisionFilter, searchResults.length, searching, selectedSchoolNames, trimmedSearchQuery]);
 
     const loadData = useCallback(async () => {
         if (!athleteId) {
@@ -168,36 +193,34 @@ export default function ExpandSchoolList() {
         let active = true;
 
         async function runSearch() {
-            const trimmedQuery = searchQuery.trim();
+            const trimmedQuery = trimmedSearchQuery;
             if (trimmedQuery.length < SEARCH_MIN_LENGTH) {
                 setSearchResults([]);
+                setSearching(false);
                 return;
             }
 
-            let queryBuilder = supabase
-                .from('schools')
-                .select('id, name, city, state, division, conference')
-                .ilike('name', `%${trimmedQuery}%`)
-                .order('name', { ascending: true })
-                .limit(SEARCH_LIMIT);
+            setSearching(true);
 
-            if (divisionFilter !== 'all') {
-                queryBuilder = queryBuilder.eq('division', divisionFilter);
-            }
+            try {
+                const schools = await searchSchoolsWithFallback({
+                    query: trimmedQuery,
+                    divisionFilter,
+                    limit: SEARCH_LIMIT
+                });
+                if (!active) return;
 
-            const { data, error: searchError } = await queryBuilder;
-            if (!active) return;
-
-            if (searchError) {
+                const filtered = schools.filter(
+                    (school) => !selectedSchoolNames.has(String(school.name || '').toLowerCase())
+                );
+                setSearchResults(filtered);
+                setSearching(false);
+            } catch (searchError) {
+                if (!active) return;
                 setError(searchError.message || 'Unable to search schools right now.');
                 setSearchResults([]);
-                return;
+                setSearching(false);
             }
-
-            const filtered = (data || []).filter(
-                (school) => !selectedSchoolNames.has(String(school.name || '').toLowerCase())
-            );
-            setSearchResults(filtered);
         }
 
         const timeoutId = window.setTimeout(runSearch, 200);
@@ -205,7 +228,7 @@ export default function ExpandSchoolList() {
             active = false;
             window.clearTimeout(timeoutId);
         };
-    }, [divisionFilter, searchQuery, selectedSchoolNames]);
+    }, [divisionFilter, selectedSchoolNames, trimmedSearchQuery]);
 
     const addSchool = useCallback(async (school, category = 'target') => {
         if (!athleteId || (!school?.school_name && !school?.name) || saving) return;
@@ -226,7 +249,7 @@ export default function ExpandSchoolList() {
             athlete_id: athleteId,
             school_name: schoolName,
             school_location: school.school_location || formatSchoolLocation(school),
-            division: String(school.division || '').toLowerCase(),
+            division: String(school.division || '').trim().toLowerCase() || null,
             conference: school.conference || null,
             category: normalizeCategory(category),
             notes: ''
@@ -259,6 +282,11 @@ export default function ExpandSchoolList() {
         setSearchResults([]);
         setSaving(false);
     }, [athleteId, saving, selectedSchoolNames, selectedSchools.length]);
+
+    const addCustomSchool = useCallback(async () => {
+        if (!customSchoolCandidate) return;
+        await addSchool(customSchoolCandidate, 'target');
+    }, [addSchool, customSchoolCandidate]);
 
     const updateCategory = useCallback(async (schoolId, nextCategory) => {
         if (!schoolId || saving) return;
@@ -475,8 +503,12 @@ export default function ExpandSchoolList() {
                         </label>
                     </div>
 
-                    {searchQuery.trim().length > 0 && searchQuery.trim().length < SEARCH_MIN_LENGTH && (
+                    {trimmedSearchQuery.length > 0 && trimmedSearchQuery.length < SEARCH_MIN_LENGTH && (
                         <p className="mt-2 text-xs font-medium text-gray-600">Type at least {SEARCH_MIN_LENGTH} characters to search.</p>
+                    )}
+
+                    {searching && (
+                        <p className="mt-2 text-xs font-medium text-gray-600">Searching schools...</p>
                     )}
 
                     {searchResults.length > 0 && (
@@ -506,6 +538,24 @@ export default function ExpandSchoolList() {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    )}
+
+                    {trimmedSearchQuery.length >= SEARCH_MIN_LENGTH && !searching && searchResults.length === 0 && (
+                        <div className="mt-2 space-y-1">
+                            <p className="text-xs font-medium text-gray-600">
+                                No results found. Try another spelling or division filter.
+                            </p>
+                            {customSchoolCandidate ? (
+                                <button
+                                    type="button"
+                                    className="text-xs font-semibold text-[#6C2EB9] underline-offset-2 hover:underline"
+                                    onClick={addCustomSchool}
+                                    disabled={loading || saving}
+                                >
+                                    Add "{customSchoolCandidate.name}" as a custom school
+                                </button>
+                            ) : null}
                         </div>
                     )}
                 </section>

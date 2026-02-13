@@ -14,3 +14,34 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## School Catalog API
+
+The dev server exposes dynamic school catalog routes backed by Supabase:
+
+- `GET /v1/schools?query=<text>&divisions=d1,d2,d3,juco&sport=football&limit=20&offset=0`
+- `GET /v1/schools/:id`
+- `GET /v1/sports`
+
+Legacy compatibility route:
+
+- `GET /api/schools?divisions=d1,d2`
+
+### Syncing School Data
+
+Run the sync script to upsert schools and sport offerings:
+
+```bash
+npm run sync:schools -- --file scripts/data/schools_catalog.sample.json
+```
+
+For annual maintenance updates (only new/changed rows):
+
+```bash
+npm run sync:schools -- --file /path/to/full_catalog.json --delta
+```
+
+Required environment variables:
+
+- `VITE_SUPABASE_URL` (or `SUPABASE_URL`)
+- `SUPABASE_SERVICE_ROLE_KEY`

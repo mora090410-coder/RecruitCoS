@@ -4,6 +4,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import { useProfile } from '../../hooks/useProfile';
 import { supabase } from '../../lib/supabase';
 import { getFeatureRebuildMessage, isMissingTableError } from '../../lib/dbResilience';
+import { searchSchoolsWithFallback } from '../../lib/schoolCatalogClient';
 import {
     resolveActionNumberFromSearch,
     resolveItemIdFromSearch,
@@ -61,6 +62,10 @@ const CATEGORY_NORMALIZATION = {
 function normalizeCategory(value) {
     const normalized = String(value || '').trim().toLowerCase();
     return CATEGORY_NORMALIZATION[normalized] || 'target';
+}
+
+function normalizeSchoolNameInput(value) {
+    return String(value || '').trim().replace(/\s+/g, ' ');
 }
 
 function formatDivision(division) {
@@ -225,13 +230,33 @@ export default function ResearchSchools() {
 
     const [divisionFilter, setDivisionFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [searching, setSearching] = useState(false);
     const [searchResults, setSearchResults] = useState([]);
     const [selectedSchools, setSelectedSchools] = useState([]);
+
+    const trimmedSearchQuery = useMemo(
+        () => normalizeSchoolNameInput(searchQuery),
+        [searchQuery]
+    );
 
     const selectedSchoolNames = useMemo(
         () => new Set(selectedSchools.map((school) => String(school.school_name || '').toLowerCase())),
         [selectedSchools]
     );
+
+    const customSchoolCandidate = useMemo(() => {
+        if (trimmedSearchQuery.length < SEARCH_MIN_LENGTH) return null;
+        if (searching) return null;
+        if (searchResults.length > 0) return null;
+        if (selectedSchoolNames.has(trimmedSearchQuery.toLowerCase())) return null;
+        return {
+            name: trimmedSearchQuery,
+            city: '',
+            state: '',
+            division: divisionFilter === 'all' ? null : divisionFilter,
+            conference: null
+        };
+    }, [divisionFilter, searchResults.length, searching, selectedSchoolNames, trimmedSearchQuery]);
 
     const loadSavedSchools = useCallback(async () => {
         if (!athleteId) {
@@ -276,44 +301,41 @@ export default function ResearchSchools() {
         let active = true;
 
         async function runSearch() {
-            const trimmedQuery = searchQuery.trim();
+            const trimmedQuery = trimmedSearchQuery;
             if (trimmedQuery.length < SEARCH_MIN_LENGTH) {
                 setSearchResults([]);
+                setSearching(false);
                 return;
             }
 
             setError('');
+            setSearching(true);
 
-            let queryBuilder = supabase
-                .from('schools')
-                .select('id, name, city, state, division, conference')
-                .ilike('name', `%${trimmedQuery}%`)
-                .order('name', { ascending: true })
-                .limit(SEARCH_LIMIT);
+            try {
+                const schools = await searchSchoolsWithFallback({
+                    query: trimmedQuery,
+                    divisionFilter,
+                    limit: SEARCH_LIMIT
+                });
 
-            if (divisionFilter !== 'all') {
-                queryBuilder = queryBuilder.eq('division', divisionFilter);
-            }
+                if (!active) return;
 
-            const { data, error: searchError } = await queryBuilder;
+                const filtered = schools.filter(
+                    (school) => !selectedSchoolNames.has(String(school.name || '').toLowerCase())
+                );
 
-            if (!active) return;
-
-            if (searchError) {
+                setSearchResults(filtered);
+                setSearching(false);
+            } catch (searchError) {
+                if (!active) return;
                 if (isMissingTableError(searchError)) {
                     setError(getFeatureRebuildMessage('School catalog'));
                 } else {
                     setError(searchError.message || 'Unable to search schools right now.');
                 }
                 setSearchResults([]);
-                return;
+                setSearching(false);
             }
-
-            const filtered = (data || []).filter(
-                (school) => !selectedSchoolNames.has(String(school.name || '').toLowerCase())
-            );
-
-            setSearchResults(filtered);
         }
 
         const timeoutId = window.setTimeout(runSearch, 200);
@@ -322,7 +344,7 @@ export default function ResearchSchools() {
             active = false;
             window.clearTimeout(timeoutId);
         };
-    }, [divisionFilter, searchQuery, selectedSchoolNames]);
+    }, [divisionFilter, selectedSchoolNames, trimmedSearchQuery]);
 
     const addSchool = useCallback(async (school, category) => {
         if (!athleteId || !school?.name) return;
@@ -339,7 +361,7 @@ export default function ResearchSchools() {
             athlete_id: athleteId,
             school_name: school.name,
             school_location: formatSchoolLocation(school),
-            division: String(school.division || '').toLowerCase(),
+            division: String(school.division || '').trim().toLowerCase() || null,
             conference: school.conference || null,
             category: normalizeCategory(category),
             notes: ''
@@ -379,6 +401,11 @@ export default function ResearchSchools() {
         setSearchResults([]);
         setSaving(false);
     }, [athleteId, selectedSchoolNames]);
+
+    const addCustomSchool = useCallback(async () => {
+        if (!customSchoolCandidate) return;
+        await addSchool(customSchoolCandidate, 'target');
+    }, [addSchool, customSchoolCandidate]);
 
     const removeSchool = useCallback(async (schoolId) => {
         if (!schoolId) return;
@@ -550,8 +577,12 @@ export default function ResearchSchools() {
                         />
                     </div>
 
-                    {searchQuery.trim().length > 0 && searchQuery.trim().length < SEARCH_MIN_LENGTH && (
+                    {trimmedSearchQuery.length > 0 && trimmedSearchQuery.length < SEARCH_MIN_LENGTH && (
                         <p className="rs-inline-note">Type at least {SEARCH_MIN_LENGTH} characters to search.</p>
+                    )}
+
+                    {searching && (
+                        <p className="rs-inline-note">Searching schools...</p>
                     )}
 
                     {searchResults.length > 0 && (
@@ -567,8 +598,15 @@ export default function ResearchSchools() {
                         </div>
                     )}
 
-                    {searchQuery.trim().length >= SEARCH_MIN_LENGTH && searchResults.length === 0 && !error && (
-                        <p className="rs-inline-note">No results found for that search and filter combination.</p>
+                    {trimmedSearchQuery.length >= SEARCH_MIN_LENGTH && !searching && searchResults.length === 0 && !error && (
+                        <div className="rs-inline-note">
+                            <p>No results found for that search and filter combination.</p>
+                            {customSchoolCandidate ? (
+                                <button type="button" className="rs-link-btn" onClick={addCustomSchool} disabled={loading || saving}>
+                                    Add "{customSchoolCandidate.name}" as a custom school
+                                </button>
+                            ) : null}
+                        </div>
                     )}
                 </section>
 

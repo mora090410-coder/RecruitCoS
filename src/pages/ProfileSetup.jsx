@@ -261,12 +261,16 @@ export default function ProfileSetup() {
             setBackgroundStatus(prev => ({ ...prev, schools: 'loading', plan: 'loading' }))
 
             const divisions = formData.targetDivisions.join(',')
-            const apiData = await safeGetJson(`/api/schools?divisions=${encodeURIComponent(divisions)}&location=${encodeURIComponent('')}`)
+            const apiData = await safeGetJson(`/v1/schools?divisions=${encodeURIComponent(divisions)}&limit=1`)
 
             let schoolCount = 0
-            if (Array.isArray(apiData)) {
+            if (apiData && typeof apiData?.pagination?.count === 'number') {
+                schoolCount = apiData.pagination.count
+            } else if (Array.isArray(apiData?.data)) {
+                schoolCount = apiData.data.length
+            } else if (Array.isArray(apiData)) {
                 schoolCount = apiData.length
-            } else if (apiData && typeof apiData.count === 'number') {
+            } else if (apiData && typeof apiData?.count === 'number') {
                 schoolCount = apiData.count
             } else {
                 schoolCount = formData.targetDivisions.length * 8
