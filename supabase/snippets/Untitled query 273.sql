@@ -1,664 +1,263 @@
--- Migration 041: Restore RecruitCoS end-to-end onboarding -> weekly plan -> dashboard schema
--- This migration is additive/idempotent and preserves compatibility with the current app contract.
+-- Seed file: Recruiting Reality Engine school catalog (60 schools) + benchmarks + recruiting regions.
+-- Safe to re-run; uses ON CONFLICT upserts.
 
 BEGIN;
 
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+WITH school_seed AS (
+    SELECT *
+    FROM (
+        VALUES
+            -- D1 Top 25 (10)
+            ('University of Tennessee', 'Knoxville', 'TN', 35.960600, -83.920700, 'd1', 'd1_top25', 'SEC', 31500, ARRAY['softball','baseball','football','basketball'], 36700),
+            ('Stanford University', 'Stanford', 'CA', 37.427500, -122.169700, 'd1', 'd1_top25', 'ACC', 84120, ARRAY['softball','baseball','football','basketball'], 17700),
+            ('University of California, Los Angeles', 'Los Angeles', 'CA', 34.068900, -118.445200, 'd1', 'd1_top25', 'Big Ten', 43400, ARRAY['softball','baseball','football','basketball'], 46400),
+            ('Duke University', 'Durham', 'NC', 36.001400, -78.938200, 'd1', 'd1_top25', 'ACC', 86200, ARRAY['softball','baseball','football','basketball'], 17800),
+            ('University of Oklahoma', 'Norman', 'OK', 35.205900, -97.445700, 'd1', 'd1_top25', 'SEC', 30700, ARRAY['softball','baseball','football','basketball'], 28500),
+            ('University of Florida', 'Gainesville', 'FL', 29.643600, -82.354900, 'd1', 'd1_top25', 'SEC', 28600, ARRAY['softball','baseball','football','basketball'], 60200),
+            ('University of Texas at Austin', 'Austin', 'TX', 30.284900, -97.734100, 'd1', 'd1_top25', 'SEC', 30800, ARRAY['softball','baseball','football','basketball'], 52600),
+            ('University of Washington', 'Seattle', 'WA', 47.655300, -122.303500, 'd1', 'd1_top25', 'Big Ten', 40900, ARRAY['softball','baseball','football','basketball'], 52600),
+            ('Louisiana State University', 'Baton Rouge', 'LA', 30.413300, -91.180000, 'd1', 'd1_top25', 'SEC', 28900, ARRAY['softball','baseball','football','basketball'], 37100),
+            ('University of Georgia', 'Athens', 'GA', 33.948000, -83.377300, 'd1', 'd1_top25', 'SEC', 30000, ARRAY['softball','baseball','football','basketball'], 40100),
 
--- ============================================
--- CORE TABLES
--- ============================================
+            -- D1 Power 5 (20)
+            ('Purdue University', 'West Lafayette', 'IN', 40.423700, -86.921200, 'd1', 'd1_power5', 'Big Ten', 28800, ARRAY['softball','baseball','football','basketball'], 52000),
+            ('Indiana University Bloomington', 'Bloomington', 'IN', 39.165300, -86.526400, 'd1', 'd1_power5', 'Big Ten', 27200, ARRAY['softball','baseball','football','basketball'], 47900),
+            ('Michigan State University', 'East Lansing', 'MI', 42.701800, -84.482200, 'd1', 'd1_power5', 'Big Ten', 29600, ARRAY['softball','baseball','football','basketball'], 50700),
+            ('University of Michigan', 'Ann Arbor', 'MI', 42.278000, -83.738200, 'd1', 'd1_power5', 'Big Ten', 37200, ARRAY['softball','baseball','football','basketball'], 52100),
+            ('Ohio State University', 'Columbus', 'OH', 40.007600, -83.030000, 'd1', 'd1_power5', 'Big Ten', 28700, ARRAY['softball','baseball','football','basketball'], 61100),
+            ('Penn State University', 'University Park', 'PA', 40.798200, -77.859900, 'd1', 'd1_power5', 'Big Ten', 33700, ARRAY['softball','baseball','football','basketball'], 49800),
+            ('University of Alabama', 'Tuscaloosa', 'AL', 33.214800, -87.539100, 'd1', 'd1_power5', 'SEC', 32000, ARRAY['softball','baseball','football','basketball'], 39400),
+            ('Auburn University', 'Auburn', 'AL', 32.603000, -85.487000, 'd1', 'd1_power5', 'SEC', 32900, ARRAY['softball','baseball','football','basketball'], 31300),
+            ('University of Mississippi', 'Oxford', 'MS', 34.364700, -89.538600, 'd1', 'd1_power5', 'SEC', 29800, ARRAY['softball','baseball','football','basketball'], 22800),
+            ('University of South Carolina', 'Columbia', 'SC', 33.998800, -81.030000, 'd1', 'd1_power5', 'SEC', 33600, ARRAY['softball','baseball','football','basketball'], 36000),
+            ('North Carolina State University', 'Raleigh', 'NC', 35.784700, -78.682100, 'd1', 'd1_power5', 'ACC', 31600, ARRAY['softball','baseball','football','basketball'], 36900),
+            ('Virginia Tech', 'Blacksburg', 'VA', 37.229600, -80.423400, 'd1', 'd1_power5', 'ACC', 31300, ARRAY['softball','baseball','football','basketball'], 38600),
+            ('Texas A&M University', 'College Station', 'TX', 30.618700, -96.336500, 'd1', 'd1_power5', 'SEC', 32500, ARRAY['softball','baseball','football','basketball'], 74400),
+            ('Baylor University', 'Waco', 'TX', 31.549300, -97.114300, 'd1', 'd1_power5', 'Big 12', 65400, ARRAY['softball','baseball','football','basketball'], 20700),
+            ('Arizona State University', 'Tempe', 'AZ', 33.424200, -111.928100, 'd1', 'd1_power5', 'Big 12', 33500, ARRAY['softball','baseball','football','basketball'], 80200),
+            ('Oregon State University', 'Corvallis', 'OR', 44.563800, -123.279400, 'd1', 'd1_power5', 'Pac-12', 32100, ARRAY['softball','baseball','football','basketball'], 36500),
+            ('University of Louisville', 'Louisville', 'KY', 38.215600, -85.760000, 'd1', 'd1_power5', 'ACC', 32700, ARRAY['softball','baseball','football','basketball'], 23900),
+            ('Clemson University', 'Clemson', 'SC', 34.677100, -82.837400, 'd1', 'd1_power5', 'ACC', 32900, ARRAY['softball','baseball','football','basketball'], 28900),
+            ('University of Wisconsin-Madison', 'Madison', 'WI', 43.076600, -89.412500, 'd1', 'd1_power5', 'Big Ten', 31300, ARRAY['softball','baseball','football','basketball'], 50400),
+            ('University of Nebraska-Lincoln', 'Lincoln', 'NE', 40.820000, -96.700000, 'd1', 'd1_power5', 'Big Ten', 28200, ARRAY['softball','baseball','football','basketball'], 25400),
 
-CREATE TABLE IF NOT EXISTS public.users (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    email TEXT UNIQUE NOT NULL,
-    parent_name TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+            -- D1 Mid-Major (10)
+            ('Ball State University', 'Muncie', 'IN', 40.201700, -85.406100, 'd1', 'd1_mid_major', 'MAC', 24000, ARRAY['softball','baseball','football','basketball'], 21400),
+            ('Miami University', 'Oxford', 'OH', 39.510000, -84.740000, 'd1', 'd1_mid_major', 'MAC', 36400, ARRAY['softball','baseball','football','basketball'], 19600),
+            ('University of North Texas', 'Denton', 'TX', 33.210900, -97.150000, 'd1', 'd1_mid_major', 'American', 25700, ARRAY['softball','baseball','football','basketball'], 44000),
+            ('University of South Alabama', 'Mobile', 'AL', 30.695400, -88.180700, 'd1', 'd1_mid_major', 'Sun Belt', 23700, ARRAY['softball','baseball','football','basketball'], 13600),
+            ('Coastal Carolina University', 'Conway', 'SC', 33.793400, -79.014300, 'd1', 'd1_mid_major', 'Sun Belt', 28600, ARRAY['softball','baseball','football','basketball'], 10700),
+            ('University of Louisiana at Lafayette', 'Lafayette', 'LA', 30.214100, -92.020100, 'd1', 'd1_mid_major', 'Sun Belt', 22100, ARRAY['softball','baseball','football','basketball'], 18900),
+            ('Wichita State University', 'Wichita', 'KS', 37.717200, -97.295100, 'd1', 'd1_mid_major', 'American', 23600, ARRAY['softball','baseball','basketball'], 16700),
+            ('University of Nevada, Reno', 'Reno', 'NV', 39.545000, -119.817000, 'd1', 'd1_mid_major', 'Mountain West', 24900, ARRAY['softball','baseball','football','basketball'], 21000),
+            ('San Diego State University', 'San Diego', 'CA', 32.775700, -117.071900, 'd1', 'd1_mid_major', 'Mountain West', 30200, ARRAY['softball','baseball','football','basketball'], 37800),
+            ('IU Indianapolis', 'Indianapolis', 'IN', 39.773900, -86.176000, 'd1', 'd1_mid_major', 'Horizon League', 24500, ARRAY['softball','baseball','basketball'], 25500),
 
-ALTER TABLE public.athletes
-    ADD COLUMN IF NOT EXISTS user_id UUID,
-    ADD COLUMN IF NOT EXISTS grade_level INTEGER,
-    ADD COLUMN IF NOT EXISTS graduation_year INTEGER,
-    ADD COLUMN IF NOT EXISTS birth_date DATE,
-    ADD COLUMN IF NOT EXISTS target_division TEXT,
-    ADD COLUMN IF NOT EXISTS recruiting_phase TEXT DEFAULT 'evaluation';
+            -- D2 (10)
+            ('Grand Valley State University', 'Allendale', 'MI', 42.963400, -85.887200, 'd2', 'd2_high', 'GLIAC', 22000, ARRAY['softball','baseball','football','basketball'], 23100),
+            ('Ashland University', 'Ashland', 'OH', 40.868700, -82.318200, 'd2', 'd2_high', 'G-MAC', 39000, ARRAY['softball','baseball','football','basketball'], 4300),
+            ('Colorado School of Mines', 'Golden', 'CO', 39.751600, -105.221100, 'd2', 'd2_high', 'RMAC', 44400, ARRAY['softball','baseball','football','basketball'], 7400),
+            ('University of Tampa', 'Tampa', 'FL', 27.947500, -82.466900, 'd2', 'd2_high', 'SSC', 49300, ARRAY['softball','baseball','basketball'], 11000),
+            ('Bentley University', 'Waltham', 'MA', 42.388900, -71.220300, 'd2', 'd2_high', 'NE10', 57800, ARRAY['softball','baseball','basketball'], 5600),
+            ('Rollins College', 'Winter Park', 'FL', 28.592200, -81.348100, 'd2', 'd2_low', 'SSC', 73900, ARRAY['softball','baseball','basketball'], 3100),
+            ('West Texas A&M University', 'Canyon', 'TX', 34.981700, -101.918500, 'd2', 'd2_high', 'Lone Star', 23700, ARRAY['softball','baseball','football','basketball'], 10200),
+            ('California State University, Dominguez Hills', 'Carson', 'CA', 33.864600, -118.256900, 'd2', 'd2_low', 'CCAA', 18900, ARRAY['softball','baseball','basketball'], 17100),
+            ('University of Central Oklahoma', 'Edmond', 'OK', 35.656400, -97.471700, 'd2', 'd2_high', 'MIAA', 21800, ARRAY['softball','baseball','football','basketball'], 14300),
+            ('Minnesota State University, Mankato', 'Mankato', 'MN', 44.147700, -93.999400, 'd2', 'd2_high', 'NSIC', 22200, ARRAY['softball','baseball','football','basketball'], 15800),
 
-UPDATE public.athletes
-SET user_id = id
-WHERE user_id IS NULL;
-
--- Legacy safety: if a backfilled user_id does not exist in auth.users,
--- clear it so the FK can be added without blocking the migration.
-UPDATE public.athletes a
-SET user_id = NULL
-WHERE a.user_id IS NOT NULL
-  AND NOT EXISTS (
-      SELECT 1
-      FROM auth.users au
-      WHERE au.id = a.user_id
-  );
-
-UPDATE public.athletes
-SET graduation_year = grad_year
-WHERE graduation_year IS NULL AND grad_year IS NOT NULL;
-
--- Backfill public.users for valid athlete-linked auth users.
-INSERT INTO public.users (id, email, created_at, updated_at)
+            -- D3 (10)
+            ('Denison University', 'Granville', 'OH', 40.074800, -82.519900, 'd3', 'd3', 'NCAC', 58000, ARRAY['softball','baseball','football','basketball'], 2300),
+            ('Kenyon College', 'Gambier', 'OH', 40.372000, -82.397000, 'd3', 'd3', 'NCAC', 81100, ARRAY['softball','baseball','basketball'], 1900),
+            ('Amherst College', 'Amherst', 'MA', 42.372500, -72.518500, 'd3', 'd3', 'NESCAC', 87500, ARRAY['softball','baseball','football','basketball'], 1900),
+            ('Williams College', 'Williamstown', 'MA', 42.712000, -73.203700, 'd3', 'd3', 'NESCAC', 86700, ARRAY['softball','baseball','football','basketball'], 2200),
+            ('Johns Hopkins University', 'Baltimore', 'MD', 39.329900, -76.620500, 'd3', 'd3', 'Centennial', 82600, ARRAY['softball','baseball','football','basketball'], 32000),
+            ('Tufts University', 'Medford', 'MA', 42.407500, -71.119000, 'd3', 'd3', 'NESCAC', 84900, ARRAY['softball','baseball','football','basketball'], 13100),
+            ('Emory University', 'Atlanta', 'GA', 33.792500, -84.323800, 'd3', 'd3', 'UAA', 82000, ARRAY['softball','baseball','basketball'], 15400),
+            ('Claremont-Mudd-Scripps', 'Claremont', 'CA', 34.101800, -117.709600, 'd3', 'd3', 'SCIAC', 80800, ARRAY['softball','baseball','football','basketball'], 3500),
+            ('DePauw University', 'Greencastle', 'IN', 39.644500, -86.864700, 'd3', 'd3', 'NCAC', 77000, ARRAY['softball','baseball','football','basketball'], 2000),
+            ('Washington University in St. Louis', 'St. Louis', 'MO', 38.648800, -90.310800, 'd3', 'd3', 'UAA', 85000, ARRAY['softball','baseball','football','basketball'], 16800)
+    ) AS t(
+        name,
+        city,
+        state,
+        latitude,
+        longitude,
+        division,
+        tier,
+        conference,
+        cost_of_attendance,
+        sports_offered,
+        enrollment
+    )
+)
+INSERT INTO public.schools (
+    name,
+    city,
+    state,
+    latitude,
+    longitude,
+    division,
+    tier,
+    conference,
+    cost_of_attendance,
+    sports_offered,
+    enrollment
+)
 SELECT
-    au.id,
-    COALESCE(au.email, CONCAT(au.id::TEXT, '@placeholder.invalid')),
-    NOW(),
-    NOW()
-FROM auth.users au
-JOIN (
-    SELECT DISTINCT user_id
-    FROM public.athletes
-    WHERE user_id IS NOT NULL
-) linked ON linked.user_id = au.id
-ON CONFLICT (id) DO UPDATE
+    name,
+    city,
+    state,
+    latitude,
+    longitude,
+    division,
+    tier,
+    conference,
+    cost_of_attendance,
+    sports_offered,
+    enrollment
+FROM school_seed
+ON CONFLICT (name, state) DO UPDATE
 SET
-    email = EXCLUDED.email,
-    updated_at = NOW();
+    city = EXCLUDED.city,
+    latitude = EXCLUDED.latitude,
+    longitude = EXCLUDED.longitude,
+    division = EXCLUDED.division,
+    tier = EXCLUDED.tier,
+    conference = EXCLUDED.conference,
+    cost_of_attendance = EXCLUDED.cost_of_attendance,
+    sports_offered = EXCLUDED.sports_offered,
+    enrollment = EXCLUDED.enrollment;
 
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_constraint
-        WHERE conname = 'athletes_user_id_fkey'
-    ) THEN
-        ALTER TABLE public.athletes
-            ADD CONSTRAINT athletes_user_id_fkey
-            FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-    END IF;
-END $$;
-
-CREATE INDEX IF NOT EXISTS idx_athletes_user_id ON public.athletes (user_id);
-
--- ============================================
--- WEEKLY PLAN TABLES
--- ============================================
-
-CREATE TABLE IF NOT EXISTS public.weekly_plans (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    athlete_id UUID NOT NULL REFERENCES public.athletes(id) ON DELETE CASCADE,
-    week_number INTEGER NOT NULL,
-    sport TEXT NOT NULL,
-    grade_level INTEGER NOT NULL,
-    recruiting_phase TEXT NOT NULL,
-    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    completed_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (athlete_id, week_number)
-);
-
-CREATE INDEX IF NOT EXISTS idx_weekly_plans_athlete ON public.weekly_plans (athlete_id);
-
--- App compatibility table (used by current weekly plan reads/writes)
-CREATE TABLE IF NOT EXISTS public.athlete_weekly_plans (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    athlete_id UUID NOT NULL REFERENCES public.athletes(id) ON DELETE CASCADE,
-    week_of_date DATE NOT NULL,
-    week_number INTEGER,
-    sport TEXT,
-    grade_level INTEGER,
-    recruiting_phase TEXT,
-    phase TEXT,
-    primary_gap_metric TEXT,
-    primary_gap_band TEXT,
-    primary_gap_score NUMERIC,
-    summary JSONB NOT NULL DEFAULT '{}'::JSONB,
-    generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    plan_json JSONB NOT NULL DEFAULT '{}'::JSONB,
-    computed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    completed_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (athlete_id, week_of_date)
-);
-
-CREATE INDEX IF NOT EXISTS idx_athlete_weekly_plans_athlete_week
-    ON public.athlete_weekly_plans (athlete_id, week_of_date DESC);
-
-CREATE TABLE IF NOT EXISTS public.athlete_weekly_plan_items (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    athlete_id UUID NOT NULL REFERENCES public.athletes(id) ON DELETE CASCADE,
-    weekly_plan_id UUID REFERENCES public.weekly_plans(id) ON DELETE CASCADE,
-    week_start_date DATE,
-    week_number INTEGER,
-    priority_rank INTEGER CHECK (priority_rank BETWEEN 1 AND 3),
-    action_number INTEGER CHECK (action_number BETWEEN 1 AND 3),
-    item_type TEXT,
-    action_type TEXT,
-    title TEXT,
-    action_title TEXT,
-    why TEXT,
-    action_description TEXT,
-    actions JSONB NOT NULL DEFAULT '[]'::JSONB,
-    estimated_minutes INTEGER NOT NULL DEFAULT 10,
-    status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('not_started', 'in_progress', 'open', 'done', 'skipped')),
-    completed_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (athlete_id, week_start_date, priority_rank),
-    UNIQUE (athlete_id, week_number, action_number)
-);
-
-CREATE INDEX IF NOT EXISTS idx_weekly_plan_items_athlete_week
-    ON public.athlete_weekly_plan_items (athlete_id, week_start_date DESC);
-CREATE INDEX IF NOT EXISTS idx_weekly_plan_items_status
-    ON public.athlete_weekly_plan_items (status);
-
-CREATE TABLE IF NOT EXISTS public.action_completions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    athlete_id UUID NOT NULL REFERENCES public.athletes(id) ON DELETE CASCADE,
-    action_id UUID,
-    weekly_plan_item_id UUID REFERENCES public.athlete_weekly_plan_items(id) ON DELETE CASCADE,
-    week_start_date DATE,
-    week_number INTEGER,
-    action_number INTEGER,
-    action_type TEXT,
-    completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    time_to_complete_seconds INTEGER,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_action_completions_athlete_action
-    ON public.action_completions (athlete_id, action_id)
-    WHERE action_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_action_completions_athlete
-    ON public.action_completions (athlete_id);
-
--- ============================================
--- ACTION 1: ATHLETE STATS/MEASURABLES
--- ============================================
-
-CREATE TABLE IF NOT EXISTS public.athlete_measurables (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    athlete_id UUID NOT NULL REFERENCES public.athletes(id) ON DELETE CASCADE,
-    sport TEXT,
-    metric TEXT,
-    value NUMERIC,
-    unit TEXT,
-    verified BOOLEAN NOT NULL DEFAULT FALSE,
-    sixty_yard_dash DECIMAL(4,2),
-    forty_yard_dash DECIMAL(4,2),
-    shuttle_run DECIMAL(4,2),
-    vertical_jump DECIMAL(4,2),
-    broad_jump DECIMAL(5,2),
-    bench_press INTEGER,
-    squat INTEGER,
-    deadlift INTEGER,
-    recent_stats TEXT,
-    measured_at DATE NOT NULL DEFAULT CURRENT_DATE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_measurables_athlete ON public.athlete_measurables (athlete_id);
-CREATE INDEX IF NOT EXISTS idx_athlete_measurables_query
-    ON public.athlete_measurables (athlete_id, sport, metric, measured_at DESC);
-
--- ============================================
--- ACTION 2: TARGET SCHOOLS
--- ============================================
-
-CREATE TABLE IF NOT EXISTS public.athlete_saved_schools (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    athlete_id UUID NOT NULL REFERENCES public.athletes(id) ON DELETE CASCADE,
-    school_name TEXT NOT NULL,
-    school_location TEXT,
-    division TEXT,
-    conference TEXT,
-    category TEXT,
-    match_score INTEGER,
-    notes TEXT,
-    status TEXT,
-    distance_miles NUMERIC,
-    added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (athlete_id, school_name)
-);
-
-CREATE INDEX IF NOT EXISTS idx_saved_schools_athlete ON public.athlete_saved_schools (athlete_id);
-
--- ============================================
--- ACTION 3: EXPENSES
--- ============================================
-
-CREATE TABLE IF NOT EXISTS public.expenses (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    athlete_id UUID NOT NULL REFERENCES public.athletes(id) ON DELETE CASCADE,
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    category TEXT NOT NULL,
-    amount DECIMAL(10,2) NOT NULL,
-    date DATE,
-    expense_date DATE,
-    notes TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CHECK (date IS NOT NULL OR expense_date IS NOT NULL)
-);
-
-CREATE INDEX IF NOT EXISTS idx_expenses_athlete ON public.expenses (athlete_id);
-CREATE INDEX IF NOT EXISTS idx_expenses_user ON public.expenses (user_id);
-CREATE INDEX IF NOT EXISTS idx_expenses_date ON public.expenses (date DESC);
-
--- ============================================
--- DASHBOARD TABLES
--- ============================================
-
-CREATE TABLE IF NOT EXISTS public.user_streaks (
-    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    athlete_id UUID REFERENCES public.athletes(id) ON DELETE CASCADE,
-    current_streak_weeks INTEGER NOT NULL DEFAULT 0,
-    longest_streak_weeks INTEGER NOT NULL DEFAULT 0,
-    last_completed_week DATE,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS public.readiness_scores (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    athlete_id UUID NOT NULL REFERENCES public.athletes(id) ON DELETE CASCADE,
-    total_score INTEGER NOT NULL,
-    score_label TEXT,
-    athletic_score INTEGER,
-    academic_score INTEGER,
-    exposure_score INTEGER,
-    division_recommendation TEXT,
-    calculated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_readiness_scores_athlete ON public.readiness_scores (athlete_id);
-
--- ============================================
--- SUBSCRIPTION / BILLING TABLES
--- ============================================
-
-CREATE TABLE IF NOT EXISTS public.subscriptions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    tier TEXT NOT NULL,
-    status TEXT NOT NULL,
-    stripe_customer_id TEXT,
-    stripe_subscription_id TEXT,
-    current_period_start TIMESTAMPTZ,
-    current_period_end TIMESTAMPTZ,
-    trial_end TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON public.subscriptions (user_id);
-CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON public.subscriptions (status);
-
--- ============================================
--- ROW LEVEL SECURITY
--- ============================================
-
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.athletes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.weekly_plans ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.athlete_weekly_plans ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.athlete_weekly_plan_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.action_completions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.athlete_measurables ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.athlete_saved_schools ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_streaks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.readiness_scores ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users can manage own user row" ON public.users;
-CREATE POLICY "Users can manage own user row"
-ON public.users
-FOR ALL
-TO authenticated
-USING (auth.uid() = id)
-WITH CHECK (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Users can manage athletes by user_id" ON public.athletes;
-CREATE POLICY "Users can manage athletes by user_id"
-ON public.athletes
-FOR ALL
-TO authenticated
-USING (user_id = auth.uid() OR id = auth.uid())
-WITH CHECK (user_id = auth.uid() OR id = auth.uid());
-
-DROP POLICY IF EXISTS "Users can manage own weekly_plans" ON public.weekly_plans;
-CREATE POLICY "Users can manage own weekly_plans"
-ON public.weekly_plans
-FOR ALL
-TO authenticated
-USING (
-    EXISTS (
-        SELECT 1
-        FROM public.athletes a
-        WHERE a.id = weekly_plans.athlete_id
-          AND (a.user_id = auth.uid() OR a.id = auth.uid())
-    )
+WITH benchmark_inputs AS (
+    SELECT
+        s.id AS school_id,
+        s.tier,
+        sport_name::TEXT AS sport
+    FROM public.schools s
+    CROSS JOIN LATERAL unnest(ARRAY['softball', 'baseball', 'football']) AS sport_name
+    WHERE sport_name::TEXT = ANY (s.sports_offered)
 )
-WITH CHECK (
-    EXISTS (
-        SELECT 1
-        FROM public.athletes a
-        WHERE a.id = weekly_plans.athlete_id
-          AND (a.user_id = auth.uid() OR a.id = auth.uid())
-    )
-);
-
-DROP POLICY IF EXISTS "Users can manage own athlete_weekly_plans" ON public.athlete_weekly_plans;
-CREATE POLICY "Users can manage own athlete_weekly_plans"
-ON public.athlete_weekly_plans
-FOR ALL
-TO authenticated
-USING (
-    EXISTS (
-        SELECT 1
-        FROM public.athletes a
-        WHERE a.id = athlete_weekly_plans.athlete_id
-          AND (a.user_id = auth.uid() OR a.id = auth.uid())
-    )
+INSERT INTO public.school_recruiting_benchmarks (
+    school_id,
+    sport,
+    avg_sixty_yard_dash,
+    avg_vertical_jump,
+    avg_gpa,
+    roster_size,
+    recruiting_class_size
 )
-WITH CHECK (
-    EXISTS (
-        SELECT 1
-        FROM public.athletes a
-        WHERE a.id = athlete_weekly_plans.athlete_id
-          AND (a.user_id = auth.uid() OR a.id = auth.uid())
-    )
-);
+SELECT
+    bi.school_id,
+    bi.sport,
+    CASE bi.tier
+        WHEN 'd1_top25' THEN 6.90
+        WHEN 'd1_power5' THEN 7.20
+        WHEN 'd1_mid_major' THEN 7.45
+        WHEN 'd2_high' THEN 7.60
+        WHEN 'd2_low' THEN 7.80
+        WHEN 'd3' THEN 7.90
+        WHEN 'naia' THEN 8.00
+        ELSE 8.10
+    END,
+    CASE bi.tier
+        WHEN 'd1_top25' THEN 32.0
+        WHEN 'd1_power5' THEN 29.0
+        WHEN 'd1_mid_major' THEN 26.5
+        WHEN 'd2_high' THEN 25.0
+        WHEN 'd2_low' THEN 23.5
+        WHEN 'd3' THEN 22.5
+        WHEN 'naia' THEN 21.5
+        ELSE 20.5
+    END,
+    CASE bi.tier
+        WHEN 'd1_top25' THEN 3.55
+        WHEN 'd1_power5' THEN 3.40
+        WHEN 'd1_mid_major' THEN 3.20
+        WHEN 'd2_high' THEN 3.10
+        WHEN 'd2_low' THEN 2.95
+        WHEN 'd3' THEN 3.45
+        WHEN 'naia' THEN 3.00
+        ELSE 2.85
+    END,
+    CASE
+        WHEN bi.sport = 'football' THEN 110
+        WHEN bi.sport = 'baseball' THEN 40
+        ELSE 26
+    END,
+    CASE
+        WHEN bi.sport = 'football' THEN 25
+        WHEN bi.sport = 'baseball' THEN 12
+        ELSE 7
+    END
+FROM benchmark_inputs bi
+ON CONFLICT (school_id, sport) DO UPDATE
+SET
+    avg_sixty_yard_dash = EXCLUDED.avg_sixty_yard_dash,
+    avg_vertical_jump = EXCLUDED.avg_vertical_jump,
+    avg_gpa = EXCLUDED.avg_gpa,
+    roster_size = EXCLUDED.roster_size,
+    recruiting_class_size = EXCLUDED.recruiting_class_size;
 
-DROP POLICY IF EXISTS "Users can manage own athlete_weekly_plan_items" ON public.athlete_weekly_plan_items;
-CREATE POLICY "Users can manage own athlete_weekly_plan_items"
-ON public.athlete_weekly_plan_items
-FOR ALL
-TO authenticated
-USING (
-    EXISTS (
-        SELECT 1
-        FROM public.athletes a
-        WHERE a.id = athlete_weekly_plan_items.athlete_id
-          AND (a.user_id = auth.uid() OR a.id = auth.uid())
-    )
+WITH home_regions AS (
+    SELECT id AS school_id, state
+    FROM public.schools
 )
-WITH CHECK (
-    EXISTS (
-        SELECT 1
-        FROM public.athletes a
-        WHERE a.id = athlete_weekly_plan_items.athlete_id
-          AND (a.user_id = auth.uid() OR a.id = auth.uid())
-    )
-);
+INSERT INTO public.school_recruiting_regions (school_id, state, recruits_heavily, avg_recruits_per_year)
+SELECT school_id, state, TRUE, 4
+FROM home_regions
+ON CONFLICT (school_id, state) DO UPDATE
+SET
+    recruits_heavily = EXCLUDED.recruits_heavily,
+    avg_recruits_per_year = EXCLUDED.avg_recruits_per_year;
 
-DROP POLICY IF EXISTS "Users can manage own action_completions" ON public.action_completions;
-CREATE POLICY "Users can manage own action_completions"
-ON public.action_completions
-FOR ALL
-TO authenticated
-USING (
-    EXISTS (
-        SELECT 1
-        FROM public.athletes a
-        WHERE a.id = action_completions.athlete_id
-          AND (a.user_id = auth.uid() OR a.id = auth.uid())
-    )
+WITH state_neighbors AS (
+    SELECT * FROM (
+        VALUES
+            ('AL', 'GA', 'FL'),
+            ('AZ', 'CA', 'NM'),
+            ('CA', 'AZ', 'NV'),
+            ('CO', 'UT', 'NM'),
+            ('FL', 'GA', 'AL'),
+            ('GA', 'FL', 'SC'),
+            ('IN', 'IL', 'OH'),
+            ('KS', 'MO', 'OK'),
+            ('KY', 'OH', 'TN'),
+            ('LA', 'TX', 'MS'),
+            ('MA', 'CT', 'NH'),
+            ('MD', 'PA', 'VA'),
+            ('MI', 'IN', 'OH'),
+            ('MN', 'WI', 'IA'),
+            ('MO', 'IL', 'KS'),
+            ('MS', 'AL', 'LA'),
+            ('NC', 'SC', 'VA'),
+            ('NE', 'IA', 'KS'),
+            ('NV', 'CA', 'AZ'),
+            ('OH', 'MI', 'PA'),
+            ('OK', 'TX', 'AR'),
+            ('OR', 'WA', 'CA'),
+            ('PA', 'OH', 'NJ'),
+            ('SC', 'NC', 'GA'),
+            ('TN', 'GA', 'NC'),
+            ('TX', 'OK', 'LA'),
+            ('VA', 'NC', 'MD'),
+            ('WA', 'OR', 'CA'),
+            ('WI', 'MN', 'IL')
+    ) AS t(state, neighbor_a, neighbor_b)
+),
+neighbor_rows AS (
+    SELECT
+        s.id AS school_id,
+        unnest(ARRAY[sn.neighbor_a, sn.neighbor_b]) AS state
+    FROM public.schools s
+    JOIN state_neighbors sn ON sn.state = s.state
 )
-WITH CHECK (
-    EXISTS (
-        SELECT 1
-        FROM public.athletes a
-        WHERE a.id = action_completions.athlete_id
-          AND (a.user_id = auth.uid() OR a.id = auth.uid())
-    )
-);
-
-DROP POLICY IF EXISTS "Users can manage own athlete_measurables" ON public.athlete_measurables;
-CREATE POLICY "Users can manage own athlete_measurables"
-ON public.athlete_measurables
-FOR ALL
-TO authenticated
-USING (
-    EXISTS (
-        SELECT 1
-        FROM public.athletes a
-        WHERE a.id = athlete_measurables.athlete_id
-          AND (a.user_id = auth.uid() OR a.id = auth.uid())
-    )
-)
-WITH CHECK (
-    EXISTS (
-        SELECT 1
-        FROM public.athletes a
-        WHERE a.id = athlete_measurables.athlete_id
-          AND (a.user_id = auth.uid() OR a.id = auth.uid())
-    )
-);
-
-DROP POLICY IF EXISTS "Users can manage own athlete_saved_schools" ON public.athlete_saved_schools;
-CREATE POLICY "Users can manage own athlete_saved_schools"
-ON public.athlete_saved_schools
-FOR ALL
-TO authenticated
-USING (
-    EXISTS (
-        SELECT 1
-        FROM public.athletes a
-        WHERE a.id = athlete_saved_schools.athlete_id
-          AND (a.user_id = auth.uid() OR a.id = auth.uid())
-    )
-)
-WITH CHECK (
-    EXISTS (
-        SELECT 1
-        FROM public.athletes a
-        WHERE a.id = athlete_saved_schools.athlete_id
-          AND (a.user_id = auth.uid() OR a.id = auth.uid())
-    )
-);
-
-DROP POLICY IF EXISTS "Users can manage own expenses" ON public.expenses;
-CREATE POLICY "Users can manage own expenses"
-ON public.expenses
-FOR ALL
-TO authenticated
-USING (
-    user_id = auth.uid()
-    OR EXISTS (
-        SELECT 1
-        FROM public.athletes a
-        WHERE a.id = expenses.athlete_id
-          AND (a.user_id = auth.uid() OR a.id = auth.uid())
-    )
-)
-WITH CHECK (
-    (user_id IS NULL OR user_id = auth.uid())
-    AND EXISTS (
-        SELECT 1
-        FROM public.athletes a
-        WHERE a.id = expenses.athlete_id
-          AND (a.user_id = auth.uid() OR a.id = auth.uid())
-    )
-);
-
-DROP POLICY IF EXISTS "Users can manage own user_streaks" ON public.user_streaks;
-CREATE POLICY "Users can manage own user_streaks"
-ON public.user_streaks
-FOR ALL
-TO authenticated
-USING (user_id = auth.uid())
-WITH CHECK (user_id = auth.uid());
-
-DROP POLICY IF EXISTS "Users can manage own readiness_scores" ON public.readiness_scores;
-CREATE POLICY "Users can manage own readiness_scores"
-ON public.readiness_scores
-FOR ALL
-TO authenticated
-USING (
-    EXISTS (
-        SELECT 1
-        FROM public.athletes a
-        WHERE a.id = readiness_scores.athlete_id
-          AND (a.user_id = auth.uid() OR a.id = auth.uid())
-    )
-)
-WITH CHECK (
-    EXISTS (
-        SELECT 1
-        FROM public.athletes a
-        WHERE a.id = readiness_scores.athlete_id
-          AND (a.user_id = auth.uid() OR a.id = auth.uid())
-    )
-);
-
-DROP POLICY IF EXISTS "Users can manage own subscriptions" ON public.subscriptions;
-CREATE POLICY "Users can manage own subscriptions"
-ON public.subscriptions
-FOR ALL
-TO authenticated
-USING (user_id = auth.uid())
-WITH CHECK (user_id = auth.uid());
-
--- ============================================
--- HELPER FUNCTIONS
--- ============================================
-
-CREATE OR REPLACE FUNCTION public.create_initial_weekly_plan(p_athlete_id UUID)
-RETURNS UUID
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_weekly_plan_id UUID;
-    v_sport TEXT;
-    v_grade_level INTEGER;
-    v_phase TEXT;
-    v_week_start DATE;
-BEGIN
-    SELECT sport, COALESCE(grade_level, 9), COALESCE(recruiting_phase, 'evaluation')
-    INTO v_sport, v_grade_level, v_phase
-    FROM public.athletes
-    WHERE id = p_athlete_id;
-
-    IF v_sport IS NULL THEN
-        RAISE EXCEPTION 'Athlete % not found or missing sport', p_athlete_id;
-    END IF;
-
-    v_week_start := date_trunc('week', CURRENT_DATE)::DATE;
-
-    INSERT INTO public.weekly_plans (athlete_id, week_number, sport, grade_level, recruiting_phase)
-    VALUES (p_athlete_id, 1, v_sport, v_grade_level, v_phase)
-    ON CONFLICT (athlete_id, week_number) DO UPDATE
-    SET recruiting_phase = EXCLUDED.recruiting_phase
-    RETURNING id INTO v_weekly_plan_id;
-
-    INSERT INTO public.athlete_weekly_plan_items (
-        athlete_id, weekly_plan_id, week_start_date, week_number,
-        priority_rank, action_number, item_type, action_type,
-        title, action_title, why, action_description, estimated_minutes, status
-    ) VALUES
-    (
-        p_athlete_id, v_weekly_plan_id, v_week_start, 1,
-        1, 1, 'gap', 'update_stats',
-        'Update your athlete''s current stats',
-        'Update your athlete''s current stats',
-        'Add latest measurable data to improve recruiting accuracy.',
-        'Add their latest speed/strength/performance numbers so we can track progress.',
-        5, 'open'
-    ),
-    (
-        p_athlete_id, v_weekly_plan_id, v_week_start, 1,
-        2, 2, 'strength', 'research_schools',
-        'Research 3 schools in your target division',
-        'Research 3 schools in your target division',
-        'Build a balanced school list aligned to your target level.',
-        'Find schools that match your athlete''s level and academic profile.',
-        15, 'open'
-    ),
-    (
-        p_athlete_id, v_weekly_plan_id, v_week_start, 1,
-        3, 3, 'phase', 'log_expenses',
-        'Log this month''s recruiting expenses',
-        'Log this month''s recruiting expenses',
-        'Create visibility into recruiting spend and trends.',
-        'Track showcase fees, camp costs, and travel to see where your money is going.',
-        10, 'open'
-    )
-    ON CONFLICT (athlete_id, week_number, action_number) DO NOTHING;
-
-    RETURN v_weekly_plan_id;
-END;
-$$;
-
--- ============================================
--- TRIGGERS / UPDATED_AT
--- ============================================
-
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION public.sync_expense_dates()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    IF NEW.date IS NULL AND NEW.expense_date IS NOT NULL THEN
-        NEW.date := NEW.expense_date;
-    ELSIF NEW.expense_date IS NULL AND NEW.date IS NOT NULL THEN
-        NEW.expense_date := NEW.date;
-    END IF;
-    RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS sync_expenses_date_columns ON public.expenses;
-CREATE TRIGGER sync_expenses_date_columns
-BEFORE INSERT OR UPDATE ON public.expenses
-FOR EACH ROW
-EXECUTE FUNCTION public.sync_expense_dates();
-
-DROP TRIGGER IF EXISTS update_users_updated_at ON public.users;
-CREATE TRIGGER update_users_updated_at
-BEFORE UPDATE ON public.users
-FOR EACH ROW
-EXECUTE FUNCTION public.update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_athletes_updated_at ON public.athletes;
-CREATE TRIGGER update_athletes_updated_at
-BEFORE UPDATE ON public.athletes
-FOR EACH ROW
-EXECUTE FUNCTION public.update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_measurables_updated_at ON public.athlete_measurables;
-CREATE TRIGGER update_measurables_updated_at
-BEFORE UPDATE ON public.athlete_measurables
-FOR EACH ROW
-EXECUTE FUNCTION public.update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_schools_updated_at ON public.athlete_saved_schools;
-CREATE TRIGGER update_schools_updated_at
-BEFORE UPDATE ON public.athlete_saved_schools
-FOR EACH ROW
-EXECUTE FUNCTION public.update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_expenses_updated_at ON public.expenses;
-CREATE TRIGGER update_expenses_updated_at
-BEFORE UPDATE ON public.expenses
-FOR EACH ROW
-EXECUTE FUNCTION public.update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_subscriptions_updated_at ON public.subscriptions;
-CREATE TRIGGER update_subscriptions_updated_at
-BEFORE UPDATE ON public.subscriptions
-FOR EACH ROW
-EXECUTE FUNCTION public.update_updated_at_column();
+INSERT INTO public.school_recruiting_regions (school_id, state, recruits_heavily, avg_recruits_per_year)
+SELECT school_id, state, FALSE, 1
+FROM neighbor_rows
+WHERE state IS NOT NULL
+ON CONFLICT (school_id, state) DO UPDATE
+SET
+    recruits_heavily = EXCLUDED.recruits_heavily,
+    avg_recruits_per_year = EXCLUDED.avg_recruits_per_year;
 
 COMMIT;
