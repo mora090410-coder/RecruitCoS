@@ -78,6 +78,29 @@ function safeNumber(value) {
     return Number.isFinite(parsed) ? parsed : null;
 }
 
+function normalizeCoordinate(value, maxAbs) {
+    const parsed = safeNumber(value);
+    if (parsed === null) return null;
+    if (Math.abs(parsed) <= maxAbs) return parsed;
+
+    let normalized = parsed;
+    // Handle mis-scaled values (e.g., 359606 -> 35.9606).
+    while (Math.abs(normalized) > maxAbs && Math.abs(normalized) > maxAbs * 10) {
+        normalized /= 10;
+    }
+
+    if (Math.abs(normalized) <= maxAbs) return normalized;
+    return null;
+}
+
+export function normalizeLatitude(value) {
+    return normalizeCoordinate(value, 90);
+}
+
+export function normalizeLongitude(value) {
+    return normalizeCoordinate(value, 180);
+}
+
 /**
  * Returns geographic centroid coordinates for a U.S. state abbreviation.
  */
@@ -90,10 +113,10 @@ export function getStateCentroid(state) {
  * Calculates great-circle distance between two coordinate pairs in miles.
  */
 export function calculateDistance(lat1, lon1, lat2, lon2) {
-    const sourceLat = safeNumber(lat1);
-    const sourceLon = safeNumber(lon1);
-    const targetLat = safeNumber(lat2);
-    const targetLon = safeNumber(lon2);
+    const sourceLat = normalizeLatitude(lat1);
+    const sourceLon = normalizeLongitude(lon1);
+    const targetLat = normalizeLatitude(lat2);
+    const targetLon = normalizeLongitude(lon2);
 
     if ([sourceLat, sourceLon, targetLat, targetLon].some((value) => value === null)) {
         return 0;

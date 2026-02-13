@@ -14,7 +14,9 @@ import {
     categorizeMatch,
     generatePivotSuggestions,
     getStateCentroid,
-    MATCH_CATEGORY_COLORS
+    MATCH_CATEGORY_COLORS,
+    normalizeLatitude,
+    normalizeLongitude
 } from '../../lib/matchScoring';
 import {
     resolveActionNumberFromSearch,
@@ -118,10 +120,21 @@ function parseAthleteStats(athlete, measurableRows) {
     return normalized;
 }
 
-function resolveAthleteLocation(athlete) {
-    const latitude = coerceNumber(athlete?.latitude);
-    const longitude = coerceNumber(athlete?.longitude);
-    const state = String(athlete?.state || '').trim().toUpperCase();
+function resolveCoordinatePair(latitudeValue, longitudeValue, stateValue) {
+    let latitude = normalizeLatitude(latitudeValue);
+    let longitude = normalizeLongitude(longitudeValue);
+    const state = String(stateValue || '').trim().toUpperCase();
+
+    // Most U.S. coordinates should be western hemisphere (negative longitude).
+    if (longitude !== null && longitude > 0 && state.length === 2) {
+        longitude = -longitude;
+    }
+
+    // Ignore known placeholder coordinate pairs.
+    if (latitude !== null && longitude !== null && Math.abs(latitude) < 1 && Math.abs(longitude) < 1) {
+        latitude = null;
+        longitude = null;
+    }
 
     if (latitude !== null && longitude !== null) {
         return { latitude, longitude, state: state || DEFAULT_LOCATION.state };
@@ -133,6 +146,31 @@ function resolveAthleteLocation(athlete) {
     }
 
     return DEFAULT_LOCATION;
+}
+
+function resolveAthleteLocation(athlete) {
+    return resolveCoordinatePair(athlete?.latitude, athlete?.longitude, athlete?.state);
+}
+
+function isMissingColumnError(error) {
+    const message = String(error?.message || '').toLowerCase();
+    return (
+        String(error?.code || '') === '42703'
+        || (message.includes('column') && message.includes('does not exist'))
+    );
+}
+
+function buildLegacySavedSchoolPayload(payload) {
+    return {
+        athlete_id: payload.athlete_id,
+        school_name: payload.school_name,
+        school_location: payload.school_location,
+        division: payload.division,
+        conference: payload.conference,
+        category: payload.category,
+        match_score: payload.match_score,
+        distance_miles: payload.distance_miles
+    };
 }
 
 function schoolOffersSport(school, sport) {
@@ -437,10 +475,11 @@ export default function ResearchSchools() {
     }, [schoolCatalog, divisionFilters, activeSport]);
 
     const buildSchoolAssessment = useCallback((school) => {
+        const schoolCoordinates = resolveCoordinatePair(school.latitude, school.longitude, school.state);
         const benchmark = getSchoolBenchmarks(school, activeSport);
         const recruitsRegion = recruitsAthleteRegion(school, userLocation.state);
         const athleticFit = calculateAthleticFit(athleteStats, benchmark, school.tier);
-        const geographicFit = calculateGeographicFit(userLocation, school, recruitsRegion);
+        const geographicFit = calculateGeographicFit(userLocation, schoolCoordinates, recruitsRegion);
         const academicFit = calculateAcademicFit(athleteStats?.gpa ?? athleteRow?.gpa, benchmark?.avg_gpa);
         const financialFit = calculateFinancialFit(athleteRow, school.cost_of_attendance);
         const matchScore = calculateOverallMatch(athleticFit, geographicFit, academicFit, financialFit);
@@ -449,8 +488,8 @@ export default function ResearchSchools() {
         const distanceMiles = calculateDistance(
             userLocation.latitude,
             userLocation.longitude,
-            school.latitude,
-            school.longitude
+            schoolCoordinates.latitude,
+            schoolCoordinates.longitude
         );
 
         return {
@@ -545,7 +584,7 @@ export default function ResearchSchools() {
                     .order('created_at', { ascending: false }),
                 supabase
                     .from('athlete_saved_schools')
-                    .select('id, school_id, school_name, school_location, division, conference, category, match_score, athletic_fit, geographic_fit, academic_fit, financial_fit, distance_miles, match_category, is_dream_school, is_pivot_suggestion, pivot_from_school_id')
+                    .select('id, school_name, school_location, division, conference, category, match_score, distance_miles, created_at')
                     .eq('athlete_id', targetAthleteId)
                     .order('created_at', { ascending: true }),
                 supabase
@@ -635,9 +674,25 @@ export default function ResearchSchools() {
                 .select('id, school_id, school_name, school_location, division, conference, category, match_score, athletic_fit, geographic_fit, academic_fit, financial_fit, distance_miles, match_category, is_dream_school, is_pivot_suggestion, pivot_from_school_id')
                 .single();
 
-            if (saveError) throw saveError;
+            let savedPayload = data;
+            let workingError = saveError;
 
-            const savedRow = normalizeSavedSchool({ ...payload, ...data });
+            if (workingError && isMissingColumnError(workingError)) {
+                // Fallback for environments not yet migrated with advanced fit columns.
+                const legacyPayload = buildLegacySavedSchoolPayload(payload);
+                const legacySave = await supabase
+                    .from('athlete_saved_schools')
+                    .upsert(legacyPayload, { onConflict: 'athlete_id,school_name' })
+                    .select('id, school_name, school_location, division, conference, category, match_score, distance_miles')
+                    .single();
+
+                savedPayload = legacySave.data;
+                workingError = legacySave.error;
+            }
+
+            if (workingError) throw workingError;
+
+            const savedRow = normalizeSavedSchool({ ...payload, ...savedPayload });
             setSelectedSchools((previous) => [...previous, savedRow]);
 
             if (options.isDream && payload.match_score < PIVOT_THRESHOLD) {
