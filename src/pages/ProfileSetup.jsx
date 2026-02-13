@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Info, Lock, Mail, Plus, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -14,20 +13,13 @@ import { track } from '../lib/analytics'
 
 const TOTAL_STEPS = 6
 
-const GRADE_OPTIONS = [
-    { value: '8', label: '8th' },
-    { value: '9', label: 'Freshman (9th)' },
-    { value: '10', label: 'Sophomore (10th)' },
-    { value: '11', label: 'Junior (11th)' },
-    { value: '12', label: 'Senior (12th)' }
-]
+const MAX_GRAD_YEAR_OFFSET = 6
 
-const PHASE_BY_GRADE = {
-    '8': '🏗️ Foundation Phase - Build skills, have fun',
-    '9': '🏗️ Foundation Phase - Build skills, have fun',
-    '10': '🔍 Awareness Phase - Explore options',
-    '11': '📣 Engagement Phase - Active recruiting',
-    '12': '✅ Commitment Phase - Final decision'
+const PHASE_BY_YEARS_TO_GRAD = {
+    foundation: '🏗️ Foundation Phase - Build skills, have fun',
+    awareness: '🔍 Awareness Phase - Explore options',
+    engagement: '📣 Engagement Phase - Active recruiting',
+    commitment: '✅ Commitment Phase - Final decision'
 }
 
 const DIVISION_OPTIONS = [
@@ -68,11 +60,15 @@ async function safeGetJson(path) {
     }
 }
 
-function gradeToGradYear(grade) {
+function getGradYearOptions() {
     const currentYear = new Date().getFullYear()
-    const gradeNum = Number(grade)
-    if (!Number.isFinite(gradeNum)) return currentYear + 2
-    return currentYear + Math.max(0, 12 - gradeNum)
+    return Array.from({ length: MAX_GRAD_YEAR_OFFSET + 1 }, (_, index) => {
+        const year = currentYear + index
+        return {
+            value: String(year),
+            label: `Class of ${year}`
+        }
+    })
 }
 
 function toDistancePreference(miles) {
@@ -86,12 +82,24 @@ function distanceLabel(miles) {
     return `${miles} miles`
 }
 
-function planSubtitleFromGrade(grade) {
-    const phase = PHASE_BY_GRADE[grade] || '🏗️ Foundation Phase - Build skills, have fun'
+function resolvePhaseFromGradYear(gradYear) {
+    const currentYear = new Date().getFullYear()
+    const gradYearNumber = Number(gradYear)
+    if (!Number.isFinite(gradYearNumber)) return PHASE_BY_YEARS_TO_GRAD.foundation
+
+    const yearsUntilGrad = gradYearNumber - currentYear
+    if (yearsUntilGrad <= 0) return PHASE_BY_YEARS_TO_GRAD.commitment
+    if (yearsUntilGrad === 1) return PHASE_BY_YEARS_TO_GRAD.engagement
+    if (yearsUntilGrad === 2) return PHASE_BY_YEARS_TO_GRAD.awareness
+    return PHASE_BY_YEARS_TO_GRAD.foundation
+}
+
+function planSubtitleFromGradYear(gradYear) {
+    const phase = resolvePhaseFromGradYear(gradYear)
     return `${phase.split(' - ')[0].replace(/^[^ ]+\s/, '')} - Week 1`
 }
 
-function buildPlanPreview({ grade, sport, positionLabel, divisions, distanceMiles }) {
+function buildPlanPreview({ gradYear, sport, positionLabel, divisions, distanceMiles }) {
     const sportText = sport || 'your sport'
     const positionText = positionLabel || 'your position'
     const divisionText = divisions.length > 0 ? divisions.join(', ') : 'your target levels'
@@ -99,7 +107,7 @@ function buildPlanPreview({ grade, sport, positionLabel, divisions, distanceMile
 
     return {
         title: "Here's your first week",
-        subtitle: planSubtitleFromGrade(grade),
+        subtitle: planSubtitleFromGradYear(gradYear),
         items: [
             {
                 title: '⚡ Focus: Athletic Baseline',
@@ -120,7 +128,6 @@ function buildPlanPreview({ grade, sport, positionLabel, divisions, distanceMile
 export default function ProfileSetup() {
     const { signUp, user } = useAuth()
     const { refreshProfile, isProfileLoading, isInitialized, hasProfile } = useProfile()
-    const navigate = useNavigate()
 
     const [step, setStep] = useState(1)
     const [loading, setLoading] = useState(false)
@@ -144,7 +151,7 @@ export default function ProfileSetup() {
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
-        grade: '',
+        gradYear: '',
         sport: '',
         positionCode: '',
         positionLabel: '',
@@ -266,7 +273,7 @@ export default function ProfileSetup() {
             }
 
             const preview = buildPlanPreview({
-                grade: formData.grade,
+                gradYear: formData.gradYear,
                 sport: formData.sport,
                 positionLabel: formData.positionLabel,
                 divisions: formData.targetDivisions,
@@ -283,7 +290,7 @@ export default function ProfileSetup() {
         return () => {
             active = false
         }
-    }, [formData.targetDivisions, formData.sport, formData.positionLabel, formData.grade, selectedDistance])
+    }, [formData.targetDivisions, formData.sport, formData.positionLabel, formData.gradYear, selectedDistance])
 
     const extractMissingColumnName = (message = '') => {
         const match = message.match(/Could not find the '([^']+)' column/)
@@ -376,7 +383,7 @@ export default function ProfileSetup() {
     const canProceed = useMemo(() => {
         switch (step) {
             case 1:
-                return Boolean(formData.firstName.trim() && formData.lastName.trim() && formData.grade)
+                return Boolean(formData.firstName.trim() && formData.lastName.trim() && formData.gradYear)
             case 2:
                 return Boolean(formData.sport && formData.positionCode)
             case 3:
@@ -460,7 +467,8 @@ export default function ProfileSetup() {
                 first_name: formData.firstName.trim(),
                 last_name: formData.lastName.trim(),
                 name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
-                grad_year: gradeToGradYear(formData.grade),
+                grad_year: Number(formData.gradYear),
+                graduation_year: Number(formData.gradYear),
                 sport: formData.sport,
                 position: normalizedDisplay,
                 primary_position_display: normalizedDisplay,
@@ -498,7 +506,7 @@ export default function ProfileSetup() {
 
             track('onboarding_completed', {
                 sport: formData.sport,
-                grad_year: gradeToGradYear(formData.grade),
+                grad_year: Number(formData.gradYear),
                 position: formData.positionLabel,
                 target_level: formData.targetDivisions[0] || null,
                 onboarding_duration_ms: Date.now() - onboardingStartRef.current
@@ -616,21 +624,21 @@ export default function ProfileSetup() {
                         </div>
 
                         <div>
-                            <label className="mb-2 block text-sm font-medium text-gray-700">What grade are they in?</label>
+                            <label className="mb-2 block text-sm font-medium text-gray-700">What is their graduation year?</label>
                             <select
                                 className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none ring-violet-300 transition focus:border-violet-500 focus:ring"
-                                value={formData.grade}
-                                onChange={(event) => setFormData(prev => ({ ...prev, grade: event.target.value }))}
+                                value={formData.gradYear}
+                                onChange={(event) => setFormData(prev => ({ ...prev, gradYear: event.target.value }))}
                             >
-                                <option value="">Select grade</option>
-                                {GRADE_OPTIONS.map(option => (
+                                <option value="">Select graduation year</option>
+                                {getGradYearOptions().map(option => (
                                     <option key={option.value} value={option.value}>{option.label}</option>
                                 ))}
                             </select>
 
-                            {formData.grade && (
+                            {formData.gradYear && (
                                 <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                                    <p className="text-sm font-medium text-emerald-700">{PHASE_BY_GRADE[formData.grade]}</p>
+                                    <p className="text-sm font-medium text-emerald-700">{resolvePhaseFromGradYear(formData.gradYear)}</p>
                                     <p className="mt-2 flex items-center gap-2 text-xs text-emerald-700" title={PHASE_TOOLTIP}>
                                         <Info className="h-3.5 w-3.5" />
                                         {PHASE_TOOLTIP}
@@ -855,8 +863,9 @@ export default function ProfileSetup() {
                             <p><span className="font-medium">Athlete:</span> {formData.firstName} {formData.lastName}</p>
                             <p className="mt-1"><span className="font-medium">Sport:</span> {formData.sport} - {formData.positionLabel}</p>
                             <p className="mt-1"><span className="font-medium">Divisions:</span> {formData.targetDivisions.join(', ') || 'None selected'}</p>
+                            <p className="mt-1"><span className="font-medium">Grad Year:</span> {formData.gradYear || 'Not selected'}</p>
                             <p className="mt-1"><span className="font-medium">Distance:</span> {distanceLabel(selectedDistance)}</p>
-                            <p className="mt-1"><span className="font-medium">Phase:</span> {PHASE_BY_GRADE[formData.grade] || 'Not selected'}</p>
+                            <p className="mt-1"><span className="font-medium">Phase:</span> {resolvePhaseFromGradYear(formData.gradYear)}</p>
                         </div>
 
                         <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm text-violet-700">
