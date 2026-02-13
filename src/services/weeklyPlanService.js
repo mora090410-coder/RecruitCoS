@@ -23,6 +23,12 @@ const resolvePreviousWeekStartDate = (weekStartDate) => (
 );
 
 const normalizeActions = (actions) => (Array.isArray(actions) ? actions.filter(Boolean) : []);
+const normalizeStatus = (status) => {
+    const normalized = String(status || '').toLowerCase();
+    if (normalized === 'done') return 'done';
+    if (normalized === 'in_progress') return 'in_progress';
+    return 'not_started';
+};
 
 const adjustCarryForwardActions = (actions) => {
     if (Array.isArray(actions) && actions.length > 0) {
@@ -129,10 +135,11 @@ const buildWeeklyPlanItems = async (athleteId, weekStartDate, options = {}) => {
     const existingByType = new Map((existingItems || []).map((item) => [item.item_type, item]));
     const resolveExistingStatus = (itemType) => {
         const existing = existingByType.get(itemType);
-        if (!existing) return { status: 'open', completed_at: null };
+        if (!existing) return { status: 'not_started', completed_at: null };
+        const normalizedStatus = normalizeStatus(existing.status);
         return {
-            status: existing.status || 'open',
-            completed_at: existing.completed_at || null
+            status: normalizedStatus,
+            completed_at: normalizedStatus === 'done' ? (existing.completed_at || null) : null
         };
     };
 

@@ -1,6 +1,13 @@
 import { addWeeks, format, startOfWeek } from 'date-fns';
 import { supabase as defaultSupabase } from '../lib/supabase';
 
+const normalizeStatus = (status) => {
+    const normalized = String(status || '').toLowerCase();
+    if (normalized === 'done') return 'done';
+    if (normalized === 'in_progress') return 'in_progress';
+    return 'not_started';
+};
+
 /**
  * Canonical weekly action templates used for week plan generation.
  */
@@ -141,7 +148,7 @@ export function resolveWeekStartDateForWeek(weekNumber) {
 
 /**
  * Generates (or refreshes) a week plan and action rows for one athlete.
- * Preserves completed/skipped status for existing action rows.
+ * Preserves done/in_progress status for existing action rows.
  */
 export async function generateWeeklyPlan(athleteId, weekNumber, supabaseClient = defaultSupabase) {
     if (!athleteId) {
@@ -212,8 +219,9 @@ export async function generateWeeklyPlan(athleteId, weekNumber, supabaseClient =
 
     const rowsToUpsert = actions.map((action) => {
         const existing = existingStatusByAction.get(action.action_number);
-        const existingStatus = String(existing?.status || 'open').toLowerCase();
-        const preserveCompletion = existingStatus === 'done' || existingStatus === 'skipped';
+        const existingStatus = normalizeStatus(existing?.status);
+        const preserveCompletion = existingStatus === 'done';
+        const preserveInProgress = existingStatus === 'in_progress';
 
         return {
             athlete_id: athleteId,
@@ -229,7 +237,7 @@ export async function generateWeeklyPlan(athleteId, weekNumber, supabaseClient =
             why: action.description,
             action_description: action.description,
             estimated_minutes: action.estimated_minutes,
-            status: preserveCompletion ? existing.status : 'open',
+            status: preserveCompletion || preserveInProgress ? existingStatus : 'not_started',
             completed_at: preserveCompletion ? existing.completed_at : null
         };
     });

@@ -87,7 +87,7 @@ export default defineConfig({
                 supabase.from('athlete_gap_results').select('*').eq('athlete_id', athleteId).order('computed_at', { ascending: false }).limit(1).maybeSingle(),
                 supabase.from('athlete_readiness_results').select('*').eq('athlete_id', athleteId).order('computed_at', { ascending: false }).limit(1).maybeSingle(),
                 supabase.from('athlete_school_interest_results').select('*').eq('athlete_id', athleteId).order('computed_at', { ascending: false }).limit(1).maybeSingle(),
-                supabase.from('athlete_weekly_plans').select('*').eq('athlete_id', athleteId).order('computed_at', { ascending: false }).limit(1).maybeSingle()
+                supabase.from('weekly_plans').select('*').eq('athlete_id', athleteId).order('week_number', { ascending: false }).order('started_at', { ascending: false }).limit(1).maybeSingle()
               ]);
 
               res.setHeader('Content-Type', 'application/json');

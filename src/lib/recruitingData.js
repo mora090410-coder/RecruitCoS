@@ -2,6 +2,131 @@ import { supabase } from './supabase';
 import { canonicalizeMeasurableRow, getMetricKeysForSport } from '../config/sportSchema';
 import { track } from './analytics';
 
+const WEEKLY_STATUS_NOT_STARTED = 'not_started';
+const WEEKLY_STATUS_IN_PROGRESS = 'in_progress';
+const WEEKLY_STATUS_DONE = 'done';
+
+function normalizeWeeklyItemStatus(status, fallback = WEEKLY_STATUS_NOT_STARTED) {
+    const normalized = String(status || '').trim().toLowerCase();
+
+    if (normalized === WEEKLY_STATUS_DONE) return WEEKLY_STATUS_DONE;
+    if (normalized === WEEKLY_STATUS_IN_PROGRESS) return WEEKLY_STATUS_IN_PROGRESS;
+    if (normalized === WEEKLY_STATUS_NOT_STARTED) return WEEKLY_STATUS_NOT_STARTED;
+    if (normalized === 'open' || normalized === 'skipped') return WEEKLY_STATUS_NOT_STARTED;
+    return fallback;
+}
+
+function toDateOnly(value) {
+    if (!value) return null;
+    const asString = String(value);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(asString)) return asString;
+    const parsed = new Date(asString);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toISOString().slice(0, 10);
+}
+
+function getCurrentWeekStartDate() {
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 Sun ... 6 Sat
+    const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+    const monday = new Date(now);
+    monday.setHours(0, 0, 0, 0);
+    monday.setDate(monday.getDate() + diffToMonday);
+    return monday.toISOString().slice(0, 10);
+}
+
+function resolveWeekOfDate(weekOf, planData) {
+    const candidates = [
+        weekOf,
+        planData?.week_of_date,
+        planData?.weekOfDate,
+        planData?.weekOf
+    ];
+
+    for (const candidate of candidates) {
+        const dateOnly = toDateOnly(candidate);
+        if (dateOnly) return dateOnly;
+    }
+
+    return getCurrentWeekStartDate();
+}
+
+function resolveExplicitWeekNumber(planData) {
+    const candidates = [planData?.week_number, planData?.weekNumber, planData?.week];
+    for (const candidate of candidates) {
+        const value = Number.parseInt(candidate, 10);
+        if (Number.isInteger(value) && value > 0) return value;
+    }
+    return null;
+}
+
+function getWeekDateBoundsIso(weekOfDate) {
+    const start = new Date(`${weekOfDate}T00:00:00.000Z`);
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + 1);
+    return {
+        startIso: start.toISOString(),
+        endIso: end.toISOString()
+    };
+}
+
+function mapWeeklyPlanRowToHeader(row, overrides = {}) {
+    if (!row) return null;
+    return {
+        id: row.id,
+        athlete_id: row.athlete_id,
+        week_number: row.week_number,
+        week_of_date: overrides.week_of_date || toDateOnly(row.started_at),
+        phase: overrides.phase ?? row.recruiting_phase ?? null,
+        primary_gap_metric: overrides.primary_gap_metric ?? null,
+        primary_gap_band: overrides.primary_gap_band ?? null,
+        primary_gap_score: overrides.primary_gap_score ?? null,
+        summary: overrides.summary ?? {},
+        generated_at: overrides.generated_at ?? row.created_at ?? null,
+        plan_json: overrides.plan_json ?? {},
+        computed_at: overrides.computed_at ?? row.created_at ?? null,
+        sport: row.sport ?? null,
+        grade_level: row.grade_level ?? null,
+        recruiting_phase: row.recruiting_phase ?? null,
+        started_at: row.started_at ?? null,
+        completed_at: row.completed_at ?? null,
+        created_at: row.created_at ?? null
+    };
+}
+
+async function fetchWeekStartDateMap(athleteId, weekNumbers) {
+    const sanitizedWeekNumbers = Array.from(
+        new Set((weekNumbers || []).filter((value) => Number.isInteger(value) && value > 0))
+    );
+    const weekStartByWeekNumber = new Map();
+
+    if (!athleteId || sanitizedWeekNumbers.length === 0) return weekStartByWeekNumber;
+
+    const { data, error } = await supabase
+        .from('athlete_weekly_plan_items')
+        .select('week_number, week_start_date')
+        .eq('athlete_id', athleteId)
+        .in('week_number', sanitizedWeekNumbers)
+        .not('week_start_date', 'is', null)
+        .order('week_start_date', { ascending: false });
+
+    if (error) {
+        console.error('[recruitingData] Error fetching week_start_date map:', error);
+        return weekStartByWeekNumber;
+    }
+
+    (data || []).forEach((row) => {
+        const weekNumber = Number.parseInt(row.week_number, 10);
+        const weekStartDate = toDateOnly(row.week_start_date);
+        if (!Number.isInteger(weekNumber) || !weekStartDate) return;
+        if (!weekStartByWeekNumber.has(weekNumber)) {
+            weekStartByWeekNumber.set(weekNumber, weekStartDate);
+        }
+    });
+
+    return weekStartByWeekNumber;
+}
+
 /**
  * Fetches the most recent measurables for an athlete.
  * Uses a unique-by-metric approach.
@@ -203,7 +328,13 @@ export async function saveInterestResults(results) {
  * Saves a generated weekly plan.
  */
 export async function saveWeeklyPlan(athleteId, weekOf, planData) {
+    if (!athleteId) {
+        throw new Error('Missing athlete id for saveWeeklyPlan.');
+    }
+
     const generatedAt = new Date().toISOString();
+    const weekOfDate = resolveWeekOfDate(weekOf, planData);
+    const { startIso, endIso } = getWeekDateBoundsIso(weekOfDate);
     const primaryGapMetric = planData?.primary_gap_metric
         ?? planData?.primaryGapMetric
         ?? planData?.primaryGap?.metricKey
@@ -225,29 +356,95 @@ export async function saveWeeklyPlan(athleteId, weekOf, planData) {
         target_level: planData?.target_level ?? planData?.targetLevel ?? null,
         ...(planData?.summary || {})
     };
+
+    const explicitWeekNumber = resolveExplicitWeekNumber(planData);
+
+    const [
+        { data: athleteMeta, error: athleteMetaError },
+        { data: existingPlanForDate, error: existingPlanError },
+        { data: latestPlan, error: latestPlanError }
+    ] = await Promise.all([
+        supabase
+            .from('athletes')
+            .select('sport, grade_level, recruiting_phase')
+            .eq('id', athleteId)
+            .maybeSingle(),
+        explicitWeekNumber
+            ? Promise.resolve({ data: null, error: null })
+            : supabase
+                .from('weekly_plans')
+                .select('id, week_number')
+                .eq('athlete_id', athleteId)
+                .gte('started_at', startIso)
+                .lt('started_at', endIso)
+                .order('week_number', { ascending: false })
+                .limit(1)
+                .maybeSingle(),
+        explicitWeekNumber
+            ? Promise.resolve({ data: null, error: null })
+            : supabase
+                .from('weekly_plans')
+                .select('week_number')
+                .eq('athlete_id', athleteId)
+                .order('week_number', { ascending: false })
+                .limit(1)
+                .maybeSingle()
+    ]);
+
+    if (athleteMetaError) {
+        console.error('[WeeklyPlanHeaderPersist] athlete lookup error', athleteMetaError);
+        throw athleteMetaError;
+    }
+    if (existingPlanError) {
+        console.error('[WeeklyPlanHeaderPersist] existing week lookup error', existingPlanError);
+        throw existingPlanError;
+    }
+    if (latestPlanError) {
+        console.error('[WeeklyPlanHeaderPersist] latest week lookup error', latestPlanError);
+        throw latestPlanError;
+    }
+
+    const resolvedWeekNumber = explicitWeekNumber
+        || existingPlanForDate?.week_number
+        || ((latestPlan?.week_number || 0) + 1)
+        || 1;
+
+    const recruitingPhase = planData?.phase
+        || planData?.recruiting_phase
+        || athleteMeta?.recruiting_phase
+        || 'evaluation';
     const payload = [{
         athlete_id: athleteId,
-        week_of_date: weekOf,
-        phase: planData?.phase ?? null,
-        primary_gap_metric: primaryGapMetric,
-        primary_gap_band: primaryGapBand,
-        primary_gap_score: primaryGapScore,
-        summary,
-        generated_at: generatedAt,
-        plan_json: planData || {},
-        computed_at: generatedAt
+        week_number: resolvedWeekNumber,
+        sport: planData?.sport || athleteMeta?.sport || 'unknown',
+        grade_level: Number.isInteger(planData?.grade_level)
+            ? planData.grade_level
+            : (Number.isInteger(athleteMeta?.grade_level) ? athleteMeta.grade_level : 9),
+        recruiting_phase: recruitingPhase,
+        started_at: startIso
     }];
 
     const { data, error } = await supabase
-        .from('athlete_weekly_plans')
-        .upsert(payload, { onConflict: 'athlete_id,week_of_date' })
+        .from('weekly_plans')
+        .upsert(payload, { onConflict: 'athlete_id,week_number' })
         .select();
 
     if (error) {
         console.error('[WeeklyPlanHeaderPersist] error', error);
         throw error;
     }
-    return data[0];
+
+    return mapWeeklyPlanRowToHeader(data?.[0], {
+        week_of_date: weekOfDate,
+        phase: recruitingPhase,
+        primary_gap_metric: primaryGapMetric,
+        primary_gap_band: primaryGapBand,
+        primary_gap_score: primaryGapScore,
+        summary,
+        plan_json: planData || {},
+        generated_at: generatedAt,
+        computed_at: generatedAt
+    });
 }
 
 /**
@@ -256,11 +453,12 @@ export async function saveWeeklyPlan(athleteId, weekOf, planData) {
 export async function fetchLatestWeeklyPlan(athleteId) {
     if (!athleteId) return null;
 
-    const { data, error } = await supabase
-        .from('athlete_weekly_plans')
+    const { data: planRow, error } = await supabase
+        .from('weekly_plans')
         .select('*')
         .eq('athlete_id', athleteId)
-        .order('computed_at', { ascending: false })
+        .order('week_number', { ascending: false })
+        .order('started_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -268,7 +466,13 @@ export async function fetchLatestWeeklyPlan(athleteId) {
         console.error('[recruitingData] Error fetching latest weekly plan:', error);
         return null;
     }
-    return data;
+
+    if (!planRow) return null;
+
+    const weekStartMap = await fetchWeekStartDateMap(athleteId, [planRow.week_number]);
+    return mapWeeklyPlanRowToHeader(planRow, {
+        week_of_date: weekStartMap.get(planRow.week_number) || toDateOnly(planRow.started_at)
+    });
 }
 
 /**
@@ -278,17 +482,26 @@ export async function fetchLatestWeeklyPlanHeaders(athleteId, limit = 2) {
     if (!athleteId) return [];
 
     const { data, error } = await supabase
-        .from('athlete_weekly_plans')
+        .from('weekly_plans')
         .select('*')
         .eq('athlete_id', athleteId)
-        .order('week_of_date', { ascending: false })
+        .order('week_number', { ascending: false })
+        .order('started_at', { ascending: false })
         .limit(limit);
 
     if (error) {
         console.error('[recruitingData] Error fetching weekly plan headers:', error);
         return [];
     }
-    return data || [];
+
+    const weekNumbers = (data || [])
+        .map((row) => Number.parseInt(row.week_number, 10))
+        .filter((value) => Number.isInteger(value) && value > 0);
+    const weekStartMap = await fetchWeekStartDateMap(athleteId, weekNumbers);
+
+    return (data || []).map((row) => mapWeeklyPlanRowToHeader(row, {
+        week_of_date: weekStartMap.get(row.week_number) || toDateOnly(row.started_at)
+    }));
 }
 
 /**
@@ -356,12 +569,16 @@ export async function insertWeeklyPlanItems(items) {
     const upsertRows = items.map((item) => {
         const key = `${item.athlete_id}::${item.week_start_date}::${item.priority_rank}`;
         const existingRow = existingRowsByKey.get(key);
-        const shouldPreserveCompletion = existingRow?.status === 'done' || existingRow?.status === 'skipped';
+        const existingStatus = normalizeWeeklyItemStatus(existingRow?.status);
+        const shouldPreserveDone = existingStatus === WEEKLY_STATUS_DONE;
+        const shouldPreserveInProgress = existingStatus === WEEKLY_STATUS_IN_PROGRESS;
 
         return {
             ...item,
-            status: shouldPreserveCompletion ? existingRow.status : 'open',
-            completed_at: shouldPreserveCompletion ? existingRow.completed_at : null
+            status: shouldPreserveDone || shouldPreserveInProgress
+                ? existingStatus
+                : WEEKLY_STATUS_NOT_STARTED,
+            completed_at: shouldPreserveDone ? existingRow.completed_at : null
         };
     });
 
@@ -400,6 +617,8 @@ export async function deleteWeeklyPlanItemsForWeek(athleteId, weekStartDate) {
  */
 export async function updateWeeklyPlanItemStatus(itemId, status) {
     if (!itemId || !status) return null;
+    const normalizedStatus = normalizeWeeklyItemStatus(status);
+
     const { data: existingItem, error: existingItemError } = await supabase
         .from('athlete_weekly_plan_items')
         .select('id, athlete_id, status, week_start_date')
@@ -412,8 +631,8 @@ export async function updateWeeklyPlanItemStatus(itemId, status) {
     }
 
     const updates = {
-        status,
-        completed_at: status === 'done' ? new Date().toISOString() : null
+        status: normalizedStatus,
+        completed_at: normalizedStatus === WEEKLY_STATUS_DONE ? new Date().toISOString() : null
     };
 
     const { data, error } = await supabase
@@ -430,7 +649,7 @@ export async function updateWeeklyPlanItemStatus(itemId, status) {
 
     // Best-effort write for optional completion analytics table.
     // Some environments may not have this table yet, so failures are non-fatal.
-    if (status === 'done' && data?.athlete_id && data?.week_start_date) {
+    if (normalizedStatus === WEEKLY_STATUS_DONE && data?.athlete_id && data?.week_start_date) {
         const completionPayload = {
             athlete_id: data.athlete_id,
             action_id: data.id,
@@ -448,8 +667,8 @@ export async function updateWeeklyPlanItemStatus(itemId, status) {
     }
 
     if (data?.athlete_id && existingItem) {
-        const wasDone = existingItem.status === 'done';
-        const isNowDone = status === 'done';
+        const wasDone = normalizeWeeklyItemStatus(existingItem.status) === WEEKLY_STATUS_DONE;
+        const isNowDone = normalizedStatus === WEEKLY_STATUS_DONE;
         let actionDelta = 0;
 
         if (!wasDone && isNowDone) actionDelta = 1;
@@ -492,7 +711,7 @@ export async function updateWeeklyPlanItemStatus(itemId, status) {
 
 /**
  * Computes weekly-plan engagement metrics for progressive disclosure.
- * Completion rate is defined as done/total across plan items in the last 2 plans by week_of_date DESC.
+ * Completion rate is defined as done/total across plan items in the last 2 plans.
  */
 export async function getAthleteEngagement(athleteId) {
     if (!athleteId) {
@@ -516,7 +735,7 @@ export async function getAthleteEngagement(athleteId) {
             .eq('id', athleteId)
             .maybeSingle(),
         supabase
-            .from('athlete_weekly_plans')
+            .from('weekly_plans')
             .select('id', { count: 'exact', head: true })
             .eq('athlete_id', athleteId),
         supabase
@@ -525,11 +744,11 @@ export async function getAthleteEngagement(athleteId) {
             .eq('athlete_id', athleteId)
             .eq('status', 'done'),
         supabase
-            .from('athlete_weekly_plans')
-            .select('week_of_date, created_at')
+            .from('weekly_plans')
+            .select('week_number, started_at')
             .eq('athlete_id', athleteId)
-            .order('week_of_date', { ascending: false })
-            .order('created_at', { ascending: false })
+            .order('week_number', { ascending: false })
+            .order('started_at', { ascending: false })
             .limit(2)
     ]);
 
@@ -546,8 +765,15 @@ export async function getAthleteEngagement(athleteId) {
         console.error('[recruitingData] Error fetching latest plans for completion rate:', latestPlansError);
     }
 
+    const latestWeekNumbers = (latestPlans || [])
+        .map((row) => Number.parseInt(row.week_number, 10))
+        .filter((value) => Number.isInteger(value) && value > 0);
+    const latestWeekStartMap = await fetchWeekStartDateMap(athleteId, latestWeekNumbers);
     const latestWeeks = (latestPlans || [])
-        .map((row) => row.week_of_date)
+        .map((row) => (
+            latestWeekStartMap.get(row.week_number)
+            || toDateOnly(row.started_at)
+        ))
         .filter(Boolean);
 
     let completionRate = 0;
