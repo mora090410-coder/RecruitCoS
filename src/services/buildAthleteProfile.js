@@ -200,7 +200,7 @@ export async function buildAthleteProfile(athleteId) {
 
     const { data: savedSchools } = await safeSelect('athlete_saved_schools', (table) =>
         table
-            .select('id, school_name, division, conference, status, created_at, updated_at, distance_miles')
+            .select('id, school_name, division, conference, status, created_at, updated_at')
             .eq('athlete_id', athleteId)
     );
 

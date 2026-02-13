@@ -420,7 +420,6 @@ If the objective is close to 'Playing Time' (100), prioritize schools where the 
         setLoading(true)
         try {
             // Sanitize numeric fields
-            const distanceMiles = parseInt(school.distance_miles, 10)
             const gpaValue = parseFloat(school.gpa_requirement)
 
             // Determine targeting
@@ -435,7 +434,6 @@ If the objective is close to 'Playing Time' (100), prioritize schools where the 
                     category: school.category,
                     conference: school.conference,
                     division: school.division,
-                    distance_miles: isNaN(distanceMiles) ? null : distanceMiles,
                     athletic_level: school.athletic_level,
                     academic_selectivity: school.academic_selectivity,
                     gpa: isNaN(gpaValue) ? null : gpaValue,
