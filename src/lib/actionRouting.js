@@ -14,7 +14,10 @@ export const ACTION_TYPE_TO_ROUTE = {
     research_schools: '/actions/research-schools',
     log_expenses: '/actions/log-expenses',
     recruiting_timeline: '/actions/recruiting-timeline',
-    coach_interaction: '/actions/coach-interaction'
+    coach_interaction: '/actions/coach-interaction',
+    refine_school_list: '/actions/refine-school-list',
+    analyze_expenses: '/actions/analyze-expenses',
+    expand_school_list: '/actions/expand-school-list'
 };
 
 const ACTION_TYPE_TO_NUMBER = {
@@ -28,7 +31,13 @@ const ACTION_TYPE_TO_NUMBER = {
     research_schools: 2,
     log_expenses: 3,
     recruiting_timeline: 1,
-    coach_interaction: 2
+    coach_interaction: 2,
+    recommendations: 1,
+    roi: 2,
+    expansion: 3,
+    refine_school_list: 1,
+    analyze_expenses: 2,
+    expand_school_list: 3
 };
 
 export function resolveActionNumberFromItem(item, fallback = 1) {

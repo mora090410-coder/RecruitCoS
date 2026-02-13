@@ -1,0 +1,261 @@
+.w3-page {
+    margin: 0 auto;
+    display: flex;
+    max-width: 960px;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.w3-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.w3-back-link {
+    color: #6c2eb9;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.w3-back-link:hover {
+    text-decoration: underline;
+}
+
+.w3-action-pill {
+    border-radius: 999px;
+    background: #f3ecff;
+    color: #6c2eb9;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.375rem 0.75rem;
+}
+
+.w3-card {
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    background: #ffffff;
+    padding: 1.5rem;
+}
+
+.w3-card-soft {
+    border: 2px solid #d8b4fe;
+    border-radius: 12px;
+    background: #faf5ff;
+    padding: 1rem;
+}
+
+.w3-header h1 {
+    color: #111827;
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.w3-header p {
+    color: #4b5563;
+    font-size: 0.95rem;
+    margin-top: 0.5rem;
+}
+
+.w3-meta-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.w3-meta-chip {
+    border: 1px solid #d8b4fe;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #6c2eb9;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.625rem;
+}
+
+.w3-recommendation-grid {
+    display: grid;
+    gap: 0.875rem;
+}
+
+.w3-recommendation-card {
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    background: #ffffff;
+    padding: 1rem;
+}
+
+.w3-recommendation-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.w3-match-badge {
+    align-items: center;
+    background: #6c2eb9;
+    border-radius: 999px;
+    color: #ffffff;
+    display: inline-flex;
+    font-size: 0.75rem;
+    font-weight: 700;
+    gap: 0.25rem;
+    padding: 0.3rem 0.6rem;
+}
+
+.w3-detail-list {
+    margin-top: 0.75rem;
+    display: grid;
+    gap: 0.45rem;
+}
+
+.w3-detail-list li {
+    color: #374151;
+    font-size: 0.875rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.w3-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.875rem;
+}
+
+.w3-upgrade-teaser {
+    border: 1px solid #c4b5fd;
+    border-radius: 12px;
+    background: linear-gradient(140deg, #f8f2ff 0%, #efe3ff 100%);
+    padding: 1rem;
+}
+
+.w3-upgrade-teaser ul {
+    color: #1f2937;
+    font-size: 0.875rem;
+    margin: 0.5rem 0 0;
+    padding-left: 1rem;
+}
+
+.w3-goal-grid {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 0.75rem;
+}
+
+.w3-goal-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #ffffff;
+    padding: 0.625rem;
+    text-align: center;
+}
+
+.w3-goal-count {
+    color: #111827;
+    display: block;
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+.w3-goal-label {
+    color: #6b7280;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.w3-progress-track {
+    border-radius: 999px;
+    background: #ede9fe;
+    height: 10px;
+    overflow: hidden;
+}
+
+.w3-progress-fill {
+    background: linear-gradient(90deg, #6c2eb9 0%, #8b5fd8 100%);
+    height: 100%;
+}
+
+.w3-category-bar {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #ffffff;
+    padding: 0.75rem;
+}
+
+.w3-category-bar-header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+}
+
+.w3-category-bar-track {
+    border-radius: 999px;
+    background: #f3f4f6;
+    height: 8px;
+    margin-top: 0.4rem;
+    overflow: hidden;
+}
+
+.w3-category-bar-fill {
+    background: linear-gradient(90deg, #6c2eb9 0%, #8b5fd8 100%);
+    height: 100%;
+}
+
+.w3-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.w3-error {
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    background: #fef2f2;
+    color: #b91c1c;
+    font-size: 0.875rem;
+    padding: 0.75rem;
+}
+
+.w3-empty {
+    border: 1px dashed #d1d5db;
+    border-radius: 10px;
+    background: #f9fafb;
+    color: #4b5563;
+    font-size: 0.875rem;
+    padding: 0.875rem;
+}
+
+@media (max-width: 640px) {
+    .w3-card,
+    .w3-card-soft,
+    .w3-upgrade-teaser {
+        padding: 0.875rem;
+    }
+
+    .w3-header h1 {
+        font-size: 1.35rem;
+    }
+
+    .w3-goal-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .w3-actions {
+        flex-direction: column-reverse;
+    }
+
+    .w3-actions button {
+        width: 100%;
+    }
+}

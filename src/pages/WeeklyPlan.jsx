@@ -6,7 +6,28 @@ import { supabase } from '../lib/supabase';
 import { track } from '../lib/analytics';
 import { generateWeeklyPlan } from '../utils/weeklyPlanGenerator';
 
-const MAX_TRIAL_WEEK = 2;
+const MAX_TRIAL_WEEK = 3;
+
+const WEEK_UNLOCK_COPY = {
+    2: {
+        title: 'Week 2 Unlocked!',
+        subtitle: 'Great job completing Week 1. Here is what is next:',
+        bullets: [
+            '📅 Learn your recruiting timeline',
+            '📞 Track coach interactions',
+            '💰 Update your budget'
+        ]
+    },
+    3: {
+        title: 'Week 3 Unlocked!',
+        subtitle: 'Now it is time for data-driven recruiting intelligence:',
+        bullets: [
+            '🤖 Get AI-powered school recommendations',
+            '📈 See recruiting spend ROI insights',
+            '🧭 Expand to a balanced 10-school list'
+        ]
+    }
+};
 
 async function fetchWeekActions(athleteId, weekNumber) {
     const { data, error } = await supabase
@@ -37,6 +58,12 @@ async function fetchExistingWeeks(athleteId) {
         .filter((week) => Number.isInteger(week) && week >= 1 && week <= MAX_TRIAL_WEEK)));
 }
 
+function isWeekComplete(actions) {
+    return Array.isArray(actions)
+        && actions.length === 3
+        && actions.every((action) => action.status === 'done');
+}
+
 function buildWeekUnlockStorageKey(athleteId, weekNumber) {
     if (!athleteId || !weekNumber) return null;
     return `rc_week_unlock_seen:${athleteId}:${weekNumber}`;
@@ -51,6 +78,7 @@ export default function WeeklyPlan() {
     const [hasTrackedPlanView, setHasTrackedPlanView] = useState(false);
     const [currentWeekNumber, setCurrentWeekNumber] = useState(1);
     const [showWeekUnlockMessage, setShowWeekUnlockMessage] = useState(false);
+    const [unlockedWeekNumber, setUnlockedWeekNumber] = useState(null);
 
     const targetAthleteId = useMemo(() => {
         if (isImpersonating) return activeAthlete?.id || null;
@@ -66,6 +94,11 @@ export default function WeeklyPlan() {
     }, [targetAthleteId, reloadNonce, currentWeekNumber]);
 
     useEffect(() => {
+        setShowWeekUnlockMessage(false);
+        setUnlockedWeekNumber(null);
+    }, [targetAthleteId]);
+
+    useEffect(() => {
         let active = true;
 
         const loadPlan = async () => {
@@ -79,18 +112,21 @@ export default function WeeklyPlan() {
                 }
 
                 await generateWeeklyPlan(targetAthleteId, 1, supabase);
-
-                const weekOneActions = await fetchWeekActions(targetAthleteId, 1);
-                const weekOneComplete = weekOneActions.length === 3
-                    && weekOneActions.every((action) => action.status === 'done');
-
                 let existingWeeks = await fetchExistingWeeks(targetAthleteId);
-                let unlockedWeek2Now = false;
 
-                if (weekOneComplete && !existingWeeks.includes(2)) {
-                    await generateWeeklyPlan(targetAthleteId, 2, supabase);
+                let unlockedWeekNow = null;
+                for (let week = 1; week < MAX_TRIAL_WEEK; week += 1) {
+                    const nextWeek = week + 1;
+                    if (!existingWeeks.includes(week)) break;
+
+                    const weekActions = await fetchWeekActions(targetAthleteId, week);
+                    if (!isWeekComplete(weekActions) || existingWeeks.includes(nextWeek)) {
+                        continue;
+                    }
+
+                    await generateWeeklyPlan(targetAthleteId, nextWeek, supabase);
                     existingWeeks = await fetchExistingWeeks(targetAthleteId);
-                    unlockedWeek2Now = true;
+                    unlockedWeekNow = nextWeek;
                 }
 
                 const safeWeeks = existingWeeks.length > 0 ? existingWeeks : [1];
@@ -108,8 +144,8 @@ export default function WeeklyPlan() {
                     setCurrentWeekNumber(resolvedWeekNumber);
                 }
 
-                if (unlockedWeek2Now) {
-                    const storageKey = buildWeekUnlockStorageKey(targetAthleteId, 2);
+                if (unlockedWeekNow) {
+                    const storageKey = buildWeekUnlockStorageKey(targetAthleteId, unlockedWeekNow);
                     let alreadySeen = false;
                     try {
                         alreadySeen = storageKey ? window.localStorage.getItem(storageKey) === 'true' : false;
@@ -118,6 +154,7 @@ export default function WeeklyPlan() {
                     }
 
                     if (!alreadySeen) {
+                        setUnlockedWeekNumber(unlockedWeekNow);
                         setShowWeekUnlockMessage(true);
                         try {
                             if (storageKey) window.localStorage.setItem(storageKey, 'true');
@@ -153,9 +190,11 @@ export default function WeeklyPlan() {
         setReloadNonce((prev) => prev + 1);
     };
 
-    const handleStartWeekTwo = () => {
+    const handleStartUnlockedWeek = () => {
         setShowWeekUnlockMessage(false);
-        setCurrentWeekNumber(2);
+        if (unlockedWeekNumber) {
+            setCurrentWeekNumber(unlockedWeekNumber);
+        }
     };
 
     const handleSelectWeek = (weekNumber) => {
@@ -174,6 +213,8 @@ export default function WeeklyPlan() {
         });
         setHasTrackedPlanView(true);
     }, [simplePlan, loading, hasTrackedPlanView]);
+
+    const unlockCopy = WEEK_UNLOCK_COPY[unlockedWeekNumber] || WEEK_UNLOCK_COPY[2];
 
     return (
         <DashboardLayout>
@@ -195,24 +236,24 @@ export default function WeeklyPlan() {
                     <section className="w-full max-w-[520px] rounded-2xl border border-[rgba(108,46,185,0.28)] bg-white p-6 shadow-2xl sm:p-8">
                         <div className="text-center">
                             <div className="text-6xl leading-none" aria-hidden="true">🎉</div>
-                            <h2 className="mt-3 text-2xl font-bold text-gray-900">Week 2 Unlocked!</h2>
+                            <h2 className="mt-3 text-2xl font-bold text-gray-900">{unlockCopy.title}</h2>
                             <p className="mt-2 text-sm text-gray-600">
-                                Great job completing Week 1. Here&apos;s what is next:
+                                {unlockCopy.subtitle}
                             </p>
                         </div>
 
                         <ul className="mt-5 space-y-2 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-4 text-sm text-gray-800">
-                            <li>📅 Learn your recruiting timeline</li>
-                            <li>📞 Track coach interactions</li>
-                            <li>💰 Update your budget</li>
+                            {unlockCopy.bullets.map((bullet) => (
+                                <li key={bullet}>{bullet}</li>
+                            ))}
                         </ul>
 
                         <button
                             type="button"
-                            onClick={handleStartWeekTwo}
+                            onClick={handleStartUnlockedWeek}
                             className="mt-6 h-11 w-full rounded-xl bg-[#6C2EB9] px-5 text-sm font-semibold text-white transition hover:bg-[#5B25A0]"
                         >
-                            Start Week 2
+                            Start Week {unlockedWeekNumber || 2}
                         </button>
                     </section>
                 </div>

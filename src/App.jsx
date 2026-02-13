@@ -29,6 +29,9 @@ import ResearchSchools from './pages/actions/ResearchSchools'
 import LogExpenses from './pages/actions/LogExpenses'
 import RecruitingTimeline from './pages/actions/RecruitingTimeline'
 import CoachInteraction from './pages/actions/CoachInteraction'
+import RefineSchoolList from './pages/actions/RefineSchoolList'
+import AnalyzeExpenses from './pages/actions/AnalyzeExpenses'
+import ExpandSchoolList from './pages/actions/ExpandSchoolList'
 
 // --- TRAFFIC CONTROLLER ---
 function MainNavigator() {
@@ -142,6 +145,9 @@ function MainNavigator() {
       <Route path="/actions/log-expenses" element={<LogExpenses />} />
       <Route path="/actions/recruiting-timeline" element={<RecruitingTimeline />} />
       <Route path="/actions/coach-interaction" element={<CoachInteraction />} />
+      <Route path="/actions/refine-school-list" element={<RefineSchoolList />} />
+      <Route path="/actions/analyze-expenses" element={<AnalyzeExpenses />} />
+      <Route path="/actions/expand-school-list" element={<ExpandSchoolList />} />
       <Route path="/upgrade" element={<Upgrade />} />
       <Route path="/pricing" element={<Upgrade />} />
       {import.meta.env.DEV ? (

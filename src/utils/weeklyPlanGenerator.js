@@ -62,6 +62,35 @@ export const WEEKLY_ACTIONS = {
             route: '/actions/log-expenses',
             estimated_minutes: 10
         }
+    ],
+    week3: [
+        {
+            action_number: 1,
+            title: 'Refine your school list with AI',
+            description: 'Get 3 data-driven school recommendations and preview your full fit report.',
+            action_type: 'refine_school_list',
+            item_type: 'recommendations',
+            route: '/actions/refine-school-list',
+            estimated_minutes: 12
+        },
+        {
+            action_number: 2,
+            title: 'Analyze your recruiting spend',
+            description: 'See category-level ROI from expenses vs. coach contacts to sharpen your plan.',
+            action_type: 'analyze_expenses',
+            item_type: 'roi',
+            route: '/actions/analyze-expenses',
+            estimated_minutes: 10
+        },
+        {
+            action_number: 3,
+            title: 'Expand to 10 schools',
+            description: 'Build a balanced Dream/Target/Safety list using your new recommendations.',
+            action_type: 'expand_school_list',
+            item_type: 'expansion',
+            route: '/actions/expand-school-list',
+            estimated_minutes: 12
+        }
     ]
 };
 

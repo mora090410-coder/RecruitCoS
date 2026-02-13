@@ -9,7 +9,10 @@ const WEEK_ICON_BY_TYPE = {
     research_schools: '🎯',
     log_expenses: '💰',
     recruiting_timeline: '📅',
-    coach_interaction: '📞'
+    coach_interaction: '📞',
+    refine_school_list: '🤖',
+    analyze_expenses: '📈',
+    expand_school_list: '🧭'
 }
 
 function getActionNumber(item) {
@@ -19,7 +22,17 @@ function getActionNumber(item) {
     const byPriority = Number(item?.priority_rank)
     if (Number.isInteger(byPriority) && byPriority >= 1 && byPriority <= 3) return byPriority
 
-    const typeMap = { gap: 1, strength: 2, phase: 3 }
+    const typeMap = {
+        gap: 1,
+        strength: 2,
+        phase: 3,
+        timeline: 1,
+        interaction: 2,
+        budget: 3,
+        recommendations: 1,
+        roi: 2,
+        expansion: 3
+    }
     const byType = typeMap[String(item?.item_type || '').toLowerCase()]
     return byType || null
 }
