@@ -9,17 +9,42 @@ export const ACTION_NUMBER_TO_ROUTE = {
     3: '/actions/log-expenses'
 };
 
+export const ACTION_TYPE_TO_ROUTE = {
+    update_stats: '/actions/update-stats',
+    research_schools: '/actions/research-schools',
+    log_expenses: '/actions/log-expenses',
+    recruiting_timeline: '/actions/recruiting-timeline',
+    coach_interaction: '/actions/coach-interaction'
+};
+
 const ACTION_TYPE_TO_NUMBER = {
     gap: 1,
     strength: 2,
-    phase: 3
+    phase: 3,
+    timeline: 1,
+    interaction: 2,
+    budget: 3,
+    update_stats: 1,
+    research_schools: 2,
+    log_expenses: 3,
+    recruiting_timeline: 1,
+    coach_interaction: 2
 };
 
 export function resolveActionNumberFromItem(item, fallback = 1) {
+    const explicitActionNumber = Number.parseInt(item?.action_number, 10);
+    if (Number.isInteger(explicitActionNumber) && explicitActionNumber >= 1 && explicitActionNumber <= 3) {
+        return explicitActionNumber;
+    }
+
     const byPriority = Number.parseInt(item?.priority_rank, 10);
     if (Number.isInteger(byPriority) && byPriority >= 1 && byPriority <= 3) {
         return byPriority;
     }
+
+    const actionType = String(item?.action_type || '').toLowerCase();
+    const byActionType = ACTION_TYPE_TO_NUMBER[actionType];
+    if (byActionType) return byActionType;
 
     const byType = ACTION_TYPE_TO_NUMBER[String(item?.item_type || '').toLowerCase()];
     if (byType) return byType;
@@ -49,7 +74,8 @@ export function resolveWeekStartFromSearch(searchParams) {
 
 export function resolveActionHref(item, weekStartDate) {
     const actionNumber = resolveActionNumberFromItem(item);
-    const baseRoute = ACTION_NUMBER_TO_ROUTE[actionNumber] || ACTION_NUMBER_TO_ROUTE[1];
+    const actionTypeRoute = ACTION_TYPE_TO_ROUTE[String(item?.action_type || '').toLowerCase()];
+    const baseRoute = actionTypeRoute || ACTION_NUMBER_TO_ROUTE[actionNumber] || ACTION_NUMBER_TO_ROUTE[1];
     const params = new URLSearchParams({
         action: String(actionNumber)
     });

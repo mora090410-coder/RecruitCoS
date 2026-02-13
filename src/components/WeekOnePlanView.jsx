@@ -1,44 +1,21 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import CelebrationModal from './CelebrationModal'
-import UnlockScreen from './UnlockScreen'
 import { resolveActionHref } from '../lib/actionRouting'
-import { supabase } from '../lib/supabase'
-import { unlockDashboard } from '../lib/recruitingData'
-import { track } from '../lib/analytics'
+import { getWeeklyActionsForWeek } from '../utils/weeklyPlanGenerator'
 
-const WEEK_1_NUMBER = 1
-
-const ACTION_CONTENT = {
-    1: {
-        icon: '📋',
-        title: "Update your athlete's current stats",
-        description: 'Add their latest speed/strength/performance numbers so we can track progress.',
-        minutes: 5,
-        fallbackRoute: '/actions/update-stats'
-    },
-    2: {
-        icon: '🎯',
-        title: 'Research 3 schools in your target division',
-        description: "Find schools that match your athlete's level and academic profile.",
-        minutes: 15,
-        fallbackRoute: '/actions/research-schools'
-    },
-    3: {
-        icon: '💰',
-        title: "Log this month's recruiting expenses",
-        description: "Track showcase fees, camp costs, and travel to see where your money is going.",
-        minutes: 10,
-        fallbackRoute: '/actions/log-expenses'
-    }
-}
-
-function buildUnlockSeenStorageKey(athleteId, weekStartDate) {
-    if (!athleteId || !weekStartDate) return null
-    return `rc_week1_unlock_seen:${athleteId}:${weekStartDate}`
+const WEEK_ICON_BY_TYPE = {
+    update_stats: '📋',
+    research_schools: '🎯',
+    log_expenses: '💰',
+    recruiting_timeline: '📅',
+    coach_interaction: '📞'
 }
 
 function getActionNumber(item) {
+    const byActionNumber = Number.parseInt(item?.action_number, 10)
+    if (Number.isInteger(byActionNumber) && byActionNumber >= 1 && byActionNumber <= 3) return byActionNumber
+
     const byPriority = Number(item?.priority_rank)
     if (Number.isInteger(byPriority) && byPriority >= 1 && byPriority <= 3) return byPriority
 
@@ -47,13 +24,32 @@ function getActionNumber(item) {
     return byType || null
 }
 
-function resolveActionLink(actionNumber, actionItem, weekStartDate) {
+function resolveActionTemplate(weekNumber, actionNumber) {
+    const templates = getWeeklyActionsForWeek(weekNumber) || []
+    const match = templates.find((template) => Number(template.action_number) === Number(actionNumber))
+    return match || null
+}
+
+function resolveActionLink(weekNumber, actionNumber, actionItem, weekStartDate) {
     if (actionItem) return resolveActionHref(actionItem, weekStartDate)
 
-    const baseRoute = ACTION_CONTENT[actionNumber].fallbackRoute
+    const template = resolveActionTemplate(weekNumber, actionNumber)
+    const baseRoute = template?.route || '/weekly-plan'
     const params = new URLSearchParams({ action: String(actionNumber) })
     if (weekStartDate) params.set('weekStart', weekStartDate)
     return `${baseRoute}?${params.toString()}`
+}
+
+function resolveActionContent(weekNumber, actionNumber, item) {
+    const template = resolveActionTemplate(weekNumber, actionNumber)
+    const actionType = String(item?.action_type || template?.action_type || '').toLowerCase()
+
+    return {
+        icon: WEEK_ICON_BY_TYPE[actionType] || '✅',
+        title: item?.action_title || item?.title || template?.title || `Action ${actionNumber}`,
+        description: item?.action_description || item?.why || template?.description || 'Complete this weekly action.',
+        minutes: Number(item?.estimated_minutes || template?.estimated_minutes || 10)
+    }
 }
 
 function LoadingCard() {
@@ -73,15 +69,15 @@ export default function WeekOnePlanView({
     actions,
     loading,
     error,
-    targetAthleteId,
+    onRetry,
     weekStartDate,
-    onRetry
+    weekNumber = 1,
+    availableWeekNumbers = [1],
+    onSelectWeek
 }) {
     const navigate = useNavigate()
     const location = useLocation()
     const [searchParams] = useSearchParams()
-    const [showUnlockScreen, setShowUnlockScreen] = useState(false)
-    const [isCheckingUnlock, setIsCheckingUnlock] = useState(false)
 
     const actionByNumber = useMemo(() => {
         const map = new Map()
@@ -108,86 +104,39 @@ export default function WeekOnePlanView({
         ? actionParam
         : null
 
-    const unlockSeenStorageKey = useMemo(
-        () => buildUnlockSeenStorageKey(targetAthleteId, weekStartDate),
-        [targetAthleteId, weekStartDate]
-    )
-
-    const maybeShowUnlockScreen = async () => {
-        if (isCheckingUnlock) return
-        if (!targetAthleteId || !weekStartDate || !unlockSeenStorageKey) return
-        if (completedActionNumber !== 3) return
-
-        try {
-            if (window.localStorage.getItem(unlockSeenStorageKey) === 'true') {
-                return
-            }
-        } catch {
-            // no-op
-        }
-
-        setIsCheckingUnlock(true)
-        try {
-            const { data, error: queryError } = await supabase
-                .from('athlete_weekly_plan_items')
-                .select('status')
-                .eq('athlete_id', targetAthleteId)
-                .eq('week_start_date', weekStartDate)
-                .order('priority_rank', { ascending: true })
-                .limit(3)
-
-            if (queryError) return
-
-            const hasAllActionsDone = Array.isArray(data)
-                && data.length === 3
-                && data.every((item) => item.status === 'done')
-
-            if (!hasAllActionsDone) return
-
-            try {
-                window.localStorage.setItem(unlockSeenStorageKey, 'true')
-            } catch {
-                // no-op
-            }
-
-            let unlockedNow = false
-            try {
-                const unlockResult = await unlockDashboard(targetAthleteId)
-                unlockedNow = Boolean(unlockResult?.unlockedNow)
-            } catch {
-                // no-op
-            }
-
-            track('dashboard_unlocked', {
-                week_number: WEEK_1_NUMBER,
-                completed_actions: 3,
-                unlock_reason: 'completed_week_1',
-                unlocked_now: unlockedNow
-            })
-
-            setShowUnlockScreen(true)
-        } finally {
-            setIsCheckingUnlock(false)
-        }
-    }
-
     const closeCelebrationModal = () => {
         navigate(location.pathname, { replace: true })
-        void maybeShowUnlockScreen()
-    }
-
-    const closeUnlockScreen = () => {
-        setShowUnlockScreen(false)
     }
 
     return (
         <div className="mx-auto w-full max-w-3xl space-y-8">
             <header className="text-center">
-                <h1 className="text-4xl font-bold tracking-tight text-gray-900">Welcome to Week 1, {athlete?.name || 'Athlete'}</h1>
-                <p className="mt-2 text-xl text-gray-600">Here&apos;s your plan for this week</p>
+                <h1 className="text-4xl font-bold tracking-tight text-gray-900">Week {weekNumber} Plan{athlete?.name ? `, ${athlete.name}` : ''}</h1>
+                <p className="mt-2 text-xl text-gray-600">Focused actions to move recruiting forward this week</p>
             </header>
 
-            <section className="space-y-4" aria-label="Week 1 actions">
+            {!loading && !error && availableWeekNumbers.length > 1 && (
+                <section className="flex flex-wrap items-center justify-center gap-2" aria-label="Week selector">
+                    {availableWeekNumbers.map((availableWeek) => {
+                        const isActiveWeek = Number(availableWeek) === Number(weekNumber)
+                        return (
+                            <button
+                                key={availableWeek}
+                                type="button"
+                                onClick={() => onSelectWeek?.(availableWeek)}
+                                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${isActiveWeek
+                                    ? 'bg-[#6C2EB9] text-white'
+                                    : 'border border-[#D1D5DB] bg-white text-gray-700 hover:border-[#6C2EB9] hover:text-[#6C2EB9]'
+                                }`}
+                            >
+                                Week {availableWeek}
+                            </button>
+                        )
+                    })}
+                </section>
+            )}
+
+            <section className="space-y-4" aria-label={`Week ${weekNumber} actions`}>
                 {loading && (
                     <>
                         <LoadingCard />
@@ -213,8 +162,8 @@ export default function WeekOnePlanView({
 
                 {!loading && !error && [1, 2, 3].map((actionNumber) => {
                     const item = actionByNumber.get(actionNumber)
-                    const content = ACTION_CONTENT[actionNumber]
                     const isDone = item?.status === 'done'
+                    const content = resolveActionContent(weekNumber, actionNumber, item)
 
                     return (
                         <article
@@ -243,7 +192,7 @@ export default function WeekOnePlanView({
                                     ? 'cursor-not-allowed bg-gray-300 text-gray-600'
                                     : 'bg-[#6C2EB9] text-white hover:bg-[#5B25A0] hover:shadow-md active:scale-[0.99]'
                                 }`}
-                                onClick={() => navigate(resolveActionLink(actionNumber, item, weekStartDate))}
+                                onClick={() => navigate(resolveActionLink(weekNumber, actionNumber, item, weekStartDate || item?.week_start_date || null))}
                                 disabled={isDone}
                             >
                                 {isDone ? 'Completed' : 'Start This Action'}
@@ -257,8 +206,8 @@ export default function WeekOnePlanView({
                 <section className="rounded-xl border-2 border-[rgba(108,46,185,0.14)] bg-gradient-to-br from-[rgba(108,46,185,0.08)] to-[rgba(108,46,185,0.03)] p-7 text-center">
                     <div className="mb-2 text-3xl" aria-hidden="true">📊</div>
                     <h3 className="text-lg font-bold text-gray-900">Your Progress</h3>
-                    <p className="mt-1 text-base text-gray-700">Week 1 of 4 • <span className="font-semibold">{completedCount}/3</span> actions completed</p>
-                    <p className="mt-2 text-sm text-gray-600">Complete 2+ actions this week to stay on track</p>
+                    <p className="mt-1 text-base text-gray-700">Week {weekNumber} of 4 • <span className="font-semibold">{completedCount}/3</span> actions completed</p>
+                    <p className="mt-2 text-sm text-gray-600">Finish all 3 actions to unlock next steps</p>
                 </section>
             )}
 
@@ -266,14 +215,6 @@ export default function WeekOnePlanView({
                 <CelebrationModal
                     actionNumber={completedActionNumber}
                     onClose={closeCelebrationModal}
-                />
-            )}
-
-            {showUnlockScreen && (
-                <UnlockScreen
-                    athleteId={targetAthleteId}
-                    weekNumber={WEEK_1_NUMBER}
-                    onClose={closeUnlockScreen}
                 />
             )}
         </div>

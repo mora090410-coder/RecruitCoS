@@ -27,11 +27,13 @@ import Upgrade from './pages/Upgrade'
 import UpdateStats from './pages/actions/UpdateStats'
 import ResearchSchools from './pages/actions/ResearchSchools'
 import LogExpenses from './pages/actions/LogExpenses'
+import RecruitingTimeline from './pages/actions/RecruitingTimeline'
+import CoachInteraction from './pages/actions/CoachInteraction'
 
 // --- TRAFFIC CONTROLLER ---
 function MainNavigator() {
   const { user, loading: authLoading } = useAuth()
-  const { hasProfile, isProfileLoading, isInitialized, error: profileError, profile, activeAthlete, isImpersonating } = useProfile()
+  const { hasProfile, isProfileLoading, isInitialized, error: profileError, profile } = useProfile()
   const location = useLocation()
 
   useEffect(() => {
@@ -138,6 +140,8 @@ function MainNavigator() {
       <Route path="/actions/update-stats" element={<UpdateStats />} />
       <Route path="/actions/research-schools" element={<ResearchSchools />} />
       <Route path="/actions/log-expenses" element={<LogExpenses />} />
+      <Route path="/actions/recruiting-timeline" element={<RecruitingTimeline />} />
+      <Route path="/actions/coach-interaction" element={<CoachInteraction />} />
       <Route path="/upgrade" element={<Upgrade />} />
       <Route path="/pricing" element={<Upgrade />} />
       {import.meta.env.DEV ? (
