@@ -12,7 +12,7 @@ import { track } from '../lib/analytics'
 import { isMissingTableError } from '../lib/dbResilience'
 
 const DASHBOARD_WRAPPER_CLASS = 'mx-auto w-full max-w-[1200px] space-y-6 rounded-2xl bg-[#F5F1E8] px-6 py-6 md:px-12 md:py-12'
-const DASHBOARD_BACKGROUND_CLASS = 'rounded-2xl border border-[#2C2C2C1A] bg-gradient-to-r from-white to-[#F9F5FF] p-6 sm:p-8'
+const DASHBOARD_BACKGROUND_CLASS = 'rounded-2xl border border-[#2C2C2C1A] bg-gradient-to-r from-white to-[#F5F1E8] p-6 sm:p-8'
 
 function getMonthRange(now = new Date()) {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)

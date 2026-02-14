@@ -13,8 +13,8 @@
 
   <rect x="492" y="170" width="356" height="180" rx="16" fill="#F5F1E8" stroke="#F5F1E8"/>
   <text x="516" y="214" fill="rgba(44,44,44,0.6)" font-size="14" font-family="Inter, Arial, sans-serif">WEEKLY STREAK</text>
-  <text x="516" y="266" fill="#2C2C2C" font-size="48" font-weight="800" font-family="Inter, Arial, sans-serif">5 weeks</text>
-  <polyline points="520,324 570,302 620,308 670,278 720,286 770,250 820,258" fill="none" stroke="#8B2635" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="516" y="266" fill="#D4AF37" font-size="48" font-weight="800" font-family="Inter, Arial, sans-serif">5 weeks</text>
+  <polyline points="520,324 570,302 620,308 670,278 720,286 770,250 820,258" fill="none" stroke="#D4AF37" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
 
   <rect x="112" y="370" width="736" height="164" rx="16" fill="#F5F1E8" stroke="#F5F1E8"/>
   <text x="136" y="414" fill="rgba(44,44,44,0.6)" font-size="14" font-family="Inter, Arial, sans-serif">PHASE PROGRESS</text>

@@ -174,8 +174,8 @@ export default function UnlockScreen({ athleteId, onClose, weekNumber = 1 }) {
                     />
                 </div>
 
-                <section className="mt-6 rounded-xl border border-[#2C2C2C1A] bg-gradient-to-br from-[#F5F1E8] to-[#F5F1E8] p-5">
-                    <span className="inline-flex rounded-full bg-[#7D2230] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
+                <section className="mt-6 rounded-xl border border-[rgba(212,175,55,0.42)] bg-gradient-to-br from-[#F5F1E8] to-[#F5F1E8] p-5">
+                    <span className="inline-flex rounded-full border border-[rgba(212,175,55,0.5)] bg-[#D4AF37] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#2C2C2C]">
                         {comingBadge}
                     </span>
                     <h3 className="mt-3 text-xl font-semibold text-gray-900">Week 2: Coach Outreach &amp; Video Strategy</h3>
@@ -187,14 +187,14 @@ export default function UnlockScreen({ athleteId, onClose, weekNumber = 1 }) {
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                     <button
                         type="button"
-                        className="h-12 w-full rounded-lg bg-[#8B2635] px-6 py-[14px] text-sm font-semibold text-white transition hover:bg-[#7D2230] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B2635] focus-visible:ring-offset-2 active:scale-[0.99]"
+                        className="h-12 w-full rounded-lg border border-[rgba(212,175,55,0.46)] bg-[#8B2635] px-6 py-[14px] text-sm font-semibold text-white shadow-[0_0_0_1px_rgba(212,175,55,0.2)] transition hover:bg-[#7D2230] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4AF37] focus-visible:ring-offset-2 active:scale-[0.99]"
                         onClick={handleExploreDashboard}
                     >
                         Explore Dashboard
                     </button>
                     <button
                         type="button"
-                        className="h-12 w-full rounded-lg border border-gray-300 bg-white px-6 py-[14px] text-sm font-semibold text-gray-700 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 active:scale-[0.99]"
+                        className="h-12 w-full rounded-lg border border-[#8B2635] bg-[#F5F1E8] px-6 py-[14px] text-sm font-semibold text-[#8B2635] transition hover:bg-[#7D2230] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B2635] focus-visible:ring-offset-2 active:scale-[0.99]"
                         onClick={handleDoneForToday}
                     >
                         I&apos;m Done For Today

@@ -34,7 +34,7 @@ function getWeekTwoUnlockText(weekTwoDate) {
     return `Monday (${formatMonthDay(weekTwoDate)})`
 }
 
-const PRO_BUTTON_CLASS = 'mt-5 inline-flex w-full items-center justify-center rounded-lg border-2 border-[#8B2635] bg-white px-4 py-3 text-sm font-semibold text-[#8B2635] transition hover:bg-[#8B2635] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B2635] focus-visible:ring-offset-2'
+const PRO_BUTTON_CLASS = 'mt-5 inline-flex w-full items-center justify-center rounded-lg border-2 border-[#8B2635] bg-[#F5F1E8] px-4 py-3 text-sm font-semibold text-[#8B2635] transition hover:bg-[#7D2230] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B2635] focus-visible:ring-offset-2'
 
 export default function WeekProgressCard({ currentWeek, completedActions, weekStartDate, onUpgrade }) {
     const clampedWeek = Math.min(4, Math.max(1, Number(currentWeek || 1)))
@@ -68,7 +68,7 @@ export default function WeekProgressCard({ currentWeek, completedActions, weekSt
             </div>
 
             <div className="mt-5 space-y-2 text-sm text-gray-700">
-                <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 font-medium text-emerald-700">
+                <p className="rounded-lg border border-[rgba(212,175,55,0.45)] bg-[rgba(212,175,55,0.16)] px-3 py-2 font-medium text-[#D4AF37]">
                     ✓ Week 1 Complete ({completedActions}/3 actions)
                 </p>
                 <p className="rounded-lg border border-[#2C2C2C1A] bg-[#F5F1E8] px-3 py-2">

@@ -4,7 +4,7 @@ import {
     getScoreLabel
 } from './insightCalculations'
 
-const PRO_BUTTON_CLASS = 'mt-5 inline-flex w-full items-center justify-center rounded-lg border-2 border-[#8B2635] bg-white px-4 py-3 text-sm font-semibold text-[#8B2635] transition hover:bg-[#8B2635] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B2635] focus-visible:ring-offset-2'
+const PRO_BUTTON_CLASS = 'mt-5 inline-flex w-full items-center justify-center rounded-lg border-2 border-[#8B2635] bg-[#F5F1E8] px-4 py-3 text-sm font-semibold text-[#8B2635] transition hover:bg-[#7D2230] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B2635] focus-visible:ring-offset-2'
 
 function ScoreCircle({ score, label }) {
     const circleStyle = {

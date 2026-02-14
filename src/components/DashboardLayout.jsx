@@ -21,12 +21,12 @@ export default function DashboardLayout({ children, phase }) {
     return (
         <div className="lp-landing min-h-screen font-sans text-[var(--gray-900)]">
             {/* Top Navigation Bar */}
-            <header className="lp-nav border-b border-[var(--gray-200)] bg-[rgba(255,255,255,0.92)] backdrop-blur supports-[backdrop-filter]:bg-[rgba(255,255,255,0.84)]">
+            <header className="lp-nav border-b border-[rgba(212,175,55,0.35)] bg-[rgba(139,38,53,0.96)] backdrop-blur supports-[backdrop-filter]:bg-[rgba(139,38,53,0.9)]">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                     {/* Logo & Brand */}
                     <div className="flex items-center gap-8">
-                        <Link to="/dashboard" className="flex items-center gap-2 font-serif text-xl font-bold text-[var(--purple-700)]">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-md border border-[rgba(139, 38, 53, 0.28)] bg-[rgba(255,255,255,0.94)] text-[var(--purple-700)] font-sans">R</div>
+                        <Link to="/dashboard" className="flex items-center gap-2 font-serif text-xl font-bold text-[#F5F1E8]">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-md border border-[rgba(212,175,55,0.45)] bg-[#F5F1E8] text-[#8B2635] font-sans">R</div>
                             RecruitCoS
                         </Link>
 
@@ -52,44 +52,44 @@ export default function DashboardLayout({ children, phase }) {
                                                 navigate(link.label === 'Dashboard' ? '/dashboard' : '/weekly-plan')
                                             }
                                             : undefined}
-                                        className={`relative pb-1 transition-colors ${active ? 'text-[var(--purple-700)]' : 'text-[var(--gray-600)] hover:text-[var(--gray-900)]'}`}
+                                        className={`relative pb-1 transition-colors ${active ? 'text-[#F5F1E8]' : 'text-[#F5F1E8]/75 hover:text-[#F5F1E8]'}`}
                                     >
                                         {link.label}
                                         {active && (
-                                            <span className="absolute inset-x-0 -bottom-[2px] h-[2px] rounded-full bg-gradient-to-r from-[var(--purple-700)] to-[var(--purple-500)]" />
+                                            <span className="absolute inset-x-0 -bottom-[2px] h-[2px] rounded-full bg-[#D4AF37]" />
                                         )}
                                     </Link>
                                 )
                             })}
                             {/* Placeholder Links */}
-                            <span className="cursor-not-allowed text-[var(--gray-500)]/70">Saved</span>
-                            <span className="cursor-not-allowed text-[var(--gray-500)]/70">Analytics</span>
+                            <span className="cursor-not-allowed text-[#F5F1E8]/55">Saved</span>
+                            <span className="cursor-not-allowed text-[#F5F1E8]/55">Analytics</span>
                         </nav>
                     </div>
 
                     {/* Right Side Actions */}
                     <div className="flex items-center gap-4">
                         {/* Search Bar (Visual) */}
-                        <div className="hidden md:flex items-center w-64 rounded-full border border-[var(--gray-200)] bg-[rgba(255,255,255,0.9)] px-3 py-1.5">
-                            <Search className="mr-2 h-4 w-4 text-[var(--gray-500)]" />
+                        <div className="hidden md:flex items-center w-64 rounded-full border border-[rgba(212,175,55,0.35)] bg-[rgba(245,241,232,0.18)] px-3 py-1.5">
+                            <Search className="mr-2 h-4 w-4 text-[#F5F1E8]/80" />
                             <input
                                 type="text"
                                 placeholder="Search content..."
-                                className="w-full border-none bg-transparent text-sm focus:outline-none"
+                                className="w-full border-none bg-transparent text-sm text-[#F5F1E8] placeholder:text-[#F5F1E8]/65 focus:outline-none"
                             />
                         </div>
 
                         {/* Icons */}
-                        <Button variant="ghost" size="icon" className="text-[var(--gray-600)] hover:text-[var(--purple-700)]">
+                        <Button variant="ghost" size="icon" className="text-[#F5F1E8]/80 hover:text-[#F5F1E8]">
                             <Bell className="w-5 h-5" />
                         </Button>
 
                         {/* User Profile / Logout */}
-                        <div className="ml-2 flex items-center gap-2 border-l border-[var(--gray-200)] pl-2">
-                            <Button variant="ghost" size="sm" onClick={signOut} className="text-xs text-[var(--gray-600)] hover:text-[var(--purple-700)]">
+                        <div className="ml-2 flex items-center gap-2 border-l border-[rgba(212,175,55,0.35)] pl-2">
+                            <Button variant="ghost" size="sm" onClick={signOut} className="text-xs text-[#F5F1E8]/80 hover:text-[#F5F1E8]">
                                 Sign Out
                             </Button>
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--gray-200)] bg-white text-[var(--gray-600)]">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(212,175,55,0.45)] bg-[#F5F1E8] text-[#8B2635]">
                                 <User className="w-4 h-4" />
                             </div>
                         </div>

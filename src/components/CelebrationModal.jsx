@@ -6,14 +6,14 @@ export default function CelebrationModal({ actionNumber, onClose }) {
             role="presentation"
         >
             <div
-                className="rc-slide-up w-full max-w-[400px] overflow-hidden rounded-2xl border border-[rgba(139, 38, 53, 0.28)] bg-white shadow-2xl"
+                className="rc-slide-up w-full max-w-[400px] overflow-hidden rounded-2xl border border-[rgba(139,38,53,0.28)] bg-white shadow-2xl"
                 onClick={(event) => event.stopPropagation()}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="celebration-modal-title"
             >
                 <div className="bg-gradient-to-r from-[#8B2635] to-[#8B2635] px-6 py-5 text-white">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em]">Weekly Momentum</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#D4AF37]">Weekly Momentum</p>
                 </div>
 
                 <div className="px-6 pb-6 pt-5 text-center">
@@ -27,7 +27,7 @@ export default function CelebrationModal({ actionNumber, onClose }) {
                     <button
                         type="button"
                         onClick={onClose}
-                        className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-xl bg-[#8B2635] px-5 text-sm font-semibold text-white transition hover:bg-[#7D2230]"
+                        className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-xl border border-[rgba(212,175,55,0.42)] bg-[#8B2635] px-5 text-sm font-semibold text-white transition hover:bg-[#7D2230]"
                     >
                         Back to This Week&apos;s Plan
                     </button>

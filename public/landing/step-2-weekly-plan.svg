@@ -10,7 +10,7 @@
   <rect x="186" y="220" width="520" height="10" rx="5" fill="#F5F1E8"/>
 
   <rect x="112" y="282" width="736" height="96" rx="14" fill="#F5F1E8" stroke="#F5F1E8"/>
-  <text x="136" y="321" fill="#8B2635" font-size="24" font-weight="700" font-family="Inter, Arial, sans-serif">[x]</text>
+  <text x="136" y="321" fill="#D4AF37" font-size="24" font-weight="700" font-family="Inter, Arial, sans-serif">[x]</text>
   <text x="186" y="322" fill="#2C2C2C" font-size="22" font-family="Inter, Arial, sans-serif">Action 2: Coach updates...</text>
   <rect x="186" y="336" width="500" height="10" rx="5" fill="#F5F1E8"/>
 
@@ -20,5 +20,5 @@
   <rect x="186" y="452" width="510" height="10" rx="5" fill="#F5F1E8"/>
 
   <rect x="656" y="514" width="192" height="44" rx="10" fill="#8B2635"/>
-  <text x="690" y="542" fill="white" font-size="18" font-weight="700" font-family="Inter, Arial, sans-serif">Mark Complete</text>
+  <text x="690" y="542" fill="#F5F1E8" font-size="18" font-weight="700" font-family="Inter, Arial, sans-serif">Mark Complete</text>
 </svg>

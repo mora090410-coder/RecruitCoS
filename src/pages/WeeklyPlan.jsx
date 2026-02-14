@@ -391,7 +391,7 @@ export default function WeeklyPlan() {
 
             {showWeekUnlockMessage && (
                 <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[rgba(15,23,42,0.45)] p-4 backdrop-blur-sm">
-                    <section className="w-full max-w-[520px] rounded-2xl border border-[rgba(139, 38, 53, 0.28)] bg-white p-6 shadow-2xl sm:p-8">
+                    <section className="w-full max-w-[520px] rounded-2xl border border-[rgba(139,38,53,0.28)] bg-white p-6 shadow-2xl sm:p-8">
                         <div className="text-center">
                             <div className="text-6xl leading-none" aria-hidden="true">🎉</div>
                             <h2 className="mt-3 text-2xl font-bold text-gray-900">{unlockCopy.title}</h2>
@@ -419,7 +419,7 @@ export default function WeeklyPlan() {
 
             {showWeek5Paywall && (
                 <div className="fixed inset-0 z-[75] flex items-center justify-center bg-[rgba(15,23,42,0.55)] p-4 backdrop-blur-sm">
-                    <section className="w-full max-w-[620px] rounded-2xl border border-[rgba(139, 38, 53, 0.3)] bg-white p-6 shadow-2xl sm:p-8">
+                    <section className="w-full max-w-[620px] rounded-2xl border border-[rgba(139,38,53,0.3)] bg-white p-6 shadow-2xl sm:p-8">
                         <div className="text-center">
                             <div className="text-5xl leading-none" aria-hidden="true">🎉</div>
                             <h2 className="mt-3 text-2xl font-bold text-gray-900">You Completed Your Free Trial</h2>
@@ -431,14 +431,14 @@ export default function WeeklyPlan() {
                         <div className="mt-5 rounded-xl border border-[#2C2C2C1A] bg-[#F5F1E8] p-4">
                             <h3 className="text-sm font-semibold text-gray-900">Your 4-week outcomes</h3>
                             <ul className="mt-3 space-y-1.5 text-sm text-gray-800">
-                                <li>✓ {week5Summary.schoolCount} schools researched</li>
-                                <li>✓ ${week5Summary.totalExpenses.toLocaleString(undefined, { maximumFractionDigits: 2 })} in expenses tracked</li>
-                                <li>✓ {week5Summary.coachContacts} coach interactions logged</li>
-                                <li>✓ {week5Summary.roadmapCreated ? 'Recruiting roadmap created' : 'Roadmap framework generated'}</li>
+                                <li><span className="mr-1 text-[#D4AF37]">✓</span>{week5Summary.schoolCount} schools researched</li>
+                                <li><span className="mr-1 text-[#D4AF37]">✓</span>${week5Summary.totalExpenses.toLocaleString(undefined, { maximumFractionDigits: 2 })} in expenses tracked</li>
+                                <li><span className="mr-1 text-[#D4AF37]">✓</span>{week5Summary.coachContacts} coach interactions logged</li>
+                                <li><span className="mr-1 text-[#D4AF37]">✓</span>{week5Summary.roadmapCreated ? 'Recruiting roadmap created' : 'Roadmap framework generated'}</li>
                             </ul>
                         </div>
 
-                        <div className="mt-4 rounded-xl border border-[rgba(139, 38, 53, 0.22)] bg-[rgba(139, 38, 53, 0.05)] p-4">
+                        <div className="mt-4 rounded-xl border border-[rgba(139,38,53,0.22)] bg-[rgba(139,38,53,0.05)] p-4">
                             <h3 className="text-base font-semibold text-gray-900">Continue with Pro</h3>
                             <ul className="mt-2 space-y-1 text-sm text-gray-700">
                                 <li>Weekly recruiting action plans every week</li>

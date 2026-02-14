@@ -195,16 +195,16 @@ export default function WeekOnePlanView({
                     return (
                         <article
                             key={actionNumber}
-                            className={`rounded-xl border-2 bg-white p-6 transition-all ${isDone ? 'border-[#2C2C2C1A] bg-gray-50/70 opacity-80' : 'border-[#2C2C2C1A] hover:border-[#8B2635] hover:shadow-[0_8px_24px_rgba(139, 38, 53, 0.15)]'}`}
+                            className={`rounded-xl border-2 bg-white p-6 transition-all ${isDone ? 'border-[#2C2C2C1A] bg-gray-50/70 opacity-80' : 'border-[#2C2C2C1A] hover:border-[#8B2635] hover:shadow-[0_8px_24px_rgba(139,38,53,0.15)]'}`}
                         >
                             <div className="mb-4 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <span className="text-2xl" aria-hidden="true">{content.icon}</span>
-                                    <div className={`flex h-6 w-6 items-center justify-center rounded border-2 ${isDone ? 'border-[#8B2635] bg-[#8B2635] text-white' : 'border-[rgba(44,44,44,0.6)]'}`}>
+                                    <div className={`flex h-6 w-6 items-center justify-center rounded border-2 ${isDone ? 'border-[#D4AF37] bg-[#D4AF37] text-[#2C2C2C]' : 'border-[rgba(44,44,44,0.6)]'}`}>
                                         {isDone ? '✓' : ''}
                                     </div>
                                 </div>
-                                <span className={`text-sm font-semibold ${isDone ? 'text-[#8B2635]' : 'text-gray-600'}`}>
+                                <span className={`text-sm font-semibold ${isDone ? 'text-[#D4AF37]' : 'text-gray-600'}`}>
                                     {isDone ? 'Done' : 'Not Done'}
                                 </span>
                             </div>
@@ -226,7 +226,7 @@ export default function WeekOnePlanView({
             </section>
 
             {!loading && !error && (
-                <section className="rounded-xl border-2 border-[rgba(139, 38, 53, 0.14)] bg-gradient-to-br from-[rgba(139, 38, 53, 0.08)] to-[rgba(139, 38, 53, 0.03)] p-7 text-center">
+                <section className="rounded-xl border-2 border-[rgba(139,38,53,0.14)] bg-gradient-to-br from-[rgba(139,38,53,0.08)] to-[rgba(139,38,53,0.03)] p-7 text-center">
                     <div className="mb-2 text-3xl" aria-hidden="true">📊</div>
                     <h3 className="text-lg font-bold text-gray-900">Your Progress</h3>
                     <p className="mt-1 text-base text-gray-700">Week {weekNumber} of 4 • <span className="font-semibold">{completedCount}/3</span> actions completed</p>
