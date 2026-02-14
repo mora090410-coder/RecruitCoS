@@ -83,7 +83,7 @@ export default function SchoolDetail({
                         </div>
                     </div>
                     <div className="flex items-start gap-3">
-                        <Trophy className="w-5 h-5 text-purple-500 mt-0.5" />
+                        <Trophy className="w-5 h-5 text-[#8B2635] mt-0.5" />
                         <div>
                             <p className="text-xs text-gray-400">Typical GPA</p>
                             <p className="font-semibold text-gray-900">{school.gpa_requirement || '3.0'}+</p>

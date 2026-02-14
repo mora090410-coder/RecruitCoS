@@ -1,6 +1,6 @@
 import { calculateSchoolMatch } from './insightCalculations'
 
-const PRO_BUTTON_CLASS = 'inline-flex w-full items-center justify-center rounded-lg border-2 border-[#6C2EB9] bg-white px-4 py-3 text-sm font-semibold text-[#6C2EB9] transition hover:bg-[#6C2EB9] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C2EB9] focus-visible:ring-offset-2'
+const PRO_BUTTON_CLASS = 'inline-flex w-full items-center justify-center rounded-lg border-2 border-[#8B2635] bg-white px-4 py-3 text-sm font-semibold text-[#8B2635] transition hover:bg-[#8B2635] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B2635] focus-visible:ring-offset-2'
 
 function getCategoryBadgeClass(category) {
     if (category === 'SAFETY') return 'bg-emerald-100 text-emerald-700 border-emerald-200'
@@ -11,7 +11,7 @@ function getCategoryBadgeClass(category) {
 function Stars({ count }) {
     const safeCount = Math.max(0, Math.min(5, Number(count || 0)))
     return (
-        <span className="tracking-wide text-[#6C2EB9]" aria-label={`${safeCount} out of 5 stars`}>
+        <span className="tracking-wide text-[#8B2635]" aria-label={`${safeCount} out of 5 stars`}>
             {'★'.repeat(safeCount)}
             <span className="text-gray-300">{'★'.repeat(5 - safeCount)}</span>
         </span>
@@ -38,7 +38,7 @@ export default function SchoolFitCard({ schools, athleteStats, onUpgradeSchools,
     const isBalanced = mix.REACH > 0 && mix.TARGET > 0 && mix.SAFETY > 0
 
     return (
-        <article className="rounded-xl border-2 border-[#E5E7EB] bg-white p-8 transition-shadow hover:shadow-lg">
+        <article className="rounded-xl border-2 border-[#2C2C2C1A] bg-white p-8 transition-shadow hover:shadow-lg">
             <header className="mb-5 flex items-center gap-3">
                 <span className="text-3xl" aria-hidden="true">🎯</span>
                 <h2 className="text-xl font-bold text-gray-900">Target Schools ({cappedSchools.length})</h2>
@@ -46,13 +46,13 @@ export default function SchoolFitCard({ schools, athleteStats, onUpgradeSchools,
 
             <div className="space-y-3">
                 {fitRows.length === 0 && (
-                    <div className="rounded-lg border border-dashed border-[#D1D5DB] bg-[#F9FAFB] p-4 text-sm text-gray-600">
+                    <div className="rounded-lg border border-dashed border-[#2C2C2C1A] bg-[#F5F1E8] p-4 text-sm text-gray-600">
                         No schools saved yet. Add schools in Week 1 Action 2 to see fit analysis.
                     </div>
                 )}
 
                 {fitRows.map(({ school, fit }) => (
-                    <article key={school.id || school.school_name} className="rounded-lg border border-[#E5E7EB] bg-white p-4">
+                    <article key={school.id || school.school_name} className="rounded-lg border border-[#2C2C2C1A] bg-white p-4">
                         <h3 className="text-base font-semibold text-gray-900">{school.school_name}</h3>
                         <p className="mt-1 text-sm text-gray-600">
                             {(school.division || 'D3').toUpperCase()} • {getSchoolLocation(school)}
@@ -79,7 +79,7 @@ export default function SchoolFitCard({ schools, athleteStats, onUpgradeSchools,
                 ))}
             </div>
 
-            <p className="mt-5 rounded-lg bg-[#F9FAFB] px-4 py-3 text-sm text-gray-700">
+            <p className="mt-5 rounded-lg bg-[#F5F1E8] px-4 py-3 text-sm text-gray-700">
                 💡 Your target mix: {mix.REACH} reach, {mix.TARGET} target, {mix.SAFETY} safety
                 {fitRows.length > 0 ? (isBalanced ? ' ✓' : ' - Consider adding more variety') : ''}
             </p>

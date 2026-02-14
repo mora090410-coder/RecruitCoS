@@ -97,7 +97,7 @@ export const PHASE_CONFIG = {
             'Compare roster depth at target schools'
         ],
         color: 'indigo',
-        badgeClass: 'bg-indigo-100 text-indigo-700'
+        badgeClass: 'bg-[#F5F1E8] text-[#8B2635]'
     },
     [RECRUITING_PHASES.COMMITMENT]: {
         title: 'Commitment',

@@ -34,7 +34,7 @@ function getWeekTwoUnlockText(weekTwoDate) {
     return `Monday (${formatMonthDay(weekTwoDate)})`
 }
 
-const PRO_BUTTON_CLASS = 'mt-5 inline-flex w-full items-center justify-center rounded-lg border-2 border-[#6C2EB9] bg-white px-4 py-3 text-sm font-semibold text-[#6C2EB9] transition hover:bg-[#6C2EB9] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C2EB9] focus-visible:ring-offset-2'
+const PRO_BUTTON_CLASS = 'mt-5 inline-flex w-full items-center justify-center rounded-lg border-2 border-[#8B2635] bg-white px-4 py-3 text-sm font-semibold text-[#8B2635] transition hover:bg-[#8B2635] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B2635] focus-visible:ring-offset-2'
 
 export default function WeekProgressCard({ currentWeek, completedActions, weekStartDate, onUpgrade }) {
     const clampedWeek = Math.min(4, Math.max(1, Number(currentWeek || 1)))
@@ -46,7 +46,7 @@ export default function WeekProgressCard({ currentWeek, completedActions, weekSt
     const weekFourDate = addDays(baseWeekStart, 21)
 
     return (
-        <article className="rounded-xl border-2 border-[#E5E7EB] bg-white p-8 transition-shadow hover:shadow-lg">
+        <article className="rounded-xl border-2 border-[#2C2C2C1A] bg-white p-8 transition-shadow hover:shadow-lg">
             <header className="mb-5 flex items-center gap-3">
                 <span className="text-3xl" aria-hidden="true">📅</span>
                 <h2 className="text-xl font-bold text-gray-900">Your Journey</h2>
@@ -61,7 +61,7 @@ export default function WeekProgressCard({ currentWeek, completedActions, weekSt
                 </div>
                 <div className="h-3 overflow-hidden rounded-full bg-gray-100">
                     <div
-                        className="h-full rounded-full bg-gradient-to-r from-[#6C2EB9] to-[#8B5FD8]"
+                        className="h-full rounded-full bg-gradient-to-r from-[#8B2635] to-[#8B2635]"
                         style={{ width: `${progressPercentage}%` }}
                     />
                 </div>
@@ -71,18 +71,18 @@ export default function WeekProgressCard({ currentWeek, completedActions, weekSt
                 <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 font-medium text-emerald-700">
                     ✓ Week 1 Complete ({completedActions}/3 actions)
                 </p>
-                <p className="rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2">
+                <p className="rounded-lg border border-[#2C2C2C1A] bg-[#F5F1E8] px-3 py-2">
                     → Week 2 unlocks {getWeekTwoUnlockText(weekTwoDate)}
                 </p>
-                <p className="rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2">
+                <p className="rounded-lg border border-[#2C2C2C1A] bg-[#F5F1E8] px-3 py-2">
                     → Week 3 unlocks {formatMonthDay(weekThreeDate)}
                 </p>
-                <p className="rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2">
+                <p className="rounded-lg border border-[#2C2C2C1A] bg-[#F5F1E8] px-3 py-2">
                     → Week 4 unlocks {formatMonthDay(weekFourDate)}
                 </p>
             </div>
 
-            <p className="mt-5 rounded-lg bg-[#F3ECFF] px-4 py-3 text-sm text-gray-800">
+            <p className="mt-5 rounded-lg bg-[#F5F1E8] px-4 py-3 text-sm text-gray-800">
                 After Week 4: Upgrade to continue weekly plans and unlock all features.
             </p>
 

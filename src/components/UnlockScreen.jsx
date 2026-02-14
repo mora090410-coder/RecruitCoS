@@ -34,7 +34,7 @@ function resolveComingBadge() {
 
 function FeatureCard({ icon, name, preview }) {
     return (
-        <article className="group rounded-xl border-2 border-[#E5E7EB] bg-white p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#6C2EB9] hover:shadow-md">
+        <article className="group rounded-xl border-2 border-[#2C2C2C1A] bg-white p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#8B2635] hover:shadow-md">
             <div className="flex items-start gap-4">
                 <div className="text-[32px] leading-none" aria-hidden="true">{icon}</div>
                 <div className="space-y-1">
@@ -140,7 +140,7 @@ export default function UnlockScreen({ athleteId, onClose, weekNumber = 1 }) {
             role="presentation"
         >
             <section
-                className="rc-slide-up w-full max-w-[600px] rounded-2xl border border-[#E5E7EB] bg-white p-6 shadow-2xl sm:p-8"
+                className="rc-slide-up w-full max-w-[600px] rounded-2xl border border-[#2C2C2C1A] bg-white p-6 shadow-2xl sm:p-8"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="unlock-screen-title"
@@ -174,8 +174,8 @@ export default function UnlockScreen({ athleteId, onClose, weekNumber = 1 }) {
                     />
                 </div>
 
-                <section className="mt-6 rounded-xl border border-[#C4B5FD] bg-gradient-to-br from-[#F8F2FF] to-[#EEE4FF] p-5">
-                    <span className="inline-flex rounded-full bg-[#5B21B6] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
+                <section className="mt-6 rounded-xl border border-[#2C2C2C1A] bg-gradient-to-br from-[#F5F1E8] to-[#F5F1E8] p-5">
+                    <span className="inline-flex rounded-full bg-[#7D2230] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
                         {comingBadge}
                     </span>
                     <h3 className="mt-3 text-xl font-semibold text-gray-900">Week 2: Coach Outreach &amp; Video Strategy</h3>
@@ -187,7 +187,7 @@ export default function UnlockScreen({ athleteId, onClose, weekNumber = 1 }) {
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                     <button
                         type="button"
-                        className="h-12 w-full rounded-lg bg-[#6C2EB9] px-6 py-[14px] text-sm font-semibold text-white transition hover:bg-[#5B25A0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6C2EB9] focus-visible:ring-offset-2 active:scale-[0.99]"
+                        className="h-12 w-full rounded-lg bg-[#8B2635] px-6 py-[14px] text-sm font-semibold text-white transition hover:bg-[#7D2230] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8B2635] focus-visible:ring-offset-2 active:scale-[0.99]"
                         onClick={handleExploreDashboard}
                     >
                         Explore Dashboard

@@ -586,12 +586,12 @@ export default function ProfileSetup() {
 
             <div className="mx-auto w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
                 <div className="mb-6 flex items-center justify-between">
-                    <span className="inline-flex rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-700">
+                    <span className="inline-flex rounded-full bg-[#F5F1E8] px-3 py-1 text-sm font-medium text-[#8B2635]">
                         Step {step} of {TOTAL_STEPS}
                     </span>
                     <div className="h-2 w-36 overflow-hidden rounded-full bg-gray-200">
                         <div
-                            className="h-full rounded-full bg-violet-600 transition-all duration-300"
+                            className="h-full rounded-full bg-[#8B2635] transition-all duration-300"
                             style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
                         />
                     </div>
@@ -609,7 +609,7 @@ export default function ProfileSetup() {
                                 <label className="mb-2 block text-sm font-medium text-gray-700">First Name</label>
                                 <input
                                     type="text"
-                                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none ring-violet-300 transition focus:border-violet-500 focus:ring"
+                                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none ring-[rgba(139,38,53,0.25)] transition focus:border-[#8B2635] focus:ring"
                                     placeholder="First name"
                                     value={formData.firstName}
                                     onChange={(event) => setFormData(prev => ({ ...prev, firstName: event.target.value }))}
@@ -619,7 +619,7 @@ export default function ProfileSetup() {
                                 <label className="mb-2 block text-sm font-medium text-gray-700">Last Name</label>
                                 <input
                                     type="text"
-                                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none ring-violet-300 transition focus:border-violet-500 focus:ring"
+                                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none ring-[rgba(139,38,53,0.25)] transition focus:border-[#8B2635] focus:ring"
                                     placeholder="Last name"
                                     value={formData.lastName}
                                     onChange={(event) => setFormData(prev => ({ ...prev, lastName: event.target.value }))}
@@ -630,7 +630,7 @@ export default function ProfileSetup() {
                         <div>
                             <label className="mb-2 block text-sm font-medium text-gray-700">What is their graduation year?</label>
                             <select
-                                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none ring-violet-300 transition focus:border-violet-500 focus:ring"
+                                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none ring-[rgba(139,38,53,0.25)] transition focus:border-[#8B2635] focus:ring"
                                 value={formData.gradYear}
                                 onChange={(event) => setFormData(prev => ({ ...prev, gradYear: event.target.value }))}
                             >
@@ -663,7 +663,7 @@ export default function ProfileSetup() {
                         <div>
                             <label className="mb-2 block text-sm font-medium text-gray-700">What sport?</label>
                             <select
-                                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none ring-violet-300 transition focus:border-violet-500 focus:ring"
+                                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none ring-[rgba(139,38,53,0.25)] transition focus:border-[#8B2635] focus:ring"
                                 value={formData.sport}
                                 onChange={(event) => handleSportChange(event.target.value)}
                             >
@@ -680,7 +680,7 @@ export default function ProfileSetup() {
                         <div>
                             <label className="mb-2 block text-sm font-medium text-gray-700">Position</label>
                             <select
-                                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none ring-violet-300 transition focus:border-violet-500 focus:ring disabled:bg-gray-100"
+                                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none ring-[rgba(139,38,53,0.25)] transition focus:border-[#8B2635] focus:ring disabled:bg-gray-100"
                                 value={formData.positionCode}
                                 disabled={!formData.sport}
                                 onChange={(event) => handlePositionChange(event.target.value)}
@@ -698,7 +698,7 @@ export default function ProfileSetup() {
                         <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                             <button
                                 type="button"
-                                className="inline-flex items-center gap-2 text-sm font-medium text-violet-700"
+                                className="inline-flex items-center gap-2 text-sm font-medium text-[#8B2635]"
                                 onClick={() => setShowSecondaryPositions(prev => !prev)}
                             >
                                 <Plus className="h-4 w-4" />
@@ -717,7 +717,7 @@ export default function ProfileSetup() {
                                             <label
                                                 key={option.code}
                                                 className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${disabled ? 'opacity-50' : 'cursor-pointer'} ${checked
-                                                    ? 'border-violet-500 bg-violet-50'
+                                                    ? 'border-[#8B2635] bg-[#F5F1E8]'
                                                     : 'border-gray-300 bg-white'
                                                     }`}
                                             >
@@ -726,7 +726,7 @@ export default function ProfileSetup() {
                                                     checked={checked}
                                                     disabled={disabled}
                                                     onChange={() => handleSecondaryPositionToggle(option.code)}
-                                                    className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                                                    className="h-4 w-4 rounded border-gray-300 text-[#8B2635] focus:ring-[rgba(139,38,53,0.35)]"
                                                 />
                                                 {option.label}
                                             </label>
@@ -753,13 +753,13 @@ export default function ProfileSetup() {
                                     <label
                                         key={option.id}
                                         className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition ${checked
-                                            ? 'border-violet-600 bg-violet-50'
-                                            : 'border-gray-300 bg-white hover:border-violet-300'
+                                            ? 'border-[#8B2635] bg-[#F5F1E8]'
+                                            : 'border-gray-300 bg-white hover:border-[#2C2C2C1A]'
                                             }`}
                                     >
                                         <input
                                             type="checkbox"
-                                            className="mt-0.5 h-5 w-5 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                                            className="mt-0.5 h-5 w-5 rounded border-gray-300 text-[#8B2635] focus:ring-[rgba(139,38,53,0.35)]"
                                             checked={checked}
                                             onChange={() => handleDivisionToggle(option.id)}
                                         />
@@ -793,7 +793,7 @@ export default function ProfileSetup() {
                                 <label className="mb-2 block text-sm font-medium text-gray-700">City</label>
                                 <input
                                     type="text"
-                                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none ring-violet-300 transition focus:border-violet-500 focus:ring"
+                                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none ring-[rgba(139,38,53,0.25)] transition focus:border-[#8B2635] focus:ring"
                                     placeholder="Austin"
                                     value={formData.locationCity}
                                     onChange={(event) => setFormData(prev => ({ ...prev, locationCity: event.target.value }))}
@@ -803,7 +803,7 @@ export default function ProfileSetup() {
                                 <label className="mb-2 block text-sm font-medium text-gray-700">State</label>
                                 <input
                                     type="text"
-                                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none ring-violet-300 transition focus:border-violet-500 focus:ring"
+                                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none ring-[rgba(139,38,53,0.25)] transition focus:border-[#8B2635] focus:ring"
                                     placeholder="Texas"
                                     value={formData.locationState}
                                     onChange={(event) => setFormData(prev => ({ ...prev, locationState: event.target.value }))}
@@ -820,11 +820,11 @@ export default function ProfileSetup() {
                                 step={1}
                                 value={formData.distanceIndex}
                                 onChange={(event) => setFormData(prev => ({ ...prev, distanceIndex: Number(event.target.value) }))}
-                                className="w-full accent-violet-600"
+                                className="w-full accent-[#8B2635]"
                             />
                             <div className="mt-2 flex items-center justify-between text-sm text-gray-600">
                                 <span>0</span>
-                                <span className="font-medium text-violet-700">{distanceLabel(selectedDistance)}</span>
+                                <span className="font-medium text-[#8B2635]">{distanceLabel(selectedDistance)}</span>
                                 <span>Anywhere</span>
                             </div>
                         </div>
@@ -836,7 +836,7 @@ export default function ProfileSetup() {
                                     <label
                                         key={option.value}
                                         className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm transition ${formData.gpaRange === option.value
-                                            ? 'border-violet-600 bg-violet-50 text-violet-700'
+                                            ? 'border-[#8B2635] bg-[#F5F1E8] text-[#8B2635]'
                                             : 'border-gray-300 bg-white text-gray-700'
                                             }`}
                                     >
@@ -846,7 +846,7 @@ export default function ProfileSetup() {
                                             value={option.value}
                                             checked={formData.gpaRange === option.value}
                                             onChange={(event) => setFormData(prev => ({ ...prev, gpaRange: event.target.value }))}
-                                            className="h-4 w-4 border-gray-300 text-violet-600 focus:ring-violet-500"
+                                            className="h-4 w-4 border-gray-300 text-[#8B2635] focus:ring-[rgba(139,38,53,0.35)]"
                                         />
                                         {option.label}
                                     </label>
@@ -872,7 +872,7 @@ export default function ProfileSetup() {
                             <p className="mt-1"><span className="font-medium">Phase:</span> {resolvePhaseFromGradYear(formData.gradYear)}</p>
                         </div>
 
-                        <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm text-violet-700">
+                        <div className="rounded-xl border border-[#2C2C2C1A] bg-[#F5F1E8] p-4 text-sm text-[#8B2635]">
                             {backgroundStatus.plan === 'ready'
                                 ? 'Plan is pre-generated and ready to preview instantly.'
                                 : 'Generating plan in background...'
@@ -897,8 +897,8 @@ export default function ProfileSetup() {
                             ))}
                         </div>
 
-                        <div className="rounded-2xl border border-[#E9D5FF] bg-[#F5F3FF] p-6">
-                            <h2 className="text-lg font-medium text-violet-700">Get your personalized plan every Monday—free for 4 weeks</h2>
+                        <div className="rounded-2xl border border-[#F5F1E8] bg-[#F5F1E8] p-6">
+                            <h2 className="text-lg font-medium text-[#8B2635]">Get your personalized plan every Monday—free for 4 weeks</h2>
 
                             {!user && (
                                 <div className="mt-4 space-y-3">
@@ -908,7 +908,7 @@ export default function ProfileSetup() {
                                             <Mail className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-gray-400" />
                                             <input
                                                 type="email"
-                                                className="w-full rounded-xl border border-gray-300 bg-white px-10 py-3 text-base text-gray-900 outline-none ring-violet-300 transition focus:border-violet-500 focus:ring"
+                                                className="w-full rounded-xl border border-gray-300 bg-white px-10 py-3 text-base text-gray-900 outline-none ring-[rgba(139,38,53,0.25)] transition focus:border-[#8B2635] focus:ring"
                                                 placeholder="you@example.com"
                                                 value={formData.email}
                                                 onChange={(event) => setFormData(prev => ({ ...prev, email: event.target.value }))}
@@ -921,7 +921,7 @@ export default function ProfileSetup() {
                                             <Lock className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-gray-400" />
                                             <input
                                                 type="password"
-                                                className="w-full rounded-xl border border-gray-300 bg-white px-10 py-3 text-base text-gray-900 outline-none ring-violet-300 transition focus:border-violet-500 focus:ring"
+                                                className="w-full rounded-xl border border-gray-300 bg-white px-10 py-3 text-base text-gray-900 outline-none ring-[rgba(139,38,53,0.25)] transition focus:border-[#8B2635] focus:ring"
                                                 placeholder="At least 8 characters"
                                                 value={formData.password}
                                                 onChange={(event) => setFormData(prev => ({ ...prev, password: event.target.value }))}
@@ -945,7 +945,7 @@ export default function ProfileSetup() {
                                             value="parent"
                                             checked={formData.signupRole === 'parent'}
                                             onChange={(event) => setFormData(prev => ({ ...prev, signupRole: event.target.value }))}
-                                            className="h-4 w-4 border-gray-300 text-violet-600 focus:ring-violet-500"
+                                            className="h-4 w-4 border-gray-300 text-[#8B2635] focus:ring-[rgba(139,38,53,0.35)]"
                                         />
                                         Parent/Guardian
                                     </label>
@@ -956,7 +956,7 @@ export default function ProfileSetup() {
                                             value="student"
                                             checked={formData.signupRole === 'student'}
                                             onChange={(event) => setFormData(prev => ({ ...prev, signupRole: event.target.value }))}
-                                            className="h-4 w-4 border-gray-300 text-violet-600 focus:ring-violet-500"
+                                            className="h-4 w-4 border-gray-300 text-[#8B2635] focus:ring-[rgba(139,38,53,0.35)]"
                                         />
                                         Student-Athlete
                                     </label>
@@ -967,7 +967,7 @@ export default function ProfileSetup() {
 
                             <Button
                                 type="button"
-                                className="mt-4 h-12 w-full bg-purple-600 font-semibold text-white hover:bg-purple-700"
+                                className="mt-4 h-12 w-full bg-[#8B2635] font-semibold text-white hover:bg-[#7D2230]"
                                 disabled={!canProceed || loading}
                                 onClick={handleStartTrial}
                             >
@@ -977,17 +977,17 @@ export default function ProfileSetup() {
                             <label className="mt-4 inline-flex items-start gap-3 text-sm text-gray-700">
                                 <input
                                     type="checkbox"
-                                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#8B2635] focus:ring-[rgba(139,38,53,0.35)]"
                                     checked={formData.agreedToTerms}
                                     onChange={(event) => setFormData(prev => ({ ...prev, agreedToTerms: event.target.checked }))}
                                 />
                                 <span>
                                     I agree to the{' '}
-                                    <button type="button" onClick={() => openLegal('terms')} className="font-medium text-violet-700 underline">
+                                    <button type="button" onClick={() => openLegal('terms')} className="font-medium text-[#8B2635] underline">
                                         Terms of Service
                                     </button>
                                     {' '}and{' '}
-                                    <button type="button" onClick={() => openLegal('privacy')} className="font-medium text-violet-700 underline">
+                                    <button type="button" onClick={() => openLegal('privacy')} className="font-medium text-[#8B2635] underline">
                                         Privacy Policy
                                     </button>
                                 </span>

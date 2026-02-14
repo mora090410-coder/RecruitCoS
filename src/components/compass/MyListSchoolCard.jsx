@@ -39,7 +39,7 @@ export default function MyListSchoolCard({
 
                         {school.interest && (
                             <div className="flex items-center gap-1.5 group/interest relative cursor-help">
-                                <div className="flex items-center gap-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase px-2 py-0.5 rounded-md border border-indigo-100">
+                                <div className="flex items-center gap-1 bg-[#F5F1E8] text-[#8B2635] text-[10px] font-bold uppercase px-2 py-0.5 rounded-md border border-[#2C2C2C1A]">
                                     <BarChart3 className="w-3 h-3" />
                                     Interest: {school.interest.interest_score}
                                 </div>

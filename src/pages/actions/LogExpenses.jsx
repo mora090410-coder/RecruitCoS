@@ -14,7 +14,7 @@ import {
     setWeeklyActionStatus
 } from '../../lib/actionRouting';
 
-const CARD_CLASS = 'rounded-[12px] border-2 border-[#E5E7EB] bg-white p-6 md:p-8';
+const CARD_CLASS = 'rounded-[12px] border-2 border-[#2C2C2C1A] bg-white p-6 md:p-8';
 
 const CATEGORY_OPTIONS = [
     'Showcase',
@@ -166,15 +166,15 @@ export default function LogExpenses() {
         <DashboardLayout>
             <div className="mx-auto max-w-4xl space-y-4">
                 <div className="flex items-center justify-between">
-                    <Link to={weeklyPlanHref} className="text-sm font-semibold text-[#6C2EB9] hover:underline">
+                    <Link to={weeklyPlanHref} className="text-sm font-semibold text-[#8B2635] hover:underline">
                         Back to Plan
                     </Link>
-                    <span className="rounded-full bg-[#F3ECFF] px-3 py-1 text-xs font-semibold text-[#6C2EB9]">
+                    <span className="rounded-full bg-[#F5F1E8] px-3 py-1 text-xs font-semibold text-[#8B2635]">
                         Action {actionNumber} of 3
                     </span>
                 </div>
 
-                <form onSubmit={handleSubmit} className={`${CARD_CLASS} space-y-6 bg-[#F9FAFB]`}>
+                <form onSubmit={handleSubmit} className={`${CARD_CLASS} space-y-6 bg-[#F5F1E8]`}>
                     <header className="space-y-2">
                         <h1 className="text-2xl font-semibold text-gray-900">Log Recruiting Expenses</h1>
                         <p className="text-sm text-gray-600">
@@ -182,21 +182,21 @@ export default function LogExpenses() {
                         </p>
                     </header>
 
-                    <section className="rounded-[12px] border-2 border-[#D8B4FE] bg-white px-6 py-5">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-[#6C2EB9]">Running Total</p>
+                    <section className="rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-6 py-5">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-[#8B2635]">Running Total</p>
                         <p className="mt-1 text-4xl font-bold text-gray-900">${totalAmount.toFixed(2)}</p>
                     </section>
 
                     <section className="space-y-3">
                         {expenses.map((expense, index) => (
-                            <div key={expense.id} className="rounded-[12px] border-2 border-[#E5E7EB] bg-white p-4">
+                            <div key={expense.id} className="rounded-[12px] border-2 border-[#2C2C2C1A] bg-white p-4">
                                 <div className="mb-3 flex items-center justify-between">
                                     <p className="text-sm font-semibold text-gray-900">Expense {index + 1}</p>
                                     <Button
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        className="h-8 rounded-[10px] border-2 border-[#E5E7EB] px-3 text-xs font-semibold text-gray-700"
+                                        className="h-8 rounded-[10px] border-2 border-[#2C2C2C1A] px-3 text-xs font-semibold text-gray-700"
                                         onClick={() => removeExpense(expense.id)}
                                         aria-label={`Remove expense ${index + 1}`}
                                     >
@@ -210,7 +210,7 @@ export default function LogExpenses() {
                                         <select
                                             value={expense.category}
                                             onChange={(event) => updateExpense(expense.id, 'category', event.target.value)}
-                                            className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
+                                            className="w-full rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#8B2635]"
                                             aria-label={`Expense ${index + 1} category`}
                                         >
                                             <option value="">Select category</option>
@@ -229,7 +229,7 @@ export default function LogExpenses() {
                                             value={expense.amount}
                                             onChange={(event) => updateExpense(expense.id, 'amount', event.target.value)}
                                             placeholder="0.00"
-                                            className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
+                                            className="w-full rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#8B2635]"
                                             aria-label={`Expense ${index + 1} amount`}
                                         />
                                     </label>
@@ -240,7 +240,7 @@ export default function LogExpenses() {
                                             type="date"
                                             value={expense.date}
                                             onChange={(event) => updateExpense(expense.id, 'date', event.target.value)}
-                                            className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
+                                            className="w-full rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#8B2635]"
                                             aria-label={`Expense ${index + 1} date`}
                                         />
                                     </label>
@@ -252,7 +252,7 @@ export default function LogExpenses() {
                                             value={expense.notes}
                                             onChange={(event) => updateExpense(expense.id, 'notes', event.target.value)}
                                             placeholder="Optional note about this expense."
-                                            className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
+                                            className="w-full rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#8B2635]"
                                             aria-label={`Expense ${index + 1} notes`}
                                         />
                                     </label>
@@ -265,7 +265,7 @@ export default function LogExpenses() {
                         <Button
                             type="button"
                             variant="outline"
-                            className="h-11 rounded-[12px] border-2 border-[#D8B4FE] bg-white px-5 text-sm font-semibold text-[#6C2EB9]"
+                            className="h-11 rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-5 text-sm font-semibold text-[#8B2635]"
                             onClick={addExpense}
                         >
                             Add Another Expense
@@ -282,7 +282,7 @@ export default function LogExpenses() {
                         <Button
                             type="button"
                             variant="outline"
-                            className="h-11 rounded-[12px] border-2 border-[#D1D5DB] bg-white px-5 text-sm font-semibold text-gray-700"
+                            className="h-11 rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-5 text-sm font-semibold text-gray-700"
                             onClick={handleSkip}
                             disabled={isSaving || isSkipping}
                         >
@@ -290,7 +290,7 @@ export default function LogExpenses() {
                         </Button>
                         <Button
                             type="submit"
-                            className="h-11 rounded-[12px] bg-[#6C2EB9] px-5 text-sm font-semibold text-white hover:bg-[#5B25A0]"
+                            className="h-11 rounded-[12px] bg-[#8B2635] px-5 text-sm font-semibold text-white hover:bg-[#7D2230]"
                             disabled={isSaving || isSkipping || !targetAthleteId}
                         >
                             {isSaving ? 'Saving...' : 'Save & Mark Complete'}

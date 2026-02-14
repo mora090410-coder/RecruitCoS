@@ -20,7 +20,7 @@ export default function ProfileSwitcher() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex items-center gap-2 px-3 hover:bg-[rgba(153,0,0,0.05)]">
+                <Button variant="ghost" size="sm" className="flex items-center gap-2 px-3 hover:bg-[rgba(139, 38, 53, 0.05)]">
                     <div className="flex items-center gap-2">
                         {activeAthlete ? (
                             <Users className="h-4 w-4 text-[var(--rc-cardinal)]" />
@@ -40,7 +40,7 @@ export default function ProfileSwitcher() {
 
                 <DropdownMenuItem
                     onClick={() => switchAthlete(null)}
-                    className={!activeAthlete ? 'bg-[rgba(153,0,0,0.06)]' : ''}
+                    className={!activeAthlete ? 'bg-[rgba(139, 38, 53, 0.06)]' : ''}
                 >
                     <User className="w-4 h-4 mr-2" />
                     My Profile
@@ -50,7 +50,7 @@ export default function ProfileSwitcher() {
                     <DropdownMenuItem
                         key={access.athlete.id}
                         onClick={() => switchAthlete(access.athlete.id)}
-                        className={activeAthlete?.id === access.athlete.id ? 'bg-[rgba(153,0,0,0.06)]' : ''}
+                        className={activeAthlete?.id === access.athlete.id ? 'bg-[rgba(139, 38, 53, 0.06)]' : ''}
                     >
                         <Users className="w-4 h-4 mr-2" />
                         {access.athlete.full_name}

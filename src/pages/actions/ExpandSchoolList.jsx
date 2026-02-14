@@ -456,7 +456,7 @@ export default function ExpandSchoolList() {
                     ) : (
                         <div className="mt-3 grid gap-2">
                             {recommendationPicks.map((pick) => (
-                                <div key={pick.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#E5E7EB] bg-white px-3 py-2">
+                                <div key={pick.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#2C2C2C1A] bg-white px-3 py-2">
                                     <div>
                                         <p className="text-sm font-semibold text-gray-900">{pick.school_name}</p>
                                         <p className="text-xs text-gray-600">
@@ -465,7 +465,7 @@ export default function ExpandSchoolList() {
                                     </div>
                                     <Button
                                         type="button"
-                                        className="h-9 rounded-[10px] bg-[#6C2EB9] px-3 text-xs font-semibold text-white hover:bg-[#5B25A0]"
+                                        className="h-9 rounded-[10px] bg-[#8B2635] px-3 text-xs font-semibold text-white hover:bg-[#7D2230]"
                                         onClick={() => addSchool(pick, 'target')}
                                         disabled={saving || isCompleting || isSkipping}
                                     >
@@ -487,7 +487,7 @@ export default function ExpandSchoolList() {
                             <select
                                 value={divisionFilter}
                                 onChange={(event) => setDivisionFilter(event.target.value)}
-                                className="w-full rounded-[10px] border-2 border-[#E5E7EB] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#6C2EB9]"
+                                className="w-full rounded-[10px] border-2 border-[#2C2C2C1A] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#8B2635]"
                                 disabled={loading || saving}
                             >
                                 {DIVISION_OPTIONS.map((option) => (
@@ -502,7 +502,7 @@ export default function ExpandSchoolList() {
                                 value={searchQuery}
                                 onChange={(event) => setSearchQuery(event.target.value)}
                                 placeholder="Search Purdue, Tennessee, Notre Dame..."
-                                className="w-full rounded-[10px] border-2 border-[#E5E7EB] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#6C2EB9]"
+                                className="w-full rounded-[10px] border-2 border-[#2C2C2C1A] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#8B2635]"
                                 disabled={loading || saving}
                             />
                         </label>
@@ -519,7 +519,7 @@ export default function ExpandSchoolList() {
                     {searchResults.length > 0 && (
                         <div className="mt-3 grid gap-2">
                             {searchResults.map((school) => (
-                                <div key={school.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#E5E7EB] bg-white px-3 py-2">
+                                <div key={school.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#2C2C2C1A] bg-white px-3 py-2">
                                     <div>
                                         <p className="text-sm font-semibold text-gray-900">{school.name}</p>
                                         <p className="text-xs text-gray-600">
@@ -533,7 +533,7 @@ export default function ExpandSchoolList() {
                                                 key={`${school.id}-${option.value}`}
                                                 type="button"
                                                 variant="outline"
-                                                className="h-8 rounded-[10px] border border-[#D1D5DB] bg-white px-3 text-xs font-semibold text-gray-700"
+                                                className="h-8 rounded-[10px] border border-[#2C2C2C1A] bg-white px-3 text-xs font-semibold text-gray-700"
                                                 onClick={() => addSchool(school, option.value)}
                                                 disabled={saving}
                                             >
@@ -554,7 +554,7 @@ export default function ExpandSchoolList() {
                             {customSchoolCandidate ? (
                                 <button
                                     type="button"
-                                    className="text-xs font-semibold text-[#6C2EB9] underline-offset-2 hover:underline"
+                                    className="text-xs font-semibold text-[#8B2635] underline-offset-2 hover:underline"
                                     onClick={addCustomSchool}
                                     disabled={loading || saving}
                                 >
@@ -574,7 +574,7 @@ export default function ExpandSchoolList() {
                     ) : (
                         <div className="mt-3 grid gap-2">
                             {selectedSchools.map((school) => (
-                                <article key={school.id} className="rounded-lg border border-[#E5E7EB] bg-white p-3">
+                                <article key={school.id} className="rounded-lg border border-[#2C2C2C1A] bg-white p-3">
                                     <div className="flex flex-wrap items-start justify-between gap-3">
                                         <div>
                                             <p className="text-sm font-semibold text-gray-900">{school.school_name}</p>
@@ -582,7 +582,7 @@ export default function ExpandSchoolList() {
                                                 {formatDivision(school.division)} • {school.school_location || 'Location unavailable'}
                                             </p>
                                         </div>
-                                        <span className="rounded-full border border-[#D8B4FE] bg-[#F8F2FF] px-2 py-1 text-xs font-semibold text-[#6C2EB9]">
+                                        <span className="rounded-full border border-[#2C2C2C1A] bg-[#F5F1E8] px-2 py-1 text-xs font-semibold text-[#8B2635]">
                                             {normalizeCategory(school.category)}
                                         </span>
                                     </div>
@@ -591,7 +591,7 @@ export default function ExpandSchoolList() {
                                         <select
                                             value={normalizeCategory(school.category)}
                                             onChange={(event) => updateCategory(school.id, event.target.value)}
-                                            className="rounded-[10px] border border-[#D1D5DB] bg-white px-2 py-1 text-xs font-semibold text-gray-700 outline-none transition focus:border-[#6C2EB9]"
+                                            className="rounded-[10px] border border-[#2C2C2C1A] bg-white px-2 py-1 text-xs font-semibold text-gray-700 outline-none transition focus:border-[#8B2635]"
                                             disabled={saving}
                                         >
                                             {CATEGORY_OPTIONS.map((option) => (
@@ -601,7 +601,7 @@ export default function ExpandSchoolList() {
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            className="h-8 rounded-[10px] border border-[#E5E7EB] px-3 text-xs font-semibold text-gray-700"
+                                            className="h-8 rounded-[10px] border border-[#2C2C2C1A] px-3 text-xs font-semibold text-gray-700"
                                             onClick={() => removeSchool(school.id)}
                                             disabled={saving}
                                         >
@@ -622,7 +622,7 @@ export default function ExpandSchoolList() {
                     <div className="mt-3">
                         <Button
                             type="button"
-                            className="h-10 rounded-[10px] bg-[#6C2EB9] px-4 text-sm font-semibold text-white hover:bg-[#5B25A0]"
+                            className="h-10 rounded-[10px] bg-[#8B2635] px-4 text-sm font-semibold text-white hover:bg-[#7D2230]"
                             onClick={() => navigate('/pricing')}
                         >
                             Upgrade to Pro - $25/mo
@@ -636,7 +636,7 @@ export default function ExpandSchoolList() {
                     <Button
                         type="button"
                         variant="outline"
-                        className="h-11 rounded-[12px] border-2 border-[#D1D5DB] bg-white px-5 text-sm font-semibold text-gray-700"
+                        className="h-11 rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-5 text-sm font-semibold text-gray-700"
                         onClick={handleSkip}
                         disabled={loading || saving || isCompleting || isSkipping}
                     >
@@ -644,7 +644,7 @@ export default function ExpandSchoolList() {
                     </Button>
                     <Button
                         type="button"
-                        className="h-11 rounded-[12px] bg-[#6C2EB9] px-5 text-sm font-semibold text-white hover:bg-[#5B25A0]"
+                        className="h-11 rounded-[12px] bg-[#8B2635] px-5 text-sm font-semibold text-white hover:bg-[#7D2230]"
                         onClick={handleComplete}
                         disabled={loading || saving || isCompleting || isSkipping || !athleteId}
                     >

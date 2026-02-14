@@ -14,7 +14,7 @@ import {
     setWeeklyActionStatus
 } from '../../lib/actionRouting';
 
-const CARD_CLASS = 'rounded-[12px] border-2 border-[#E5E7EB] bg-white p-6 md:p-8';
+const CARD_CLASS = 'rounded-[12px] border-2 border-[#2C2C2C1A] bg-white p-6 md:p-8';
 
 const PHASE_MILESTONES = {
     freshmen_sophomores: [
@@ -141,11 +141,11 @@ function MilestoneChecklist({ milestoneItems, milestoneState, onToggle, onNotesC
                 const state = milestoneState[milestone.type] || { completed: false, notes: '' };
 
                 return (
-                    <div key={milestone.type} className="rounded-[12px] border-2 border-[#E5E7EB] bg-white p-4">
+                    <div key={milestone.type} className="rounded-[12px] border-2 border-[#2C2C2C1A] bg-white p-4">
                         <label className="flex items-start gap-3">
                             <input
                                 type="checkbox"
-                                className="mt-1 h-4 w-4 rounded border-gray-300 text-[#6C2EB9] focus:ring-[#6C2EB9]"
+                                className="mt-1 h-4 w-4 rounded border-gray-300 text-[#8B2635] focus:ring-[#8B2635]"
                                 checked={Boolean(state.completed)}
                                 onChange={(event) => onToggle(milestone.type, event.target.checked)}
                             />
@@ -157,7 +157,7 @@ function MilestoneChecklist({ milestoneItems, milestoneState, onToggle, onNotesC
                             value={state.notes || ''}
                             onChange={(event) => onNotesChange(milestone.type, event.target.value)}
                             placeholder="Optional note for this milestone"
-                            className="mt-3 w-full rounded-[10px] border border-[#E5E7EB] px-3 py-2 text-sm outline-none transition focus:border-[#6C2EB9]"
+                            className="mt-3 w-full rounded-[10px] border border-[#2C2C2C1A] px-3 py-2 text-sm outline-none transition focus:border-[#8B2635]"
                         />
                     </div>
                 );
@@ -369,15 +369,15 @@ export default function RecruitingTimeline() {
         <DashboardLayout>
             <div className="mx-auto max-w-4xl space-y-4">
                 <div className="flex items-center justify-between">
-                    <Link to={weeklyPlanHref} className="text-sm font-semibold text-[#6C2EB9] hover:underline">
+                    <Link to={weeklyPlanHref} className="text-sm font-semibold text-[#8B2635] hover:underline">
                         Back to Plan
                     </Link>
-                    <span className="rounded-full bg-[#F3ECFF] px-3 py-1 text-xs font-semibold text-[#6C2EB9]">
+                    <span className="rounded-full bg-[#F5F1E8] px-3 py-1 text-xs font-semibold text-[#8B2635]">
                         Action {actionNumber} of 3
                     </span>
                 </div>
 
-                <section className={`${CARD_CLASS} space-y-6 bg-[#F9FAFB]`}>
+                <section className={`${CARD_CLASS} space-y-6 bg-[#F5F1E8]`}>
                     <header className="space-y-2">
                         <h1 className="text-2xl font-semibold text-gray-900">Your Recruiting Timeline</h1>
                         <p className="text-sm text-gray-600">
@@ -385,14 +385,14 @@ export default function RecruitingTimeline() {
                         </p>
                     </header>
 
-                    <section className="rounded-[12px] border-2 border-[#D8B4FE] bg-white p-5">
+                    <section className="rounded-[12px] border-2 border-[#2C2C2C1A] bg-white p-5">
                         <h2 className="text-lg font-semibold text-gray-900">Timeline Focus</h2>
                         <div className="mt-4 space-y-3">
                             {timelineEvents.map((event, index) => (
-                                <article key={`${event.title}-${index}`} className="rounded-[10px] border border-[#E5E7EB] bg-white p-4">
+                                <article key={`${event.title}-${index}`} className="rounded-[10px] border border-[#2C2C2C1A] bg-white p-4">
                                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                         <h3 className="text-sm font-semibold text-gray-900">{event.title}</h3>
-                                        <span className="inline-flex rounded-full bg-[#F3ECFF] px-2.5 py-1 text-xs font-semibold text-[#6C2EB9]">
+                                        <span className="inline-flex rounded-full bg-[#F5F1E8] px-2.5 py-1 text-xs font-semibold text-[#8B2635]">
                                             {event.dateLabel}
                                         </span>
                                     </div>
@@ -424,7 +424,7 @@ export default function RecruitingTimeline() {
                         <Button
                             type="button"
                             variant="outline"
-                            className="h-11 rounded-[12px] border-2 border-[#D1D5DB] bg-white px-5 text-sm font-semibold text-gray-700"
+                            className="h-11 rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-5 text-sm font-semibold text-gray-700"
                             onClick={handleSkip}
                             disabled={isSaving || isSkipping || loading}
                         >
@@ -432,7 +432,7 @@ export default function RecruitingTimeline() {
                         </Button>
                         <Button
                             type="button"
-                            className="h-11 rounded-[12px] bg-[#6C2EB9] px-5 text-sm font-semibold text-white hover:bg-[#5B25A0]"
+                            className="h-11 rounded-[12px] bg-[#8B2635] px-5 text-sm font-semibold text-white hover:bg-[#7D2230]"
                             onClick={handleComplete}
                             disabled={isSaving || isSkipping || loading || !targetAthleteId}
                         >

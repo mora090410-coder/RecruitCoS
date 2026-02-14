@@ -76,7 +76,7 @@ function resolveActionContent(weekNumber, actionNumber, item) {
 
 function LoadingCard() {
     return (
-        <div className="animate-pulse rounded-xl border-2 border-[#E5E7EB] bg-white p-6">
+        <div className="animate-pulse rounded-xl border-2 border-[#2C2C2C1A] bg-white p-6">
             <div className="mb-4 h-5 w-1/3 rounded bg-gray-200" />
             <div className="h-6 w-2/3 rounded bg-gray-200" />
             <div className="mt-3 h-4 w-full rounded bg-gray-100" />
@@ -147,8 +147,8 @@ export default function WeekOnePlanView({
                                 type="button"
                                 onClick={() => onSelectWeek?.(availableWeek)}
                                 className={`rounded-full px-4 py-2 text-sm font-semibold transition ${isActiveWeek
-                                    ? 'bg-[#6C2EB9] text-white'
-                                    : 'border border-[#D1D5DB] bg-white text-gray-700 hover:border-[#6C2EB9] hover:text-[#6C2EB9]'
+                                    ? 'bg-[#8B2635] text-white'
+                                    : 'border border-[#2C2C2C1A] bg-white text-gray-700 hover:border-[#8B2635] hover:text-[#8B2635]'
                                 }`}
                             >
                                 Week {availableWeek}
@@ -188,23 +188,23 @@ export default function WeekOnePlanView({
                     const content = resolveActionContent(weekNumber, actionNumber, item)
                     const buttonLabel = isDone ? 'Edit This Action' : 'Start This Action'
                     const buttonClassName = `mt-5 h-12 w-full rounded-lg px-6 text-sm font-semibold transition ${isDone
-                        ? 'border-2 border-[#D1D5DB] bg-white text-gray-700 hover:border-[#6C2EB9] hover:text-[#6C2EB9]'
-                        : 'bg-[#6C2EB9] text-white hover:bg-[#5B25A0] hover:shadow-md active:scale-[0.99]'
+                        ? 'border-2 border-[#2C2C2C1A] bg-white text-gray-700 hover:border-[#8B2635] hover:text-[#8B2635]'
+                        : 'bg-[#8B2635] text-white hover:bg-[#7D2230] hover:shadow-md active:scale-[0.99]'
                     }`
 
                     return (
                         <article
                             key={actionNumber}
-                            className={`rounded-xl border-2 bg-white p-6 transition-all ${isDone ? 'border-[#D1D5DB] bg-gray-50/70 opacity-80' : 'border-[#E5E7EB] hover:border-[#6C2EB9] hover:shadow-[0_8px_24px_rgba(108,46,185,0.15)]'}`}
+                            className={`rounded-xl border-2 bg-white p-6 transition-all ${isDone ? 'border-[#2C2C2C1A] bg-gray-50/70 opacity-80' : 'border-[#2C2C2C1A] hover:border-[#8B2635] hover:shadow-[0_8px_24px_rgba(139, 38, 53, 0.15)]'}`}
                         >
                             <div className="mb-4 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <span className="text-2xl" aria-hidden="true">{content.icon}</span>
-                                    <div className={`flex h-6 w-6 items-center justify-center rounded border-2 ${isDone ? 'border-[#6C2EB9] bg-[#6C2EB9] text-white' : 'border-[#9CA3AF]'}`}>
+                                    <div className={`flex h-6 w-6 items-center justify-center rounded border-2 ${isDone ? 'border-[#8B2635] bg-[#8B2635] text-white' : 'border-[rgba(44,44,44,0.6)]'}`}>
                                         {isDone ? '✓' : ''}
                                     </div>
                                 </div>
-                                <span className={`text-sm font-semibold ${isDone ? 'text-[#6C2EB9]' : 'text-gray-600'}`}>
+                                <span className={`text-sm font-semibold ${isDone ? 'text-[#8B2635]' : 'text-gray-600'}`}>
                                     {isDone ? 'Done' : 'Not Done'}
                                 </span>
                             </div>
@@ -226,7 +226,7 @@ export default function WeekOnePlanView({
             </section>
 
             {!loading && !error && (
-                <section className="rounded-xl border-2 border-[rgba(108,46,185,0.14)] bg-gradient-to-br from-[rgba(108,46,185,0.08)] to-[rgba(108,46,185,0.03)] p-7 text-center">
+                <section className="rounded-xl border-2 border-[rgba(139, 38, 53, 0.14)] bg-gradient-to-br from-[rgba(139, 38, 53, 0.08)] to-[rgba(139, 38, 53, 0.03)] p-7 text-center">
                     <div className="mb-2 text-3xl" aria-hidden="true">📊</div>
                     <h3 className="text-lg font-bold text-gray-900">Your Progress</h3>
                     <p className="mt-1 text-base text-gray-700">Week {weekNumber} of 4 • <span className="font-semibold">{completedCount}/3</span> actions completed</p>

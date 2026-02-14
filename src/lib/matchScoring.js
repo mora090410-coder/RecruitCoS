@@ -2,7 +2,7 @@ const EARTH_RADIUS_MILES = 3959;
 
 export const MATCH_CATEGORY_COLORS = {
     SAFETY: '#059669',
-    TARGET: '#6C2EB9',
+    TARGET: '#8B2635',
     REACH: '#F59E0B',
     DREAM: '#DC2626'
 };

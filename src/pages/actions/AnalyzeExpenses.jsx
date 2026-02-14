@@ -350,7 +350,7 @@ export default function AnalyzeExpenses() {
                 ) : (
                     <>
                         <section className="w3-card-soft">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-[#6C2EB9]">Total Recruiting Spend</p>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-[#8B2635]">Total Recruiting Spend</p>
                             <p className="mt-1 text-4xl font-bold text-gray-900">{formatCurrency(analysis?.total_spent || 0)}</p>
                             <p className="mt-1 text-sm text-gray-600">Last {ANALYSIS_WINDOW_DAYS} days</p>
                         </section>
@@ -376,18 +376,18 @@ export default function AnalyzeExpenses() {
                                     <h2 className="text-xl font-semibold text-gray-900">ROI Insight</h2>
                                     <p className="mt-2 text-sm text-gray-700">{analysis?.recommendation}</p>
                                 </div>
-                                <div className="rounded-xl border border-[#D8B4FE] bg-[#F8F2FF] px-4 py-3 text-center">
-                                    <p className="text-xs font-semibold uppercase text-[#6C2EB9]">ROI Score</p>
+                                <div className="rounded-xl border border-[#2C2C2C1A] bg-[#F5F1E8] px-4 py-3 text-center">
+                                    <p className="text-xs font-semibold uppercase text-[#8B2635]">ROI Score</p>
                                     <p className="mt-1 text-2xl font-bold text-gray-900">{analysis?.estimated_roi_score ?? 0}/100</p>
                                 </div>
                             </div>
 
                             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                                <div className="rounded-xl border border-[#E5E7EB] bg-white p-3">
+                                <div className="rounded-xl border border-[#2C2C2C1A] bg-white p-3">
                                     <p className="text-xs font-semibold uppercase text-gray-500">Coach Contacts</p>
                                     <p className="mt-1 text-2xl font-bold text-gray-900">{analysis?.coach_contacts_gained || 0}</p>
                                 </div>
-                                <div className="rounded-xl border border-[#E5E7EB] bg-white p-3">
+                                <div className="rounded-xl border border-[#2C2C2C1A] bg-white p-3">
                                     <p className="text-xs font-semibold uppercase text-gray-500">Schools Tracked</p>
                                     <p className="mt-1 text-2xl font-bold text-gray-900">{analysis?.schools_interested || 0}</p>
                                 </div>
@@ -407,7 +407,7 @@ export default function AnalyzeExpenses() {
                     <div className="mt-3">
                         <Button
                             type="button"
-                            className="h-10 rounded-[10px] bg-[#6C2EB9] px-4 text-sm font-semibold text-white hover:bg-[#5B25A0]"
+                            className="h-10 rounded-[10px] bg-[#8B2635] px-4 text-sm font-semibold text-white hover:bg-[#7D2230]"
                             onClick={() => navigate('/pricing')}
                         >
                             Upgrade to Pro - $25/mo
@@ -421,7 +421,7 @@ export default function AnalyzeExpenses() {
                     <Button
                         type="button"
                         variant="outline"
-                        className="h-11 rounded-[12px] border-2 border-[#D1D5DB] bg-white px-5 text-sm font-semibold text-gray-700"
+                        className="h-11 rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-5 text-sm font-semibold text-gray-700"
                         onClick={handleSkip}
                         disabled={loading || isCompleting || isSkipping}
                     >
@@ -429,7 +429,7 @@ export default function AnalyzeExpenses() {
                     </Button>
                     <Button
                         type="button"
-                        className="h-11 rounded-[12px] bg-[#6C2EB9] px-5 text-sm font-semibold text-white hover:bg-[#5B25A0]"
+                        className="h-11 rounded-[12px] bg-[#8B2635] px-5 text-sm font-semibold text-white hover:bg-[#7D2230]"
                         onClick={handleComplete}
                         disabled={loading || isCompleting || isSkipping || !athleteId}
                     >

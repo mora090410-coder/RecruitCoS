@@ -14,7 +14,7 @@ import {
     setWeeklyActionStatus
 } from '../../lib/actionRouting';
 
-const CARD_CLASS = 'rounded-[12px] border-2 border-[#E5E7EB] bg-white p-6 md:p-8';
+const CARD_CLASS = 'rounded-[12px] border-2 border-[#2C2C2C1A] bg-white p-6 md:p-8';
 
 const CONTACT_METHOD_OPTIONS = [
     { value: 'email', label: 'Email' },
@@ -209,15 +209,15 @@ export default function CoachInteraction() {
         <DashboardLayout>
             <div className="mx-auto max-w-4xl space-y-4">
                 <div className="flex items-center justify-between">
-                    <Link to={weeklyPlanHref} className="text-sm font-semibold text-[#6C2EB9] hover:underline">
+                    <Link to={weeklyPlanHref} className="text-sm font-semibold text-[#8B2635] hover:underline">
                         Back to Plan
                     </Link>
-                    <span className="rounded-full bg-[#F3ECFF] px-3 py-1 text-xs font-semibold text-[#6C2EB9]">
+                    <span className="rounded-full bg-[#F5F1E8] px-3 py-1 text-xs font-semibold text-[#8B2635]">
                         Action {actionNumber} of 3
                     </span>
                 </div>
 
-                <form onSubmit={handleSubmit} className={`${CARD_CLASS} space-y-6 bg-[#F9FAFB]`}>
+                <form onSubmit={handleSubmit} className={`${CARD_CLASS} space-y-6 bg-[#F5F1E8]`}>
                     <header className="space-y-2">
                         <h1 className="text-2xl font-semibold text-gray-900">Log Coach Interaction</h1>
                         <p className="text-sm text-gray-600">
@@ -231,7 +231,7 @@ export default function CoachInteraction() {
                             <select
                                 value={interaction.school_id}
                                 onChange={(event) => updateInteraction('school_id', event.target.value)}
-                                className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
+                                className="w-full rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#8B2635]"
                                 disabled={loading || isSaving}
                                 aria-label="Which school did this interaction involve"
                             >
@@ -251,7 +251,7 @@ export default function CoachInteraction() {
                                 value={interaction.coach_name}
                                 onChange={(event) => updateInteraction('coach_name', event.target.value)}
                                 placeholder="Coach Smith"
-                                className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
+                                className="w-full rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#8B2635]"
                                 aria-label="Coach name"
                             />
                         </label>
@@ -261,7 +261,7 @@ export default function CoachInteraction() {
                             <select
                                 value={interaction.coach_title}
                                 onChange={(event) => updateInteraction('coach_title', event.target.value)}
-                                className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
+                                className="w-full rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#8B2635]"
                                 aria-label="Coach title"
                             >
                                 {COACH_TITLE_OPTIONS.map((option) => (
@@ -275,7 +275,7 @@ export default function CoachInteraction() {
                             <select
                                 value={interaction.contact_method}
                                 onChange={(event) => updateInteraction('contact_method', event.target.value)}
-                                className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
+                                className="w-full rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#8B2635]"
                                 aria-label="Contact method"
                             >
                                 {CONTACT_METHOD_OPTIONS.map((option) => (
@@ -290,7 +290,7 @@ export default function CoachInteraction() {
                                 type="date"
                                 value={interaction.interaction_date}
                                 onChange={(event) => updateInteraction('interaction_date', event.target.value)}
-                                className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
+                                className="w-full rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#8B2635]"
                                 aria-label="Interaction date"
                             />
                         </label>
@@ -300,25 +300,25 @@ export default function CoachInteraction() {
                                 Who reached out first?
                             </legend>
                             <div className="grid gap-2 sm:grid-cols-2">
-                                <label className="flex items-center gap-2 rounded-[10px] border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-gray-900">
+                                <label className="flex items-center gap-2 rounded-[10px] border border-[#2C2C2C1A] bg-white px-3 py-2 text-sm text-gray-900">
                                     <input
                                         type="radio"
                                         name="initiated_by"
                                         value="athlete"
                                         checked={interaction.initiated_by === 'athlete'}
                                         onChange={(event) => updateInteraction('initiated_by', event.target.value)}
-                                        className="h-4 w-4 border-gray-300 text-[#6C2EB9] focus:ring-[#6C2EB9]"
+                                        className="h-4 w-4 border-gray-300 text-[#8B2635] focus:ring-[#8B2635]"
                                     />
                                     I contacted them
                                 </label>
-                                <label className="flex items-center gap-2 rounded-[10px] border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-gray-900">
+                                <label className="flex items-center gap-2 rounded-[10px] border border-[#2C2C2C1A] bg-white px-3 py-2 text-sm text-gray-900">
                                     <input
                                         type="radio"
                                         name="initiated_by"
                                         value="coach"
                                         checked={interaction.initiated_by === 'coach'}
                                         onChange={(event) => updateInteraction('initiated_by', event.target.value)}
-                                        className="h-4 w-4 border-gray-300 text-[#6C2EB9] focus:ring-[#6C2EB9]"
+                                        className="h-4 w-4 border-gray-300 text-[#8B2635] focus:ring-[#8B2635]"
                                     />
                                     They contacted me
                                 </label>
@@ -332,18 +332,18 @@ export default function CoachInteraction() {
                                 value={interaction.notes}
                                 onChange={(event) => updateInteraction('notes', event.target.value)}
                                 placeholder="What did you discuss? What is the next step?"
-                                className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
+                                className="w-full rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#8B2635]"
                                 aria-label="Coach interaction notes"
                             />
                         </label>
 
                         <div className="space-y-2 md:col-span-2">
-                            <label className="flex items-center gap-2 rounded-[10px] border border-[#E5E7EB] bg-white px-3 py-2 text-sm font-medium text-gray-900">
+                            <label className="flex items-center gap-2 rounded-[10px] border border-[#2C2C2C1A] bg-white px-3 py-2 text-sm font-medium text-gray-900">
                                 <input
                                     type="checkbox"
                                     checked={interaction.needs_followup}
                                     onChange={(event) => updateInteraction('needs_followup', event.target.checked)}
-                                    className="h-4 w-4 rounded border-gray-300 text-[#6C2EB9] focus:ring-[#6C2EB9]"
+                                    className="h-4 w-4 rounded border-gray-300 text-[#8B2635] focus:ring-[#8B2635]"
                                 />
                                 Set a follow-up reminder
                             </label>
@@ -355,7 +355,7 @@ export default function CoachInteraction() {
                                         type="date"
                                         value={interaction.followup_date}
                                         onChange={(event) => updateInteraction('followup_date', event.target.value)}
-                                        className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
+                                        className="w-full rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#8B2635]"
                                         aria-label="Follow up date"
                                     />
                                 </label>
@@ -373,7 +373,7 @@ export default function CoachInteraction() {
                         <Button
                             type="button"
                             variant="outline"
-                            className="h-11 rounded-[12px] border-2 border-[#D1D5DB] bg-white px-5 text-sm font-semibold text-gray-700"
+                            className="h-11 rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-5 text-sm font-semibold text-gray-700"
                             onClick={handleSkip}
                             disabled={isSaving || isSkipping || loading}
                         >
@@ -381,7 +381,7 @@ export default function CoachInteraction() {
                         </Button>
                         <Button
                             type="submit"
-                            className="h-11 rounded-[12px] bg-[#6C2EB9] px-5 text-sm font-semibold text-white hover:bg-[#5B25A0]"
+                            className="h-11 rounded-[12px] bg-[#8B2635] px-5 text-sm font-semibold text-white hover:bg-[#7D2230]"
                             disabled={isSaving || isSkipping || loading || !targetAthleteId || savedSchools.length === 0}
                         >
                             {isSaving ? 'Saving...' : 'Save & Mark Complete'}

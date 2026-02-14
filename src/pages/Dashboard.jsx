@@ -11,8 +11,8 @@ import { getAthleteEngagement } from '../lib/getAthleteEngagement'
 import { track } from '../lib/analytics'
 import { isMissingTableError } from '../lib/dbResilience'
 
-const DASHBOARD_WRAPPER_CLASS = 'mx-auto w-full max-w-[1200px] space-y-6 rounded-2xl bg-[#F9FAFB] px-6 py-6 md:px-12 md:py-12'
-const DASHBOARD_BACKGROUND_CLASS = 'rounded-2xl border border-[#E5E7EB] bg-gradient-to-r from-white to-[#F9F5FF] p-6 sm:p-8'
+const DASHBOARD_WRAPPER_CLASS = 'mx-auto w-full max-w-[1200px] space-y-6 rounded-2xl bg-[#F5F1E8] px-6 py-6 md:px-12 md:py-12'
+const DASHBOARD_BACKGROUND_CLASS = 'rounded-2xl border border-[#2C2C2C1A] bg-gradient-to-r from-white to-[#F9F5FF] p-6 sm:p-8'
 
 function getMonthRange(now = new Date()) {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -124,7 +124,7 @@ function summarizeWeekProgress(weeklyRows, engagement) {
 
 function LoadingCard() {
     return (
-        <div className="animate-pulse rounded-xl border-2 border-[#E5E7EB] bg-white p-8">
+        <div className="animate-pulse rounded-xl border-2 border-[#2C2C2C1A] bg-white p-8">
             <div className="h-6 w-1/2 rounded bg-gray-200" />
             <div className="mt-4 h-10 w-1/3 rounded bg-gray-100" />
             <div className="mt-4 h-24 rounded bg-gray-100" />
@@ -299,7 +299,7 @@ export default function Dashboard() {
         <DashboardLayout>
             <div className={DASHBOARD_WRAPPER_CLASS}>
                 <section className={DASHBOARD_BACKGROUND_CLASS}>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6C2EB9]">Recruiting Intelligence Preview</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8B2635]">Recruiting Intelligence Preview</p>
                     <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">Your Recruiting Dashboard</h1>
                     <p className="mt-2 text-base text-gray-600">{pageSubtitle}</p>
                 </section>

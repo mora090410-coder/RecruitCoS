@@ -15,7 +15,7 @@ import {
     setWeeklyActionStatus
 } from '../../lib/actionRouting';
 
-const CARD_CLASS = 'rounded-[12px] border-2 border-[#E5E7EB] bg-white p-6 md:p-8';
+const CARD_CLASS = 'rounded-[12px] border-2 border-[#2C2C2C1A] bg-white p-6 md:p-8';
 
 const FALLBACK_METRICS = [
     {
@@ -276,15 +276,15 @@ export default function UpdateStats() {
         <DashboardLayout>
             <div className="mx-auto max-w-3xl space-y-4">
                 <div className="flex items-center justify-between">
-                    <Link to={weeklyPlanHref} className="text-sm font-semibold text-[#6C2EB9] hover:underline">
+                    <Link to={weeklyPlanHref} className="text-sm font-semibold text-[#8B2635] hover:underline">
                         Back to Plan
                     </Link>
-                    <span className="rounded-full bg-[#F3ECFF] px-3 py-1 text-xs font-semibold text-[#6C2EB9]">
+                    <span className="rounded-full bg-[#F5F1E8] px-3 py-1 text-xs font-semibold text-[#8B2635]">
                         Action {actionNumber} of 3
                     </span>
                 </div>
 
-                <form onSubmit={handleSubmit} className={`${CARD_CLASS} space-y-6 bg-[#F9FAFB]`}>
+                <form onSubmit={handleSubmit} className={`${CARD_CLASS} space-y-6 bg-[#F5F1E8]`}>
                     <header className="space-y-2">
                         <h1 className="text-2xl font-semibold text-gray-900">Update Athlete Stats</h1>
                         <p className="text-sm text-gray-600">
@@ -311,7 +311,7 @@ export default function UpdateStats() {
                                             [metric.key]: nextValue
                                         }));
                                     }}
-                                    className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
+                                    className="w-full rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#8B2635]"
                                     placeholder={resolveMetricPlaceholder(metric)}
                                     aria-label={`${metric.label} in ${resolveUnitLabel(metric.unit)}`}
                                 />
@@ -325,7 +325,7 @@ export default function UpdateStats() {
                             type="date"
                             value={measuredAt}
                             onChange={(event) => setMeasuredAt(event.target.value)}
-                            className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
+                            className="w-full rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#8B2635]"
                             aria-label="Date measured"
                         />
                     </label>
@@ -336,7 +336,7 @@ export default function UpdateStats() {
                             rows={5}
                             value={recentStats}
                             onChange={(event) => setRecentStats(event.target.value)}
-                            className="w-full rounded-[12px] border-2 border-[#E5E7EB] bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#6C2EB9]"
+                            className="w-full rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#8B2635]"
                             placeholder="Add context from recent games, showcases, or workouts."
                             aria-label="Recent stats notes"
                         />
@@ -352,7 +352,7 @@ export default function UpdateStats() {
                         <Button
                             type="button"
                             variant="outline"
-                            className="h-11 rounded-[12px] border-2 border-[#D1D5DB] bg-white px-5 text-sm font-semibold text-gray-700"
+                            className="h-11 rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-5 text-sm font-semibold text-gray-700"
                             onClick={handleSkip}
                             disabled={isSaving || isSkipping}
                         >
@@ -360,7 +360,7 @@ export default function UpdateStats() {
                         </Button>
                         <Button
                             type="submit"
-                            className="h-11 rounded-[12px] bg-[#6C2EB9] px-5 text-sm font-semibold text-white hover:bg-[#5B25A0]"
+                            className="h-11 rounded-[12px] bg-[#8B2635] px-5 text-sm font-semibold text-white hover:bg-[#7D2230]"
                             disabled={isSaving || isSkipping || !targetAthleteId}
                         >
                             {isSaving ? 'Saving...' : 'Save & Mark Complete'}

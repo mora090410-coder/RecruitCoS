@@ -107,7 +107,7 @@ function RecommendationCard({
             <div className="w3-card-actions">
                 <Button
                     type="button"
-                    className="h-10 rounded-[10px] bg-[#6C2EB9] px-4 text-sm font-semibold text-white hover:bg-[#5B25A0]"
+                    className="h-10 rounded-[10px] bg-[#8B2635] px-4 text-sm font-semibold text-white hover:bg-[#7D2230]"
                     onClick={onAdd}
                     disabled={disabled || school.added_to_list}
                 >
@@ -116,7 +116,7 @@ function RecommendationCard({
                 <Button
                     type="button"
                     variant="outline"
-                    className="h-10 rounded-[10px] border-2 border-[#D1D5DB] bg-white px-4 text-sm font-semibold text-gray-700"
+                    className="h-10 rounded-[10px] border-2 border-[#2C2C2C1A] bg-white px-4 text-sm font-semibold text-gray-700"
                     onClick={onDismiss}
                     disabled={disabled || school.dismissed || school.added_to_list}
                 >
@@ -541,7 +541,7 @@ export default function RefineSchoolList() {
                             {currentSchools.slice(0, 14).map((school) => (
                                 <span
                                     key={school.id || school.school_name}
-                                    className="rounded-full border border-[#D8B4FE] bg-[#F8F2FF] px-3 py-1 text-xs font-semibold text-[#6C2EB9]"
+                                    className="rounded-full border border-[#2C2C2C1A] bg-[#F5F1E8] px-3 py-1 text-xs font-semibold text-[#8B2635]"
                                 >
                                     {school.school_name}
                                 </span>
@@ -590,7 +590,7 @@ export default function RefineSchoolList() {
                         <div className="mt-3 flex flex-wrap gap-2">
                             <Button
                                 type="button"
-                                className="h-10 rounded-[10px] bg-[#6C2EB9] px-4 text-sm font-semibold text-white hover:bg-[#5B25A0]"
+                                className="h-10 rounded-[10px] bg-[#8B2635] px-4 text-sm font-semibold text-white hover:bg-[#7D2230]"
                                 onClick={() => navigate('/pricing')}
                             >
                                 Unlock Pro Features - $25/mo
@@ -598,7 +598,7 @@ export default function RefineSchoolList() {
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="h-10 rounded-[10px] border-2 border-[#D1D5DB] bg-white px-4 text-sm font-semibold text-gray-700"
+                                className="h-10 rounded-[10px] border-2 border-[#2C2C2C1A] bg-white px-4 text-sm font-semibold text-gray-700"
                                 onClick={handleComplete}
                                 disabled={isCompleting || isSkipping}
                             >
@@ -614,7 +614,7 @@ export default function RefineSchoolList() {
                     <Button
                         type="button"
                         variant="outline"
-                        className="h-11 rounded-[12px] border-2 border-[#D1D5DB] bg-white px-5 text-sm font-semibold text-gray-700"
+                        className="h-11 rounded-[12px] border-2 border-[#2C2C2C1A] bg-white px-5 text-sm font-semibold text-gray-700"
                         onClick={handleSkip}
                         disabled={loading || saving || isCompleting || isSkipping}
                     >
@@ -622,7 +622,7 @@ export default function RefineSchoolList() {
                     </Button>
                     <Button
                         type="button"
-                        className="h-11 rounded-[12px] bg-[#6C2EB9] px-5 text-sm font-semibold text-white hover:bg-[#5B25A0]"
+                        className="h-11 rounded-[12px] bg-[#8B2635] px-5 text-sm font-semibold text-white hover:bg-[#7D2230]"
                         onClick={handleComplete}
                         disabled={loading || saving || isCompleting || isSkipping || !athleteId}
                     >

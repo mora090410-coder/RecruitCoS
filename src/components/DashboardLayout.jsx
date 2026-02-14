@@ -26,7 +26,7 @@ export default function DashboardLayout({ children, phase }) {
                     {/* Logo & Brand */}
                     <div className="flex items-center gap-8">
                         <Link to="/dashboard" className="flex items-center gap-2 font-serif text-xl font-bold text-[var(--purple-700)]">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-md border border-[rgba(108,46,185,0.28)] bg-[rgba(255,255,255,0.94)] text-[var(--purple-700)] font-sans">R</div>
+                            <div className="flex h-8 w-8 items-center justify-center rounded-md border border-[rgba(139, 38, 53, 0.28)] bg-[rgba(255,255,255,0.94)] text-[var(--purple-700)] font-sans">R</div>
                             RecruitCoS
                         </Link>
 
